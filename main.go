@@ -5,16 +5,12 @@
 package main
 
 import (
-	//"bytes"
 	"flag"
-	//"fmt"
+	"github.com/maruel/wi/wi-plugin"
 	"github.com/nsf/termbox-go"
 	"github.com/nsf/tulib"
 	"log"
 	"os"
-	//"os/exec"
-	//"path/filepath"
-	//"strconv"
 )
 
 const (
@@ -25,69 +21,30 @@ const (
 
 // UI
 
-// Display is the output device. It shows the root window which covers the
-// whole screen estate.
-type Display interface {
-	Draw()
-	RootWindow() Window
-	ActiveWindow() Window
-	Height() int
-	Width() int
-	EventLoop() int
-}
-
-// Window is a View container. It defines the position, Z-ordering via
-// hierarchy and decoration. It can have multiple child windows. The child
-// windows are not bounded by the parent window.
-type Window interface {
-	// Each Window has its own keyboard dispatcher for Window specific commands,
-	// for example the 'command' window has different behavior than a golang
-	// editor window.
-	KeyboardDispatcher
-
-	// Rect returns the position based on the Display, not the parent Window.
-	Rect() tulib.Rect
-	Parent() Window
-	NewChildWindow(view View)
-
-	SetView(view View)
-	View() View
-}
-
-// TextBuffer is the content. It may only contain partial information in the
-// case of large file or file opened via high latency I/O.
-type TextBuffer interface {
-	Lines() int
-}
-
-// View is the presentation of a TextBuffer in a Window. It responds to user
-// input.
-type View interface {
-	SetBuffer(buffer TextBuffer)
-	Buffer() TextBuffer
-}
-
 // It is normally expected to be drawn via an ssh/mosh connection so it should
 // be "bandwidth" optimized, where bandwidth doesn't mean 1200 bauds anymore.
 type terminal struct {
-	width          int
-	height         int
-	window         Window
-	lastActive     []Window
-	events         <-chan termbox.Event
-	outputBuffer   tulib.Buffer
-	key_dispatcher KeyboardDispatcher
+	width        int
+	height       int
+	window       wi.Window
+	lastActive   []wi.Window
+	events       <-chan termbox.Event
+	outputBuffer tulib.Buffer
 }
 
 func (t *terminal) Draw() {
+	// Descend the whole Window tree and find the invalidated window to redraw.
+	// TODO(maruel): Optimize: If a floating window is invalidated, redraw all
+	// visible windows.
+	// Do a depth first search.
+	for _, window := range t.window.ChildrenWindows() {
+		if window.IsInvalid() {
+		}
+	}
 	termbox.Flush()
 }
 
-func (t *terminal) RootWindow() Window {
-	return t.window
-}
-
-func (t *terminal) ActiveWindow() Window {
+func (t *terminal) ActiveWindow() wi.Window {
 	return t.lastActive[0]
 }
 
@@ -109,7 +66,11 @@ func (t *terminal) EventLoop() int {
 		event := <-t.events
 		switch event.Type {
 		case termbox.EventKey:
-			t.key_dispatcher.OnKey(event)
+			active := t.ActiveWindow()
+			cmd := active.Keyboard().OnKey(event)
+			if cmd != "" {
+				active.Command().Execute(active, cmd)
+			}
 		case termbox.EventMouse:
 			// TODO(maruel): MouseDispatcher.
 			break
@@ -125,14 +86,19 @@ func (t *terminal) EventLoop() int {
 	return 0
 }
 
-func MakeDisplay(key_dispatcher KeyboardDispatcher) Display {
-	window := MakeWindow(nil, MakeView())
+// The root window doesn't have anything to view in it. It will contain two
+// child windows, the main content window and the status bar.
+func MakeDisplay() wi.Display {
+	cmd_dispatcher := MakeCommandDispatcher()
+	RegisterDefaultCommands(cmd_dispatcher)
+	key_dispatcher := MakeKeyboardDispatcher()
+	RegisterDefaultKeyboard(key_dispatcher)
+	window := makeWindow(cmd_dispatcher, key_dispatcher, nil, MakeView(), wi.Center)
 	events := make(chan termbox.Event, 32)
 	terminal := &terminal{
-		events:         events,
-		window:         window,
-		lastActive:     []Window{window},
-		key_dispatcher: key_dispatcher,
+		events:     events,
+		window:     window,
+		lastActive: []wi.Window{window},
 	}
 	terminal.onResize()
 	go func() {
@@ -144,94 +110,147 @@ func MakeDisplay(key_dispatcher KeyboardDispatcher) Display {
 }
 
 type window struct {
-	KeyboardDispatcher
-	parent          Window
+	cmd_dispatcher  wi.CommandDispatcher
+	key_dispatcher  wi.KeyboardDispatcher
+	parent          wi.Window
 	rect            tulib.Rect
-	childrenWindows []Window
-	view            View
+	childrenWindows []wi.Window
+	view            wi.View
+	docking         wi.DockingType
+	border          wi.BorderType
+	isInvalid       bool
 }
 
-func (w *window) Parent() Window {
+func (w *window) Command() wi.CommandDispatcher {
+	return w.cmd_dispatcher
+}
+
+func (w *window) Keyboard() wi.KeyboardDispatcher {
+	return w.key_dispatcher
+}
+
+func (w *window) Parent() wi.Window {
 	return w.parent
 }
 
-func (w *window) NewChildWindow(view View) {
-	w.childrenWindows = append(w.childrenWindows, MakeWindow(w, view))
+func (w *window) ChildrenWindows() []wi.Window {
+	return w.childrenWindows[:]
+}
+
+func (w *window) NewChildWindow(view wi.View, docking wi.DockingType) {
+	w.childrenWindows = append(w.childrenWindows, makeWindow(&commandDispatcher{}, &keyboardDispatcher{}, w, view, docking))
+}
+
+func (w *window) Remove(child wi.Window) {
+	for i, v := range w.childrenWindows {
+		if v == child {
+			copy(w.childrenWindows[i:], w.childrenWindows[i+1:])
+			w.childrenWindows[len(w.childrenWindows)-1] = nil
+			w.childrenWindows = w.childrenWindows[:len(w.childrenWindows)-1]
+			return
+		}
+	}
+	panic("Trying to remove a non-child Window")
 }
 
 func (w *window) Rect() tulib.Rect {
 	return w.rect
 }
 
-func (w *window) SetView(view View) {
-	w.view = view
+func (w *window) SetRect(rect tulib.Rect) {
+	// TODO(maruel): Add if !w.rect.IsEqual(rect) {}
+	w.rect = rect
+	w.Invalidate()
 }
 
-func (w *window) View() View {
+func (w *window) IsInvalid() bool {
+	return w.isInvalid
+}
+
+func (w *window) Invalidate() {
+	w.isInvalid = true
+}
+
+func (w *window) Docking() wi.DockingType {
+	return w.docking
+}
+
+func (w *window) SetDocking(docking wi.DockingType) {
+	if w.docking != docking {
+		w.docking = docking
+		w.Invalidate()
+	}
+}
+
+func (w *window) SetView(view wi.View) {
+	if view != w.view {
+		w.view = view
+		w.Invalidate()
+	}
+}
+
+func (w *window) View() wi.View {
 	return w.view
 }
 
-func MakeWindow(parent Window, view View) Window {
-	return &window{parent: parent, view: view}
+func makeWindow(cmd_dispatcher wi.CommandDispatcher, key_dispatcher wi.KeyboardDispatcher, parent wi.Window, view wi.View, docking wi.DockingType) wi.Window {
+	return &window{
+		cmd_dispatcher: cmd_dispatcher,
+		key_dispatcher: key_dispatcher,
+		parent:         parent,
+		view:           view,
+		docking:        docking,
+	}
 }
 
 type view struct {
-	buffer TextBuffer
+	buffer wi.TextBuffer
 }
 
-func (v *view) SetBuffer(buffer TextBuffer) {
+func (v *view) SetBuffer(buffer wi.TextBuffer) {
 	v.buffer = buffer
 }
 
-func (v *view) Buffer() TextBuffer {
+func (v *view) Buffer() wi.TextBuffer {
 	return v.buffer
 }
 
-func MakeView() View {
+func MakeView() wi.View {
 	return &view{}
 }
 
 // Config
 
-// Configuration manager.
-type Config interface {
-	GetInt(name string) int
-	Save()
-}
-
 type config struct {
-	ints map[string]int
+	ints    map[string]int
+	strings map[string]string
 }
 
 func (c *config) GetInt(name string) int {
 	return c.ints[name]
 }
 
+func (c *config) GetString(name string) string {
+	return c.strings[name]
+}
+
 func (c *config) Save() {
 }
 
-func MakeConfig() Config {
+func MakeConfig() wi.Config {
 	return &config{}
 }
 
 // Control
 
-type CommandHandler func(cmd string, args ...string)
-
-type Command interface {
-	Handle(cmd string, args ...string)
-	ShortDesc() string
-	LongDesc() string
-}
-
 type command struct {
-	handler   CommandHandler
+	handler   wi.CommandHandler
 	shortDesc string
 	longDesc  string
 }
 
-func (c *command) Handle(cmd string, args ...string) {
-	c.handler(cmd, args...)
+func (c *command) Handle(w wi.Window, cmd string, args ...string) {
+	c.handler(w, cmd, args...)
 }
 
 func (c *command) ShortDesc() string {
@@ -242,84 +261,70 @@ func (c *command) LongDesc() string {
 	return c.longDesc
 }
 
-// CommandDispatcher receives commands and dispatches them. This is where
-// plugins can add new commands. The dispatcher runs in the UI thread and must
-// be non-blocking.
-type CommandDispatcher interface {
-	// Execute executes a command through the dispatcher.
-	Execute(cmd string, args ...string)
-	// Register registers a command so it can be executed later. In practice
-	// commands should normally be registered on startup. Returns false if a
-	// command was already registered and was lost.
-	Register(cmd string, command Command) bool
-}
-
-/// KeyboardDispatcher receives keyboard input, processes it and expand macros
-//as necessary, then send the generated commands to the CommandDispatcher.
-type KeyboardDispatcher interface {
-	OnKey(event termbox.Event)
-	// Register registers a keyboard mapping so it can be executed later. In
-	// practice keyboard mappings should normally be registered on startup.
-	// Returns false if a key mapping was already registered and was lost.
-	Register(key string, command Command) bool
-}
-
 type commandDispatcher struct {
-	commands map[string]Command
+	commands map[string]wi.Command
 }
 
-func (c *commandDispatcher) Execute(cmd string, args ...string) {
+func (c *commandDispatcher) Execute(w wi.Window, cmd string, args ...string) {
 	v, _ := c.commands[cmd]
 	if v == nil {
-		c.Execute("error", "Command \""+cmd+"\" is not registered")
+		parent := w.Parent()
+		if parent != nil {
+			parent.Command().Execute(parent, cmd, args...)
+		} else {
+			// This is the root command, surface the error.
+			c.Execute(w, "alert", "Command \""+cmd+"\" is not registered")
+		}
 	} else {
-		v.Handle(cmd, args...)
+		v.Handle(w, cmd, args...)
 	}
 }
 
-func (c *commandDispatcher) Register(cmd string, command Command) bool {
-	_, ok := c.commands[cmd]
-	c.commands[cmd] = command
+func (c *commandDispatcher) Register(name string, cmd wi.Command) bool {
+	_, ok := c.commands[name]
+	c.commands[name] = cmd
 	return !ok
 }
 
-func MakeCommandDispatcher() CommandDispatcher {
-	return &commandDispatcher{make(map[string]Command)}
+func MakeCommandDispatcher() wi.CommandDispatcher {
+	return &commandDispatcher{make(map[string]wi.Command)}
 }
 
 type keyboardDispatcher struct {
-	dispatcher CommandDispatcher
-	mappings   map[string]Command
+	mappings map[string]string
 }
 
-func (k *keyboardDispatcher) OnKey(event termbox.Event) {
+func (k *keyboardDispatcher) OnKey(event termbox.Event) string {
+	key := tulib.KeyToString(event.Key, event.Ch, event.Mod)
+	return k.mappings[key]
 }
 
-func (k *keyboardDispatcher) Register(key string, command Command) bool {
+func (k *keyboardDispatcher) Register(key string, cmd string) bool {
 	_, ok := k.mappings[key]
-	k.mappings[key] = command
+	k.mappings[key] = cmd
 	return !ok
 }
 
-func MakeKeyboardDispatcher(dispatcher CommandDispatcher) KeyboardDispatcher {
-	return &keyboardDispatcher{dispatcher, make(map[string]Command)}
+func MakeKeyboardDispatcher() wi.KeyboardDispatcher {
+	return &keyboardDispatcher{make(map[string]string)}
 }
 
 // Registers the native commands.
-func RegisterDefaultCommands(display Display, dispatcher CommandDispatcher) {
+func RegisterDefaultCommands(dispatcher wi.CommandDispatcher) {
 	dispatcher.Register(
-		"error",
+		"alert",
 		&command{
-			func(cmd string, args ...string) {
+			func(w wi.Window, cmd string, args ...string) {
+				// TODO: w.Root().NewChildWindow(MakeDialog(root))
 				println("Faking an error")
 			},
-			"Prints an error message",
-			"Prints an error message.",
+			"Shows a modal message",
+			"Prints a message in a modal dialog box.",
 		})
 	dispatcher.Register(
 		"open",
 		&command{
-			func(cmd string, args ...string) {
+			func(w wi.Window, cmd string, args ...string) {
 				println("Faking opening a file")
 			},
 			"Opens a file in a new buffer",
@@ -328,7 +333,7 @@ func RegisterDefaultCommands(display Display, dispatcher CommandDispatcher) {
 	dispatcher.Register(
 		"new",
 		&command{
-			func(cmd string, args ...string) {
+			func(w wi.Window, cmd string, args ...string) {
 				println("Faking opening a file")
 			},
 			"Create a new buffer",
@@ -337,7 +342,7 @@ func RegisterDefaultCommands(display Display, dispatcher CommandDispatcher) {
 	dispatcher.Register(
 		"shell",
 		&command{
-			func(cmd string, args ...string) {
+			func(w wi.Window, cmd string, args ...string) {
 				println("Faking a shell")
 			},
 			"Opens a shell process",
@@ -345,11 +350,12 @@ func RegisterDefaultCommands(display Display, dispatcher CommandDispatcher) {
 		})
 	dispatcher.Register("doc",
 		&command{
-			func(cmd string, args ...string) {
+			func(w wi.Window, cmd string, args ...string) {
+				// TODO: MakeWindow(Bottom)
 				docArgs := make([]string, len(args)+1)
 				docArgs[0] = "doc"
 				copy(docArgs[1:], args)
-				dispatcher.Execute("shell", docArgs...)
+				dispatcher.Execute(w, "shell", docArgs...)
 			},
 			"Search godoc documentation",
 			"Uses the 'doc' tool to get documentation about the text under the cursor.",
@@ -357,7 +363,7 @@ func RegisterDefaultCommands(display Display, dispatcher CommandDispatcher) {
 	dispatcher.Register(
 		"quit",
 		&command{
-			func(cmd string, args ...string) {
+			func(w wi.Window, cmd string, args ...string) {
 				println("Faking quit")
 			},
 			"Quits",
@@ -365,7 +371,7 @@ func RegisterDefaultCommands(display Display, dispatcher CommandDispatcher) {
 		})
 	dispatcher.Register("help",
 		&command{
-			func(cmd string, args ...string) {
+			func(w wi.Window, cmd string, args ...string) {
 				println("Faking help")
 			},
 			"Prints help",
@@ -373,24 +379,14 @@ func RegisterDefaultCommands(display Display, dispatcher CommandDispatcher) {
 		})
 }
 
-type keyShortcut struct {
-	command string
-	key     string
-}
-
-// RegisterShortcut registers a shortcut to a command, so that the keyboard
-// mapping inherits the command's help.
-func RegisterShortcut(display Display, cmd_dispatcher CommandDispatcher, key_dispatcher KeyboardDispatcher, key string, command string) {
-	// TODO c := &keyShortcut{}
-}
-
-// Registers the default keyboard mapping. Most keyboard mapping should simply
-// execute the corresponding command.
+// Registers the default keyboard mapping. Keyboard mapping simply execute the
+// corresponding command. So to add a keyboard map, the corresponding command
+// needs to be added first.
 // TODO(maruel): This should be remappable via a configuration flag, for
 // example vim flavor vs emacs flavor.
-func RegisterDefaultKeyboard(display Display, cmd_dispatcher CommandDispatcher, key_dispatcher KeyboardDispatcher) {
-	RegisterShortcut(display, cmd_dispatcher, key_dispatcher, "F1", "help")
-	RegisterShortcut(display, cmd_dispatcher, key_dispatcher, "Ctrl-C", "quit")
+func RegisterDefaultKeyboard(key_dispatcher wi.KeyboardDispatcher) {
+	key_dispatcher.Register("F1", "help")
+	key_dispatcher.Register("Ctrl-C", "quit")
 }
 
 func main() {
@@ -412,23 +408,19 @@ func main() {
 	defer termbox.Close()
 	termbox.SetInputMode(termbox.InputAlt)
 
-	cmd_dispatcher := MakeCommandDispatcher()
-	key_dispatcher := MakeKeyboardDispatcher(cmd_dispatcher)
-	display := MakeDisplay(key_dispatcher)
-	RegisterDefaultCommands(display, cmd_dispatcher)
-	RegisterDefaultKeyboard(display, cmd_dispatcher, key_dispatcher)
-
+	display := MakeDisplay()
+	active := display.ActiveWindow()
 	if *command {
 		for _, i := range flag.Args() {
-			cmd_dispatcher.Execute(i)
+			active.Command().Execute(active, i)
 		}
 	} else if flag.NArg() > 0 {
 		for _, i := range flag.Args() {
-			cmd_dispatcher.Execute("open", i)
+			active.Command().Execute(active, "open", i)
 		}
 	} else {
 		// If nothing, opens a blank editor.
-		cmd_dispatcher.Execute("new")
+		active.Command().Execute(active, "new")
 	}
 
 	// Run the message loop.
