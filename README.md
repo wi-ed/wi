@@ -3,7 +3,11 @@ wi - right after vi
 
 *Experimental, do not look into.*
 
-Bringing text based editor technology past 1200 bauds.
+*Experimental, do not look into.*
+
+*Experimental, do not look into.*
+
+_Bringing text based editor technology past 1200 bauds._
 
 
 Features
@@ -12,32 +16,42 @@ Features
   - Text based terminal for the 19.2kbps connected world.
   - Out of process plugins for today's 2Mb RAM systems.
   - Gorgeous EGA colours!
-  - Single language for both the program itself and its macros.
+  - Single language to rule both the program itself and its macros.
   - Fully asynchronous processing.
   - Uses go's native distribution mechanism for both the editor and plugins.
   - The only editor that has to be installed from sources!
 
 
-Prerequisites
--------------
+Setup
+-----
+
+
+### Prerequisites
 
   - git
   - go
 
 
-Installation
-------------
+### Installation
 
 ```
 go install github.com/maruel/wi
 ```
 
 
-Updating
---------
+### Updating
 
 ```
 go install -u github.com/maruel/wi
+```
+
+
+### Installing a plugin
+
+Plugins are simple standalone executables that are transparently started by wi.
+
+```
+go install github.com/someone/wi-plugin-awesome
 ```
 
 
@@ -61,11 +75,11 @@ History
 
 Marc-Antoine badly wanted a new editor that _wouldn't freeze_ when moving the
 cursor around even if the HD has high I/O, so he got bored and wrote 'svi' in
-2012, which was a python prototype. Obviously, using a text editor with a 3
+2010, which was a python prototype. Obviously, using a text editor with a 3
 letters name is unacceptable so the project was renamed to 'wi' in 2014. The old
-python was lost due to an HD crash and sanity prevailed, the whole project is
-being written in #golang. Then he realized that someone had done an emacs clone,
-so I'm doing vim. Because of reasons.
+python was lost due to an HD crash in 2012 and sanity prevailed, the whole
+project is being written in #golang. Then he realized that someone had done an
+emacs clone, so I'm doing vim. Because of reasons.
 
 Thanks to no.smile.face@gmail.com for the inspiration (godit). This project is
 using several libraries from him.

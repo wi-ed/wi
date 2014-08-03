@@ -110,10 +110,10 @@ type Config interface {
 // Control
 
 // CommandHandler executes the command cmd on the Window w.
-type CommandHandler func(w Window, cmd string, args ...string)
+type CommandHandler func(w Window, args ...string)
 
 type Command interface {
-	Handle(w Window, cmd string, args ...string)
+	Handle(w Window, args ...string)
 	ShortDesc() string
 	LongDesc() string
 }

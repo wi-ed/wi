@@ -9,8 +9,10 @@ import (
 	"github.com/maruel/wi/wi-plugin"
 	"github.com/nsf/termbox-go"
 	"github.com/nsf/tulib"
+	"io/ioutil"
 	"log"
 	"os"
+	"strings"
 )
 
 const (
@@ -249,8 +251,8 @@ type command struct {
 	longDesc  string
 }
 
-func (c *command) Handle(w wi.Window, cmd string, args ...string) {
-	c.handler(w, cmd, args...)
+func (c *command) Handle(w wi.Window, args ...string) {
+	c.handler(w, args...)
 }
 
 func (c *command) ShortDesc() string {
@@ -276,7 +278,7 @@ func (c *commandDispatcher) Execute(w wi.Window, cmd string, args ...string) {
 			c.Execute(w, "alert", "Command \""+cmd+"\" is not registered")
 		}
 	} else {
-		v.Handle(w, cmd, args...)
+		v.Handle(w, args...)
 	}
 }
 
@@ -314,9 +316,9 @@ func RegisterDefaultCommands(dispatcher wi.CommandDispatcher) {
 	dispatcher.Register(
 		"alert",
 		&command{
-			func(w wi.Window, cmd string, args ...string) {
+			func(w wi.Window, args ...string) {
 				// TODO: w.Root().NewChildWindow(MakeDialog(root))
-				println("Faking an error")
+				log.Printf("Faking an alert: %s", args)
 			},
 			"Shows a modal message",
 			"Prints a message in a modal dialog box.",
@@ -324,8 +326,8 @@ func RegisterDefaultCommands(dispatcher wi.CommandDispatcher) {
 	dispatcher.Register(
 		"open",
 		&command{
-			func(w wi.Window, cmd string, args ...string) {
-				println("Faking opening a file")
+			func(w wi.Window, args ...string) {
+				log.Printf("Faking opening a file: %s", args)
 			},
 			"Opens a file in a new buffer",
 			"Opens a file in a new buffer.",
@@ -333,8 +335,8 @@ func RegisterDefaultCommands(dispatcher wi.CommandDispatcher) {
 	dispatcher.Register(
 		"new",
 		&command{
-			func(w wi.Window, cmd string, args ...string) {
-				println("Faking opening a file")
+			func(w wi.Window, args ...string) {
+				log.Printf("Faking opening a new buffer: %s", args)
 			},
 			"Create a new buffer",
 			"Create a new buffer.",
@@ -342,15 +344,15 @@ func RegisterDefaultCommands(dispatcher wi.CommandDispatcher) {
 	dispatcher.Register(
 		"shell",
 		&command{
-			func(w wi.Window, cmd string, args ...string) {
-				println("Faking a shell")
+			func(w wi.Window, args ...string) {
+				log.Printf("Faking opening a new shell: %s", args)
 			},
 			"Opens a shell process",
 			"Opens a shell process in a new buffer.",
 		})
 	dispatcher.Register("doc",
 		&command{
-			func(w wi.Window, cmd string, args ...string) {
+			func(w wi.Window, args ...string) {
 				// TODO: MakeWindow(Bottom)
 				docArgs := make([]string, len(args)+1)
 				docArgs[0] = "doc"
@@ -363,16 +365,16 @@ func RegisterDefaultCommands(dispatcher wi.CommandDispatcher) {
 	dispatcher.Register(
 		"quit",
 		&command{
-			func(w wi.Window, cmd string, args ...string) {
-				println("Faking quit")
+			func(w wi.Window, args ...string) {
+				log.Printf("Faking quit: %s", args)
 			},
 			"Quits",
 			"Quits the editor. Optionally bypasses writing the files to disk.",
 		})
 	dispatcher.Register("help",
 		&command{
-			func(w wi.Window, cmd string, args ...string) {
-				println("Faking help")
+			func(w wi.Window, args ...string) {
+				log.Printf("Faking help: %s", args)
 			},
 			"Prints help",
 			"Prints general help or help for a particular command.",
@@ -387,6 +389,25 @@ func RegisterDefaultCommands(dispatcher wi.CommandDispatcher) {
 func RegisterDefaultKeyboard(key_dispatcher wi.KeyboardDispatcher) {
 	key_dispatcher.Register("F1", "help")
 	key_dispatcher.Register("Ctrl-C", "quit")
+}
+
+func loadPlugins(display wi.Display) {
+	// TODO(maruel): Get the path of the executable. It's a bit involved since
+	// very OS specific but it's doable. Then all plugins in the same directory
+	// are access.
+	searchDir := "."
+	files, err := ioutil.ReadDir(searchDir)
+	if err != nil {
+		panic(err)
+	}
+	for _, f := range files {
+		if strings.HasPrefix(f.Name(), "wi-plugin-") {
+			// TODO(maruel): Windows, check for HasSuffix(f.Name(), '.exe')
+			if f.Mode()&0111 != 0 {
+				log.Printf("Would have run plugin %s", f.Name())
+			}
+		}
+	}
 }
 
 func main() {
@@ -409,6 +430,7 @@ func main() {
 	termbox.SetInputMode(termbox.InputAlt)
 
 	display := MakeDisplay()
+	loadPlugins(display)
 	active := display.ActiveWindow()
 	if *command {
 		for _, i := range flag.Args() {
