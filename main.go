@@ -59,11 +59,14 @@ func (t *terminal) Width() int {
 }
 
 func (t *terminal) onResize() {
+	// Recreate the buffer, which queries the new sizes.
 	t.outputBuffer = tulib.TermboxBuffer()
+	termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
 	// Resize the Windows.
+	t.window.SetRect(tulib.Rect{0, 0, t.Width(), t.Height()})
 }
 
-func (t *terminal) EventLoop() int {
+func (t *terminal) eventLoop() int {
 	for {
 		event := <-t.events
 		switch event.Type {
@@ -77,9 +80,9 @@ func (t *terminal) EventLoop() int {
 			// TODO(maruel): MouseDispatcher.
 			break
 		case termbox.EventResize:
-			//termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
 			t.onResize()
 		case termbox.EventError:
+			// TODO(maruel): Not sure what situations can trigger this.
 			os.Stderr.WriteString(event.Err.Error())
 			return 1
 		}
@@ -90,18 +93,20 @@ func (t *terminal) EventLoop() int {
 
 // The root window doesn't have anything to view in it. It will contain two
 // child windows, the main content window and the status bar.
-func MakeDisplay() wi.Display {
+func MakeDisplay() *terminal {
 	cmd_dispatcher := MakeCommandDispatcher()
 	RegisterDefaultCommands(cmd_dispatcher)
 	key_dispatcher := MakeKeyboardDispatcher()
 	RegisterDefaultKeyboard(key_dispatcher)
-	window := makeWindow(cmd_dispatcher, key_dispatcher, nil, MakeView(), wi.Center)
+	window := makeWindow(cmd_dispatcher, key_dispatcher, nil, makeBlankView(), wi.Fill)
 	events := make(chan termbox.Event, 32)
 	terminal := &terminal{
 		events:     events,
 		window:     window,
 		lastActive: []wi.Window{window},
 	}
+	window.NewChildWindow(makeStatusView(), wi.Bottom)
+	window.NewChildWindow(makeBlankView(), wi.Fill)
 	terminal.onResize()
 	go func() {
 		for {
@@ -206,7 +211,9 @@ func makeWindow(cmd_dispatcher wi.CommandDispatcher, key_dispatcher wi.KeyboardD
 }
 
 type view struct {
-	buffer wi.TextBuffer
+	naturalX int
+	naturalY int
+	buffer   wi.TextBuffer
 }
 
 func (v *view) SetBuffer(buffer wi.TextBuffer) {
@@ -217,8 +224,16 @@ func (v *view) Buffer() wi.TextBuffer {
 	return v.buffer
 }
 
-func MakeView() wi.View {
-	return &view{}
+func (v *view) NaturalSize() (x, y int) {
+	return v.naturalX, v.naturalY
+}
+
+func makeStatusView() wi.View {
+	return &view{1, -1, nil}
+}
+
+func makeBlankView() wi.View {
+	return &view{0, 0, nil}
 }
 
 // Config
@@ -317,7 +332,7 @@ func RegisterDefaultCommands(dispatcher wi.CommandDispatcher) {
 		"alert",
 		&command{
 			func(w wi.Window, args ...string) {
-				// TODO: w.Root().NewChildWindow(MakeDialog(root))
+				// TODO: w.Root().NewChildWindow(makeDialog(root))
 				log.Printf("Faking an alert: %s", args)
 			},
 			"Shows a modal message",
@@ -366,6 +381,10 @@ func RegisterDefaultCommands(dispatcher wi.CommandDispatcher) {
 		"quit",
 		&command{
 			func(w wi.Window, args ...string) {
+				// For all the View, question if fine to quit.
+				// If not fine, "prompt" y/n to force quit. If n, stop there.
+				// - Send a signal to each plugin.
+				// - Send a signal back to the main loop.
 				log.Printf("Faking quit: %s", args)
 			},
 			"Quits",
@@ -374,6 +393,7 @@ func RegisterDefaultCommands(dispatcher wi.CommandDispatcher) {
 	dispatcher.Register("help",
 		&command{
 			func(w wi.Window, args ...string) {
+				// Creates a new Window with a ViewHelp.
 				log.Printf("Faking help: %s", args)
 			},
 			"Prints help",
@@ -446,7 +466,7 @@ func main() {
 	}
 
 	// Run the message loop.
-	out := display.EventLoop()
+	out := display.eventLoop()
 
 	// Normal exit.
 	termbox.SetCursor(0, 0)

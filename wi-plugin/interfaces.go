@@ -20,7 +20,8 @@ type DockingType int
 
 const (
 	// The window is not constrained by the parent window size and location.
-	Floating DockingType = iota
+	Fill DockingType = iota
+	Floating
 	Left
 	Right
 	Top
@@ -45,7 +46,6 @@ type Display interface {
 	ActiveWindow() Window
 	Height() int
 	Width() int
-	EventLoop() int
 }
 
 // Window is a View container. It defines the position, Z-ordering via
@@ -94,6 +94,9 @@ type TextBuffer interface {
 // View is the presentation of a TextBuffer in a Window. It responds to user
 // input.
 type View interface {
+	// NaturalSize returns the natural size of the content. It can be -1 for as
+	// long/large as possible, 0 if indeterminate.
+	NaturalSize() (x, y int)
 	SetBuffer(buffer TextBuffer)
 	Buffer() TextBuffer
 }
