@@ -399,6 +399,14 @@ func RegisterDefaultCommands(dispatcher wi.CommandDispatcher) {
 			"Prints help",
 			"Prints general help or help for a particular command.",
 		})
+	// DIRECTION = up/down/left/right
+	// window_DIRECTION
+	// window_close
+	// cursor_move_DIRECTION
+	// add_text/insert/delete
+	// undo/redo
+	// verb/movement/multiplier
+	// Modes, select (both column and normal), command.
 }
 
 // Registers the default keyboard mapping. Keyboard mapping simply execute the
