@@ -51,14 +51,16 @@ go install github.com/someone/wi-plugin-awesome
 ### Updating
 
 ```
-go install -u github.com/maruel/wi
+go get -u github.com/maruel/wi
+go install github.com/maruel/wi
 ```
 
 
 ### Updating a plugin
 
 ```
-go install -u github.com/someone/wi-plugin-awesome
+go get -u github.com/someone/wi-plugin-awesome
+go install github.com/someone/wi-plugin-awesome
 ```
 
 
