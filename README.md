@@ -39,6 +39,15 @@ go install github.com/maruel/wi
 ```
 
 
+### Installing a plugin
+
+Plugins are simple standalone executables that are transparently started by wi.
+
+```
+go install github.com/someone/wi-plugin-awesome
+```
+
+
 ### Updating
 
 ```
@@ -46,12 +55,10 @@ go install -u github.com/maruel/wi
 ```
 
 
-### Installing a plugin
-
-Plugins are simple standalone executables that are transparently started by wi.
+### Updating a plugin
 
 ```
-go install github.com/someone/wi-plugin-awesome
+go install -u github.com/someone/wi-plugin-awesome
 ```
 
 

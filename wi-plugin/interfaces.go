@@ -51,6 +51,9 @@ type Display interface {
 // Window is a View container. It defines the position, Z-ordering via
 // hierarchy and decoration. It can have multiple child windows. The child
 // windows are not bounded by the parent window.
+//
+// Windows define the key binding and commands supported but do not directly
+// interact with it, it's the View that manage the content.
 type Window interface {
 	// Each Window has its own command dispatcher. For example a text window will
 	// have commands specific to the file type enabled.
@@ -91,8 +94,8 @@ type TextBuffer interface {
 	Lines() int
 }
 
-// View is the presentation of a TextBuffer in a Window. It responds to user
-// input.
+// View is content presented in a Window. For example it can be a TextBuffer or
+// a command box. It responds to user input.
 type View interface {
 	// NaturalSize returns the natural size of the content. It can be -1 for as
 	// long/large as possible, 0 if indeterminate.

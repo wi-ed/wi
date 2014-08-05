@@ -6,12 +6,16 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"github.com/maruel/wi/wi-plugin"
 	"github.com/nsf/termbox-go"
 	"github.com/nsf/tulib"
+	"io"
 	"io/ioutil"
 	"log"
+	"net/rpc"
 	"os"
+	"os/exec"
 	"strings"
 )
 
@@ -419,6 +423,75 @@ func RegisterDefaultKeyboard(key_dispatcher wi.KeyboardDispatcher) {
 	key_dispatcher.Register("Ctrl-C", "quit")
 }
 
+type multiCloser []io.Closer
+
+func (m multiCloser) Close() (err error) {
+	for _, i := range m {
+		err1 := i.Close()
+		if err1 != nil {
+			err = err1
+		}
+	}
+	return
+}
+
+func loadPlugin(server *rpc.Server, f string) {
+	log.Printf("Would have run plugin %s", f)
+	cmd := exec.Command(f)
+	cmd.Env = append(os.Environ(), "WI=plugin")
+
+	stdin, err := cmd.StdinPipe()
+	if err != nil {
+		panic(err)
+	}
+
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		panic(err)
+	}
+
+	stderr, err := cmd.StderrPipe()
+	if err != nil {
+		panic(err)
+	}
+	if err := cmd.Start(); err != nil {
+		// Surface the error as an "alert", since it's not a fatal error.
+		log.Fatal(err)
+	}
+
+	// Fail on any write to Stderr.
+	go func() {
+		buf := make([]byte, 2048)
+		n, _ := stderr.Read(buf)
+		if n != 0 {
+			panic(fmt.Sprintf("Plugin %s failed: %s", f, buf))
+		}
+	}()
+
+	// Before starting the RPC, ensures the version matches.
+	expectedVersion := wi.CalculateVersion()
+	b := make([]byte, 40)
+	n, err := stdout.Read(b)
+	if err != nil {
+		// Surface the error as an "alert", since it's not a fatal error.
+		log.Fatal(err)
+	}
+	if n != 40 {
+		// Surface the error as an "alert", since it's not a fatal error.
+		log.Fatal("Unexpected size")
+	}
+	actualVersion := string(b)
+	if expectedVersion != actualVersion {
+		// Surface the error as an "alert", since it's not a fatal error.
+		log.Fatalf("For %s; expected %s, got %s", f, expectedVersion, actualVersion)
+	}
+
+	// Start the RPC server for this plugin.
+	go func() {
+		server.ServeConn(wi.MakeReadWriteCloser(stdout, stdin))
+	}()
+}
+
 func loadPlugins(display wi.Display) {
 	// TODO(maruel): Get the path of the executable. It's a bit involved since
 	// very OS specific but it's doable. Then all plugins in the same directory
@@ -428,11 +501,20 @@ func loadPlugins(display wi.Display) {
 	if err != nil {
 		panic(err)
 	}
+	if len(files) == 0 {
+		// Save registering RPC stuff when unnecessary.
+		return
+	}
+
+	server := rpc.NewServer()
+	// TODO(maruel): http://golang.org/pkg/net/rpc/#Server.RegisterName
+	// It should be an interface with methods of style DoStuff(Foo, Bar) Baz
+	//server.RegisterName("Display", display)
 	for _, f := range files {
 		if strings.HasPrefix(f.Name(), "wi-plugin-") {
 			// TODO(maruel): Windows, check for HasSuffix(f.Name(), '.exe')
 			if f.Mode()&0111 != 0 {
-				log.Printf("Would have run plugin %s", f.Name())
+				loadPlugin(server, f.Name())
 			}
 		}
 	}
