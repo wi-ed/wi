@@ -76,9 +76,9 @@ func (t *terminal) eventLoop() int {
 		switch event.Type {
 		case termbox.EventKey:
 			active := t.ActiveWindow()
-			cmd := active.Keyboard().OnKey(event)
+			cmd := active.View().Keyboard().OnKey(event)
 			if cmd != "" {
-				active.Command().Execute(active, cmd)
+				active.View().Command().Execute(active, cmd)
 			}
 		case termbox.EventMouse:
 			// TODO(maruel): MouseDispatcher.
@@ -102,15 +102,25 @@ func MakeDisplay() *terminal {
 	RegisterDefaultCommands(cmd_dispatcher)
 	key_dispatcher := MakeKeyboardDispatcher()
 	RegisterDefaultKeyboard(key_dispatcher)
-	window := makeWindow(cmd_dispatcher, key_dispatcher, nil, makeBlankView(), wi.Fill)
+
+	// The root window is important, it defines all the global commands. It is
+	// pre-filled with the default native commands and keyboard mapping, and it's
+	// up to the plugins to add more global commands on startup.
+	// TODO(maruel): Add callback to allow plugins to hook into it
+	// (a)synchronously.
+	window := makeWindow(nil, makeView(cmd_dispatcher, key_dispatcher, -1, -1), wi.Fill)
 	events := make(chan termbox.Event, 32)
 	terminal := &terminal{
 		events:     events,
 		window:     window,
 		lastActive: []wi.Window{window},
 	}
+
+	// TODO(maruel): Add these via commands, so they can be deleted and added
+	// back easily?
 	window.NewChildWindow(makeStatusView(), wi.Bottom)
-	window.NewChildWindow(makeBlankView(), wi.Fill)
+	window.NewChildWindow(makeView(nil, nil, -1, -1), wi.Fill)
+
 	terminal.onResize()
 	go func() {
 		for {
@@ -121,8 +131,6 @@ func MakeDisplay() *terminal {
 }
 
 type window struct {
-	cmd_dispatcher  wi.CommandDispatcher
-	key_dispatcher  wi.KeyboardDispatcher
 	parent          wi.Window
 	rect            tulib.Rect
 	childrenWindows []wi.Window
@@ -130,14 +138,6 @@ type window struct {
 	docking         wi.DockingType
 	border          wi.BorderType
 	isInvalid       bool
-}
-
-func (w *window) Command() wi.CommandDispatcher {
-	return w.cmd_dispatcher
-}
-
-func (w *window) Keyboard() wi.KeyboardDispatcher {
-	return w.key_dispatcher
 }
 
 func (w *window) Parent() wi.Window {
@@ -149,7 +149,7 @@ func (w *window) ChildrenWindows() []wi.Window {
 }
 
 func (w *window) NewChildWindow(view wi.View, docking wi.DockingType) {
-	w.childrenWindows = append(w.childrenWindows, makeWindow(&commandDispatcher{}, &keyboardDispatcher{}, w, view, docking))
+	w.childrenWindows = append(w.childrenWindows, makeWindow(w, view, docking))
 }
 
 func (w *window) Remove(child wi.Window) {
@@ -204,20 +204,28 @@ func (w *window) View() wi.View {
 	return w.view
 }
 
-func makeWindow(cmd_dispatcher wi.CommandDispatcher, key_dispatcher wi.KeyboardDispatcher, parent wi.Window, view wi.View, docking wi.DockingType) wi.Window {
+func makeWindow(parent wi.Window, view wi.View, docking wi.DockingType) wi.Window {
 	return &window{
-		cmd_dispatcher: cmd_dispatcher,
-		key_dispatcher: key_dispatcher,
-		parent:         parent,
-		view:           view,
-		docking:        docking,
+		parent:  parent,
+		view:    view,
+		docking: docking,
 	}
 }
 
 type view struct {
-	naturalX int
-	naturalY int
-	buffer   wi.TextBuffer
+	cmd_dispatcher wi.CommandDispatcher
+	key_dispatcher wi.KeyboardDispatcher
+	naturalX       int
+	naturalY       int
+	buffer         wi.TextBuffer
+}
+
+func (v *view) Command() wi.CommandDispatcher {
+	return v.cmd_dispatcher
+}
+
+func (v *view) Keyboard() wi.KeyboardDispatcher {
+	return v.key_dispatcher
 }
 
 func (v *view) SetBuffer(buffer wi.TextBuffer) {
@@ -233,23 +241,26 @@ func (v *view) NaturalSize() (x, y int) {
 }
 
 // Empty non-editable window.
-func makeBlankView() wi.View {
-	return &view{0, 0, nil}
+func makeView(cmd_dispatcher wi.CommandDispatcher, key_dispatcher wi.KeyboardDispatcher, naturalX, naturalY int) wi.View {
+	if cmd_dispatcher == nil {
+		cmd_dispatcher = MakeCommandDispatcher()
+	}
+	return &view{cmd_dispatcher, key_dispatcher, naturalX, naturalY, nil}
 }
 
 // The status line.
 func makeStatusView() wi.View {
-	return &view{1, -1, nil}
+	return makeView(nil, nil, 1, -1)
 }
 
 // The command box.
 func makeCommandView() wi.View {
-	return &view{1, -1, nil}
+	return makeView(nil, nil, 1, -1)
 }
 
 // A dismissable modal dialog box.
 func makeAlertView() wi.View {
-	return &view{1, -1, nil}
+	return makeView(nil, nil, 1, 1)
 }
 
 // Config
@@ -276,53 +287,6 @@ func MakeConfig() wi.Config {
 
 // Control
 
-type command struct {
-	handler   wi.CommandHandler
-	shortDesc string
-	longDesc  string
-}
-
-func (c *command) Handle(w wi.Window, args ...string) {
-	c.handler(w, args...)
-}
-
-func (c *command) ShortDesc() string {
-	return c.shortDesc
-}
-
-func (c *command) LongDesc() string {
-	return c.longDesc
-}
-
-type commandDispatcher struct {
-	commands map[string]wi.Command
-}
-
-func (c *commandDispatcher) Execute(w wi.Window, cmd string, args ...string) {
-	v, _ := c.commands[cmd]
-	if v == nil {
-		parent := w.Parent()
-		if parent != nil {
-			parent.Command().Execute(parent, cmd, args...)
-		} else {
-			// This is the root command, surface the error.
-			c.Execute(w, "alert", "Command \""+cmd+"\" is not registered")
-		}
-	} else {
-		v.Handle(w, args...)
-	}
-}
-
-func (c *commandDispatcher) Register(name string, cmd wi.Command) bool {
-	_, ok := c.commands[name]
-	c.commands[name] = cmd
-	return !ok
-}
-
-func MakeCommandDispatcher() wi.CommandDispatcher {
-	return &commandDispatcher{make(map[string]wi.Command)}
-}
-
 type keyboardDispatcher struct {
 	mappings map[string]string
 }
@@ -340,89 +304,6 @@ func (k *keyboardDispatcher) Register(key string, cmd string) bool {
 
 func MakeKeyboardDispatcher() wi.KeyboardDispatcher {
 	return &keyboardDispatcher{make(map[string]string)}
-}
-
-// Registers the native commands.
-func RegisterDefaultCommands(dispatcher wi.CommandDispatcher) {
-	dispatcher.Register(
-		"alert",
-		&command{
-			func(w wi.Window, args ...string) {
-				// TODO: w.Root().NewChildWindow(makeDialog(root))
-				log.Printf("Faking an alert: %s", args)
-			},
-			"Shows a modal message",
-			"Prints a message in a modal dialog box.",
-		})
-	dispatcher.Register(
-		"open",
-		&command{
-			func(w wi.Window, args ...string) {
-				log.Printf("Faking opening a file: %s", args)
-			},
-			"Opens a file in a new buffer",
-			"Opens a file in a new buffer.",
-		})
-	dispatcher.Register(
-		"new",
-		&command{
-			func(w wi.Window, args ...string) {
-				log.Printf("Faking opening a new buffer: %s", args)
-			},
-			"Create a new buffer",
-			"Create a new buffer.",
-		})
-	dispatcher.Register(
-		"shell",
-		&command{
-			func(w wi.Window, args ...string) {
-				log.Printf("Faking opening a new shell: %s", args)
-			},
-			"Opens a shell process",
-			"Opens a shell process in a new buffer.",
-		})
-	dispatcher.Register("doc",
-		&command{
-			func(w wi.Window, args ...string) {
-				// TODO: MakeWindow(Bottom)
-				docArgs := make([]string, len(args)+1)
-				docArgs[0] = "doc"
-				copy(docArgs[1:], args)
-				dispatcher.Execute(w, "shell", docArgs...)
-			},
-			"Search godoc documentation",
-			"Uses the 'doc' tool to get documentation about the text under the cursor.",
-		})
-	dispatcher.Register(
-		"quit",
-		&command{
-			func(w wi.Window, args ...string) {
-				// For all the View, question if fine to quit.
-				// If not fine, "prompt" y/n to force quit. If n, stop there.
-				// - Send a signal to each plugin.
-				// - Send a signal back to the main loop.
-				log.Printf("Faking quit: %s", args)
-			},
-			"Quits",
-			"Quits the editor. Optionally bypasses writing the files to disk.",
-		})
-	dispatcher.Register("help",
-		&command{
-			func(w wi.Window, args ...string) {
-				// Creates a new Window with a ViewHelp.
-				log.Printf("Faking help: %s", args)
-			},
-			"Prints help",
-			"Prints general help or help for a particular command.",
-		})
-	// DIRECTION = up/down/left/right
-	// window_DIRECTION
-	// window_close
-	// cursor_move_DIRECTION
-	// add_text/insert/delete
-	// undo/redo
-	// verb/movement/multiplier
-	// Modes, select (both column and normal), command.
 }
 
 // Registers the default keyboard mapping. Keyboard mapping simply execute the
@@ -569,15 +450,15 @@ func main() {
 	active := display.ActiveWindow()
 	if *command {
 		for _, i := range flag.Args() {
-			active.Command().Execute(active, i)
+			active.View().Command().Execute(active, i)
 		}
 	} else if flag.NArg() > 0 {
 		for _, i := range flag.Args() {
-			active.Command().Execute(active, "open", i)
+			active.View().Command().Execute(active, "open", i)
 		}
 	} else {
 		// If nothing, opens a blank editor.
-		active.Command().Execute(active, "new")
+		active.View().Command().Execute(active, "new")
 	}
 
 	// Run the message loop.

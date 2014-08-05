@@ -12,9 +12,6 @@ import (
 
 // UI
 
-// BorderType defines the type of border for a Window.
-type BorderType int
-
 // DockingType defines the relative position of a Window relative to its parent.
 type DockingType int
 
@@ -28,6 +25,9 @@ const (
 	Bottom
 	Center
 )
+
+// BorderType defines the type of border for a Window.
+type BorderType int
 
 const (
 	// Width is 0.
@@ -48,22 +48,19 @@ type Display interface {
 	Width() int
 }
 
+type CommandCategory int
+
+const (
+	WindowCategory CommandCategory = iota
+	ViewCategory
+)
+
 // Window is a View container. It defines the position, Z-ordering via
 // hierarchy and decoration. It can have multiple child windows. The child
-// windows are not bounded by the parent window.
-//
-// Windows define the key binding and commands supported but do not directly
-// interact with it, it's the View that manage the content.
+// windows are not bounded by the parent window. The Window itself doesn't
+// interact with the user, since it only has a non-client area (the border).
+// All the client area is covered by the View.
 type Window interface {
-	// Each Window has its own command dispatcher. For example a text window will
-	// have commands specific to the file type enabled.
-	Command() CommandDispatcher
-
-	// Each Window has its own keyboard dispatcher for Window specific commands,
-	// for example the 'command' window has different behavior than a golang
-	// editor window.
-	Keyboard() KeyboardDispatcher
-
 	Parent() Window
 	ChildrenWindows() []Window
 	NewChildWindow(view View, docking DockingType)
@@ -95,8 +92,18 @@ type TextBuffer interface {
 }
 
 // View is content presented in a Window. For example it can be a TextBuffer or
-// a command box. It responds to user input.
+// a command box. View define the key binding and commands supported so it
+// responds to user input.
 type View interface {
+	// Each Window has its own command dispatcher. For example a text window will
+	// have commands specific to the file type enabled.
+	Command() CommandDispatcher
+
+	// Each Window has its own keyboard dispatcher for Window specific commands,
+	// for example the 'command' window has different behavior than a golang
+	// editor window.
+	Keyboard() KeyboardDispatcher
+
 	// NaturalSize returns the natural size of the content. It can be -1 for as
 	// long/large as possible, 0 if indeterminate.
 	NaturalSize() (x, y int)
@@ -120,6 +127,7 @@ type CommandHandler func(w Window, args ...string)
 
 type Command interface {
 	Handle(w Window, args ...string)
+	Category() CommandCategory
 	ShortDesc() string
 	LongDesc() string
 }
