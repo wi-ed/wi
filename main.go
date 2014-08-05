@@ -10,12 +10,12 @@ import (
 	"github.com/maruel/wi/wi-plugin"
 	"github.com/nsf/termbox-go"
 	"github.com/nsf/tulib"
-	"io"
 	"io/ioutil"
 	"log"
 	"net/rpc"
 	"os"
 	"os/exec"
+	"runtime"
 	"strings"
 )
 
@@ -232,12 +232,24 @@ func (v *view) NaturalSize() (x, y int) {
 	return v.naturalX, v.naturalY
 }
 
+// Empty non-editable window.
+func makeBlankView() wi.View {
+	return &view{0, 0, nil}
+}
+
+// The status line.
 func makeStatusView() wi.View {
 	return &view{1, -1, nil}
 }
 
-func makeBlankView() wi.View {
-	return &view{0, 0, nil}
+// The command box.
+func makeCommandView() wi.View {
+	return &view{1, -1, nil}
+}
+
+// A dismissable modal dialog box.
+func makeAlertView() wi.View {
+	return &view{1, -1, nil}
 }
 
 // Config
@@ -423,19 +435,10 @@ func RegisterDefaultKeyboard(key_dispatcher wi.KeyboardDispatcher) {
 	key_dispatcher.Register("Ctrl-C", "quit")
 }
 
-type multiCloser []io.Closer
+// Plugins
 
-func (m multiCloser) Close() (err error) {
-	for _, i := range m {
-		err1 := i.Close()
-		if err1 != nil {
-			err = err1
-		}
-	}
-	return
-}
-
-func loadPlugin(server *rpc.Server, f string) {
+// loadPlugin starts a plugin and returns the process.
+func loadPlugin(server *rpc.Server, f string) *os.Process {
 	log.Printf("Would have run plugin %s", f)
 	cmd := exec.Command(f)
 	cmd.Env = append(os.Environ(), "WI=plugin")
@@ -490,34 +493,48 @@ func loadPlugin(server *rpc.Server, f string) {
 	go func() {
 		server.ServeConn(wi.MakeReadWriteCloser(stdout, stdin))
 	}()
+
+	return cmd.Process
 }
 
-func loadPlugins(display wi.Display) {
+// loadPlugins loads all the plugins and returns the process handles.
+func loadPlugins(display wi.Display) []*os.Process {
 	// TODO(maruel): Get the path of the executable. It's a bit involved since
 	// very OS specific but it's doable. Then all plugins in the same directory
 	// are access.
 	searchDir := "."
 	files, err := ioutil.ReadDir(searchDir)
 	if err != nil {
-		panic(err)
+		return nil
 	}
 	if len(files) == 0 {
 		// Save registering RPC stuff when unnecessary.
-		return
+		return nil
 	}
 
+	out := []*os.Process{}
 	server := rpc.NewServer()
 	// TODO(maruel): http://golang.org/pkg/net/rpc/#Server.RegisterName
 	// It should be an interface with methods of style DoStuff(Foo, Bar) Baz
 	//server.RegisterName("Display", display)
 	for _, f := range files {
-		if strings.HasPrefix(f.Name(), "wi-plugin-") {
-			// TODO(maruel): Windows, check for HasSuffix(f.Name(), '.exe')
-			if f.Mode()&0111 != 0 {
-				loadPlugin(server, f.Name())
+		name := f.Name()
+		if !strings.HasPrefix(name, "wi-plugin-") {
+			continue
+		}
+		// Crude check for executable test.
+		if runtime.GOOS == "windows" {
+			if !strings.HasSuffix(name, ".exe") {
+				continue
+			}
+		} else {
+			if f.Mode()&0111 == 0 {
+				continue
 			}
 		}
+		out = append(out, loadPlugin(server, name))
 	}
+	return out
 }
 
 func main() {
@@ -540,7 +557,15 @@ func main() {
 	termbox.SetInputMode(termbox.InputAlt)
 
 	display := MakeDisplay()
-	loadPlugins(display)
+
+	plugins := loadPlugins(display)
+	defer func() {
+		for _, p := range plugins {
+			// TODO(maruel): Nicely terminate them.
+			p.Kill()
+		}
+	}()
+
 	active := display.ActiveWindow()
 	if *command {
 		for _, i := range flag.Args() {
