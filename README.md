@@ -95,20 +95,22 @@ Vision
   - Supports as many OSes as possible.
       - Because Windows users have pitying look.
   - Handles everything internally as unicode characters.
+  - Open source editor with source code that is Write-Once-Read-Multi, e.g.
+    readable source code that just works.
 
 
 History
 -------
 
 Marc-Antoine badly wanted a new editor that _wouldn't freeze_ when moving the
-cursor around even if the HD has high I/O, so he got bored and wrote 'svi' in
-2010, which was a python prototype.
+cursor around even if the HD has high I/O or the disk went to sleep, so he got
+bored and wrote 'svi' in 2010, which was a python prototype.
 
 Obviously, using a text editor with a 3 letters name is unacceptable so the
 project was renamed to 'wi' in 2014. The old python was lost due to an HD crash
 in 2012 and sanity prevailed, the whole project is being written in
 [Go](https://golang.org). Then he realized that someone had done an emacs clone,
-so I'm doing vim. Because of reasons.
+so he's doing vim. Because of reasons.
 
 Thanks to no.smile.face@gmail.com for the inspiration
 [godit](https://github.com/nsf/godit). This project is using several libraries
