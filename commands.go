@@ -170,6 +170,9 @@ var defaultCommands = map[string]wi.Command{
 	// undo/redo
 	// verb/movement/multiplier
 	// Modes, select (both column and normal), command.
+	// keybind global all Ctrl-C quit
+	// keybind active edit <left> move_left
+	// ...
 }
 
 // RegisterDefaultCommands registers the top-level native commands. This

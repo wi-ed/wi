@@ -30,8 +30,6 @@ const (
 // It is normally expected to be drawn via an ssh/mosh connection so it should
 // be "bandwidth" optimized, where bandwidth doesn't mean 1200 bauds anymore.
 type terminal struct {
-	width        int
-	height       int
 	window       wi.Window
 	lastActive   []wi.Window
 	events       <-chan termbox.Event
@@ -53,6 +51,10 @@ func (t *terminal) ActiveWindow() wi.Window {
 }
 
 func (t *terminal) ActivateWindow(w wi.Window) {
+	if w.View().IsDisabled() {
+		panic("Can't activate a disabled view")
+	}
+
 	// First remove w from t.lastActive, second add w as t.lastActive[0].
 	// This kind of manual list shuffling is really Go's achille heel.
 	// TODO(maruel): There's no way I got it right on the first try without a
@@ -74,20 +76,12 @@ func (t *terminal) ActivateWindow(w wi.Window) {
 	t.lastActive[0] = w
 }
 
-func (t *terminal) Height() int {
-	return t.height
-}
-
-func (t *terminal) Width() int {
-	return t.width
-}
-
 func (t *terminal) onResize() {
 	// Recreate the buffer, which queries the new sizes.
 	t.outputBuffer = tulib.TermboxBuffer()
 	termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
 	// Resize the Windows.
-	t.window.SetRect(tulib.Rect{0, 0, t.Width(), t.Height()})
+	t.window.SetRect(tulib.Rect{0, 0, t.outputBuffer.Width, t.outputBuffer.Height})
 }
 
 func (t *terminal) eventLoop() int {
@@ -256,6 +250,7 @@ type view struct {
 	title       string
 	isDirty     bool
 	isInvalid   bool
+	isDisabled  bool
 	naturalX    int
 	naturalY    int
 	buffer      wi.TextBuffer
@@ -279,6 +274,10 @@ func (v *view) IsDirty() bool {
 
 func (v *view) IsInvalid() bool {
 	return v.isInvalid
+}
+
+func (v *view) IsDisabled() bool {
+	return v.isDisabled
 }
 
 func (v *view) DrawInto(buffer tulib.Buffer) {
@@ -308,7 +307,12 @@ func makeView(naturalX, naturalY int) wi.View {
 }
 
 // The status line.
+// TODO(maruel): The status line is going to be a hierarchy of Window, one for
+// each element, each showing a single item.
 func makeStatusView() wi.View {
+	// TODO(maruel): OnResize(), query the root Window size, if y<=5 or x<=15,
+	// set the root status Window to y=0, so that it becomes effectively
+	// invisible when the editor window is too small.
 	return makeView(1, -1)
 }
 

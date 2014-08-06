@@ -11,21 +11,39 @@ import (
 )
 
 type keyBindings struct {
-	mappings map[string]string
+	commandMappings map[string]string
+	editMappings    map[string]string
 }
 
-func (k *keyBindings) Register(keyName string, cmdName string) bool {
-	_, ok := k.mappings[keyName]
-	k.mappings[keyName] = cmdName
+func (k *keyBindings) Set(mode wi.KeyboardMode, keyName string, cmdName string) bool {
+	var ok bool
+	if mode == wi.AllMode || mode == wi.CommandMode {
+		_, ok = k.commandMappings[keyName]
+		k.commandMappings[keyName] = cmdName
+	}
+	if mode == wi.AllMode || mode == wi.EditMode {
+		_, ok = k.editMappings[keyName]
+		k.editMappings[keyName] = cmdName
+	}
 	return !ok
 }
 
-func (k *keyBindings) Get(keyName string) string {
-	return k.mappings[keyName]
+func (k *keyBindings) Get(mode wi.KeyboardMode, keyName string) string {
+	if mode == wi.CommandMode {
+		return k.commandMappings[keyName]
+	}
+	if mode == wi.EditMode {
+		return k.editMappings[keyName]
+	}
+	v, ok := k.commandMappings[keyName]
+	if !ok {
+		return k.editMappings[keyName]
+	}
+	return v
 }
 
 func makeKeyBindings() wi.KeyBindings {
-	return &keyBindings{make(map[string]string)}
+	return &keyBindings{make(map[string]string), make(map[string]string)}
 }
 
 // keyEventToName returns the user printable key name like 'a', Ctrl-Alt-<f1>,
@@ -40,6 +58,7 @@ func keyEventToName(event termbox.Event) string {
 // TODO(maruel): This should be remappable via a configuration flag, for
 // example vim flavor vs emacs flavor.
 func RegisterDefaultKeyBindings(keyBindings wi.KeyBindings) {
-	keyBindings.Register("F1", "help")
-	keyBindings.Register("Ctrl-C", "quit")
+	// TODO(maruel): Use ExecuteCommand() calls instead.
+	keyBindings.Set(wi.AllMode, "F1", "help")
+	keyBindings.Set(wi.AllMode, "Ctrl-C", "quit")
 }

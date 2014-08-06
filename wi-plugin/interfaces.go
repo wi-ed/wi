@@ -40,6 +40,31 @@ const (
 	BorderDouble
 )
 
+// CommandCategory is used to put commands into sections for help purposes.
+type CommandCategory int
+
+const (
+	// Commands relating to manipuling windows and UI in general.
+	WindowCategory CommandCategory = iota
+	// TODO(maruel): Add other categories.
+)
+
+// Switches keyboard mapping based on the input mode. These modes are hardcode;
+// adding a new mode would require rebuilding the editor (2 seconds, really).
+type KeyboardMode int
+
+const (
+	_ KeyboardMode = iota
+	// CommandMode is the mode where typing letters results in commands, not
+	// content editing.
+	CommandMode
+	// EditMode is the mode where typing letters results in content, not commands.
+	EditMode
+	// AllMode is to bind keys independent of the current mode. It is useful for
+	// function keys, Ctrl-<letter>, arrow keys, etc.
+	AllMode
+)
+
 // Display is the output device. It shows the root window which covers the
 // whole screen estate.
 type Display interface {
@@ -50,19 +75,7 @@ type Display interface {
 	ActiveWindow() Window
 	// ActivateWindow activates a Window.
 	ActivateWindow(w Window)
-
-	Height() int
-	Width() int
 }
-
-// CommandCategory is used to put commands into sections for help purposes.
-type CommandCategory int
-
-const (
-	// Commands relating to manipuling windows and UI in general.
-	WindowCategory CommandCategory = iota
-	// TODO(maruel): Add other categories.
-)
 
 // Window is a View container. It defines the position, Z-ordering via
 // hierarchy and decoration. It can have multiple child windows. The child
@@ -72,6 +85,8 @@ const (
 type Window interface {
 	Parent() Window
 	ChildrenWindows() []Window
+	// TODO(maruel): Accept a Window, not a View. This permits more complex
+	// window creation.
 	NewChildWindow(view View, docking DockingType) Window
 	// Remove detaches a child window tree from the tree. Care should be taken to
 	// not remove the active Window.
@@ -125,6 +140,10 @@ type View interface {
 	// IsInvalid is true if the View needs to be redraw.
 	IsInvalid() bool
 
+	// IsDisabled returns false if the View can be activated to receive user
+	// inputs at all.
+	IsDisabled() bool
+
 	// Draws itself into a buffer.
 	DrawInto(buffer tulib.Buffer)
 
@@ -174,13 +193,14 @@ type Commands interface {
 // includes what can be considered "macros" as much as casual things like arrow
 // keys.
 type KeyBindings interface {
-	// Register registers a keyboard mapping. In practice keyboard mappings
+	// Set registers a keyboard mapping. In practice keyboard mappings
 	// should normally be registered on startup. Returns false if a key mapping
-	// was already registered and was lost.
-	Register(keyName string, cmdName string) bool
+	// was already registered and was lost. Set cmdName to "" to remove a key
+	// binding.
+	Set(mode KeyboardMode, keyName string, cmdName string) bool
 
 	// Get returns a command if registered, nil otherwise.
-	Get(keyName string) string
+	Get(mode KeyboardMode, keyName string) string
 }
 
 // GetCommand traverses the Display's active Window hierarchy tree to find a
@@ -227,7 +247,7 @@ func ExecuteCommandWindow(w Window, cmdName string, args ...string) {
 func GetKeyBindingCommand(d Display, keyName string) string {
 	active := d.ActiveWindow()
 	for {
-		cmdName := active.View().KeyBindings().Get(keyName)
+		cmdName := active.View().KeyBindings().Get(AllMode, keyName)
 		if cmdName != "" {
 			return cmdName
 		}
