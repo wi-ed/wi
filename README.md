@@ -94,6 +94,7 @@ Vision
       - No need to wait for years for Debian stable to be updated anymore.
   - Supports as many OSes as possible.
       - Because Windows users have pitying look.
+  - Handles everything internally as unicode characters.
 
 
 History

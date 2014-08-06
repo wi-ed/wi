@@ -43,10 +43,8 @@ func (t *terminal) Draw() {
 	// TODO(maruel): Optimize: If a floating window is invalidated, redraw all
 	// visible windows.
 	// Do a depth first search.
-	for _, window := range t.window.ChildrenWindows() {
-		if window.IsInvalid() {
-		}
-	}
+	/*for _, window := range t.window.ChildrenWindows() {
+	}*/
 	termbox.Flush()
 }
 
@@ -119,18 +117,19 @@ func (t *terminal) eventLoop() int {
 	return 0
 }
 
-// The root window doesn't have anything to view in it. It will contain two
-// child windows, the main content window and the status bar.
-func MakeDisplay() *terminal {
+// makeDisplay creates the Display object. The root window doesn't have
+// anything to view in it. It will contain two child windows, the main content
+// window and the status bar.
+func makeDisplay() *terminal {
+	// The root view is important, it defines all the global commands. It is
+	// pre-filled with the default native commands and keyboard mapping, and it's
+	// up to the plugins to add more global commands on startup.
 	rootView := makeView(-1, -1)
 	RegisterDefaultCommands(rootView.Commands())
 	RegisterDefaultKeyBindings(rootView.KeyBindings())
 
-	// The root window is important, it defines all the global commands. It is
-	// pre-filled with the default native commands and keyboard mapping, and it's
-	// up to the plugins to add more global commands on startup.
 	// TODO(maruel): Add callback to allow plugins to hook into it
-	// (a)synchronously.
+	// (a)synchronously before creating the root Window.
 	window := makeWindow(nil, rootView, wi.DockingFill)
 	events := make(chan termbox.Event, 32)
 	terminal := &terminal{
@@ -138,11 +137,6 @@ func MakeDisplay() *terminal {
 		window:     window,
 		lastActive: []wi.Window{window},
 	}
-
-	// TODO(maruel): Add these via commands, so they can be deleted and added
-	// back easily?
-	window.NewChildWindow(makeStatusView(), wi.DockingBottom)
-	window.NewChildWindow(makeView(-1, -1), wi.DockingFill)
 
 	terminal.onResize()
 	go func() {
@@ -153,8 +147,10 @@ func MakeDisplay() *terminal {
 	return terminal
 }
 
+// window implements Window. It keeps its own buffer of its display.
 type window struct {
 	parent          wi.Window
+	buffer          tulib.Buffer // includes the border
 	rect            tulib.Rect
 	childrenWindows []wi.Window
 	view            wi.View
@@ -171,8 +167,10 @@ func (w *window) ChildrenWindows() []wi.Window {
 	return w.childrenWindows[:]
 }
 
-func (w *window) NewChildWindow(view wi.View, docking wi.DockingType) {
-	w.childrenWindows = append(w.childrenWindows, makeWindow(w, view, docking))
+func (w *window) NewChildWindow(view wi.View, docking wi.DockingType) wi.Window {
+	child := makeWindow(w, view, docking)
+	w.childrenWindows = append(w.childrenWindows, child)
+	return child
 }
 
 func (w *window) Remove(child wi.Window) {
@@ -194,15 +192,30 @@ func (w *window) Rect() tulib.Rect {
 func (w *window) SetRect(rect tulib.Rect) {
 	// TODO(maruel): Add if !w.rect.IsEqual(rect) {}
 	w.rect = rect
+	w.buffer = tulib.NewBuffer(rect.Width, rect.Height)
 	w.Invalidate()
-}
-
-func (w *window) IsInvalid() bool {
-	return w.isInvalid
 }
 
 func (w *window) Invalidate() {
 	w.isInvalid = true
+}
+
+func (w *window) Buffer() tulib.Buffer {
+	if w.isInvalid {
+		// Ask the view to draw into its buffer.
+		buffer := w.buffer
+		if w.border != wi.BorderNone {
+			// Create a temporary buffer for the view to draw into.
+			// TODO(maruel): Make it smarter so we do not need to double-copy the data
+			// constantly. It's very inefficient. At least it's bearable since the
+			// amount of data will usually be under 200x200=40000 elements.
+			buffer = tulib.NewBuffer(w.rect.Width-1, w.rect.Height-1)
+			// TODO(maruel): Draw border.
+		}
+		w.view.DrawInto(buffer)
+		// TODO(maruel): Copy back.
+	}
+	return w.buffer
 }
 
 func (w *window) Docking() wi.DockingType {
@@ -229,9 +242,11 @@ func (w *window) View() wi.View {
 
 func makeWindow(parent wi.Window, view wi.View, docking wi.DockingType) wi.Window {
 	return &window{
-		parent:  parent,
-		view:    view,
-		docking: docking,
+		parent:    parent,
+		view:      view,
+		docking:   docking,
+		border:    wi.BorderNone,
+		isInvalid: true,
 	}
 }
 
@@ -264,6 +279,10 @@ func (v *view) IsDirty() bool {
 
 func (v *view) IsInvalid() bool {
 	return v.isInvalid
+}
+
+func (v *view) DrawInto(buffer tulib.Buffer) {
+	buffer.Set(0, 0, termbox.Cell{'A', termbox.ColorRed, termbox.ColorRed})
 }
 
 func (v *view) NaturalSize() (x, y int) {
@@ -446,8 +465,7 @@ func main() {
 	defer termbox.Close()
 	termbox.SetInputMode(termbox.InputAlt)
 
-	display := MakeDisplay()
-
+	display := makeDisplay()
 	plugins := loadPlugins(display)
 	defer func() {
 		for _, p := range plugins {
@@ -455,6 +473,9 @@ func main() {
 			p.Kill()
 		}
 	}()
+
+	// Add the status bar.
+	wi.ExecuteCommand(display, "add_status_bar")
 
 	if *command {
 		for _, i := range flag.Args() {

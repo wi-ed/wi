@@ -65,7 +65,11 @@ func makeCommands() wi.Commands {
 
 func cmdAlert(w wi.Window, args ...string) {
 	wi.RootWindow(w).NewChildWindow(makeView(1, -1), wi.DockingFloating)
-	log.Printf("Faking an alert: %s", args)
+	//w2.Activate()
+}
+
+func cmdAddStatusBar(w wi.Window, args ...string) {
+	w.NewChildWindow(makeStatusView(), wi.DockingBottom)
 }
 
 func cmdOpen(w wi.Window, args ...string) {
@@ -111,6 +115,12 @@ var defaultCommands = map[string]wi.Command{
 		wi.WindowCategory,
 		"Shows a modal message",
 		"Prints a message in a modal dialog box.",
+	},
+	"add_status_bar": &command{
+		cmdAddStatusBar,
+		wi.WindowCategory,
+		"Adds the standard status bar",
+		"Adds the standard status bar to the active window. This command exists so it can be overriden by a plugin, so it can create its own status bar.",
 	},
 	"open": &command{
 		cmdOpen,

@@ -33,11 +33,11 @@ type BorderType int
 
 const (
 	// Width is 0.
-	None BorderType = iota
+	BorderNone BorderType = iota
 	// Width is 1.
-	Single
-	// Width is 1.
-	Double
+	BorderSingle
+	// Despite its name, width is 1.
+	BorderDouble
 )
 
 // Display is the output device. It shows the root window which covers the
@@ -72,7 +72,7 @@ const (
 type Window interface {
 	Parent() Window
 	ChildrenWindows() []Window
-	NewChildWindow(view View, docking DockingType)
+	NewChildWindow(view View, docking DockingType) Window
 	// Remove detaches a child window tree from the tree. Care should be taken to
 	// not remove the active Window.
 	Remove(w Window)
@@ -81,11 +81,12 @@ type Window interface {
 	Rect() tulib.Rect
 	SetRect(rect tulib.Rect)
 
-	// IsInvalid is true if the Window needs to be redraw.
-	IsInvalid() bool
 	// Invalidate forces the Window to be redrawn at next drawing. Otherwise
 	// drawing this Window will be skipped.
 	Invalidate()
+
+	// Buffer returns the display buffer for this Window.
+	Buffer() tulib.Buffer
 
 	Docking() DockingType
 	// This will forces an invalidation.
@@ -123,6 +124,9 @@ type View interface {
 	IsDirty() bool
 	// IsInvalid is true if the View needs to be redraw.
 	IsInvalid() bool
+
+	// Draws itself into a buffer.
+	DrawInto(buffer tulib.Buffer)
 
 	// NaturalSize returns the natural size of the content. It can be -1 for as
 	// long/large as possible, 0 if indeterminate.
