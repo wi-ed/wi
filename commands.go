@@ -33,56 +33,38 @@ func (c *command) LongDesc() string {
 }
 
 // commandAlias references another command.
-// TODO(maruel): It should reference it by name, not by pointer, so that
-// updating the original command will have an effect on the alias too. This
-// complexifies the calls, since each function will have to do a lookup on the
-// command first, then return the data found.
 type commandAlias struct {
 	command string
 }
 
-// Alias looks up the CommandDispatcher to find the aliased command, so it can
+// Alias looks up the Commands to find the aliased command, so it can
 // return the relevant details.
-func (c *commandAlias) Alias(dispatcher wi.CommandDispatcher) wi.Command {
-	//return dispatcher.GetCommand(command)
-	return nil
+func (c *commandAlias) Alias(w wi.Window) wi.Command {
+	return wi.GetCommandWindow(w, c.command)
 }
 
-// Dispatcher
-
-type commandDispatcher struct {
+type commands struct {
 	commands map[string]wi.Command
 }
 
-func (c *commandDispatcher) Execute(w wi.Window, cmd string, args ...string) {
-	v, _ := c.commands[cmd]
-	if v == nil {
-		parent := w.Parent()
-		if parent != nil {
-			parent.View().Command().Execute(parent, cmd, args...)
-		} else {
-			// This is the root command, surface the error.
-			c.Execute(w, "alert", "Command \""+cmd+"\" is not registered")
-		}
-	} else {
-		v.Handle(w, args...)
-	}
-}
-
-func (c *commandDispatcher) Register(name string, cmd wi.Command) bool {
+func (c *commands) Register(name string, cmd wi.Command) bool {
 	_, ok := c.commands[name]
 	c.commands[name] = cmd
 	return !ok
 }
 
-func MakeCommandDispatcher() wi.CommandDispatcher {
-	return &commandDispatcher{make(map[string]wi.Command)}
+func (c *commands) Get(cmd string) wi.Command {
+	return c.commands[cmd]
+}
+
+func makeCommands() wi.Commands {
+	return &commands{make(map[string]wi.Command)}
 }
 
 // Default commands
 
 func cmdAlert(w wi.Window, args ...string) {
-	// TODO: w.Root().NewChildWindow(makeDialog(root))
+	wi.RootWindow(w).NewChildWindow(makeView(1, -1), wi.DockingFloating)
 	log.Printf("Faking an alert: %s", args)
 }
 
@@ -91,7 +73,11 @@ func cmdOpen(w wi.Window, args ...string) {
 }
 
 func cmdNew(w wi.Window, args ...string) {
-	log.Printf("Faking opening a new buffer: %s", args)
+	if len(args) != 0 {
+		wi.ExecuteCommandWindow(w, "alert", "Command 'new' doesn't accept arguments")
+	} else {
+		w.NewChildWindow(makeView(-1, -1), wi.DockingFill)
+	}
 }
 
 func cmdShell(w wi.Window, args ...string) {
@@ -166,17 +152,6 @@ var defaultCommands = map[string]wi.Command{
 		"Prints help",
 		"Prints general help or help for a particular command.",
 	},
-}
-
-// RegisterDefaultCommands registers the top-level native commands. This
-// includes the window management commands, opening a new file buffer (it's a
-// text editor after all) and help, quitting, etc. It doesn't includes handling
-// a file buffer itself, it's up to the relevant view to add the corresponding
-// commands. For example, "open" is implemented but "write" is not!
-func RegisterDefaultCommands(dispatcher wi.CommandDispatcher) {
-	for name, cmd := range defaultCommands {
-		dispatcher.Register(name, cmd)
-	}
 	// DIRECTION = up/down/left/right
 	// window_DIRECTION
 	// window_close
@@ -185,4 +160,15 @@ func RegisterDefaultCommands(dispatcher wi.CommandDispatcher) {
 	// undo/redo
 	// verb/movement/multiplier
 	// Modes, select (both column and normal), command.
+}
+
+// RegisterDefaultCommands registers the top-level native commands. This
+// includes the window management commands, opening a new file buffer (it's a
+// text editor after all) and help, quitting, etc. It doesn't includes handling
+// a file buffer itself, it's up to the relevant view to add the corresponding
+// commands. For example, "open" is implemented but "write" is not!
+func RegisterDefaultCommands(dispatcher wi.Commands) {
+	for name, cmd := range defaultCommands {
+		dispatcher.Register(name, cmd)
+	}
 }

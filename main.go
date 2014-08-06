@@ -54,6 +54,28 @@ func (t *terminal) ActiveWindow() wi.Window {
 	return t.lastActive[0]
 }
 
+func (t *terminal) ActivateWindow(w wi.Window) {
+	// First remove w from t.lastActive, second add w as t.lastActive[0].
+	// This kind of manual list shuffling is really Go's achille heel.
+	// TODO(maruel): There's no way I got it right on the first try without a
+	// unit test.
+	for i, v := range t.lastActive {
+		if v == w {
+			if i > 0 {
+				copy(t.lastActive[:i], t.lastActive[1:i+1])
+				t.lastActive[0] = w
+			}
+			return
+		}
+	}
+
+	// This Window has never been active.
+	l := len(t.lastActive)
+	t.lastActive = append(t.lastActive, nil)
+	copy(t.lastActive[:l], t.lastActive[1:l])
+	t.lastActive[0] = w
+}
+
 func (t *terminal) Height() int {
 	return t.height
 }
@@ -75,10 +97,12 @@ func (t *terminal) eventLoop() int {
 		event := <-t.events
 		switch event.Type {
 		case termbox.EventKey:
-			active := t.ActiveWindow()
-			cmd := active.View().Keyboard().OnKey(event)
-			if cmd != "" {
-				active.View().Command().Execute(active, cmd)
+			cmdName := wi.GetKeyBindingCommand(t, keyEventToName(event))
+			if cmdName != "" {
+				cmd := wi.GetCommand(t, cmdName)
+				if cmd != nil {
+					cmd.Handle(t.ActiveWindow())
+				}
 			}
 		case termbox.EventMouse:
 			// TODO(maruel): MouseDispatcher.
@@ -98,17 +122,16 @@ func (t *terminal) eventLoop() int {
 // The root window doesn't have anything to view in it. It will contain two
 // child windows, the main content window and the status bar.
 func MakeDisplay() *terminal {
-	cmd_dispatcher := MakeCommandDispatcher()
-	RegisterDefaultCommands(cmd_dispatcher)
-	key_dispatcher := MakeKeyboardDispatcher()
-	RegisterDefaultKeyboard(key_dispatcher)
+	rootView := makeView(-1, -1)
+	RegisterDefaultCommands(rootView.Commands())
+	RegisterDefaultKeyBindings(rootView.KeyBindings())
 
 	// The root window is important, it defines all the global commands. It is
 	// pre-filled with the default native commands and keyboard mapping, and it's
 	// up to the plugins to add more global commands on startup.
 	// TODO(maruel): Add callback to allow plugins to hook into it
 	// (a)synchronously.
-	window := makeWindow(nil, makeView(cmd_dispatcher, key_dispatcher, -1, -1), wi.Fill)
+	window := makeWindow(nil, rootView, wi.DockingFill)
 	events := make(chan termbox.Event, 32)
 	terminal := &terminal{
 		events:     events,
@@ -118,8 +141,8 @@ func MakeDisplay() *terminal {
 
 	// TODO(maruel): Add these via commands, so they can be deleted and added
 	// back easily?
-	window.NewChildWindow(makeStatusView(), wi.Bottom)
-	window.NewChildWindow(makeView(nil, nil, -1, -1), wi.Fill)
+	window.NewChildWindow(makeStatusView(), wi.DockingBottom)
+	window.NewChildWindow(makeView(-1, -1), wi.DockingFill)
 
 	terminal.onResize()
 	go func() {
@@ -213,19 +236,38 @@ func makeWindow(parent wi.Window, view wi.View, docking wi.DockingType) wi.Windo
 }
 
 type view struct {
-	cmd_dispatcher wi.CommandDispatcher
-	key_dispatcher wi.KeyboardDispatcher
-	naturalX       int
-	naturalY       int
-	buffer         wi.TextBuffer
+	commands    wi.Commands
+	keyBindings wi.KeyBindings
+	title       string
+	isDirty     bool
+	isInvalid   bool
+	naturalX    int
+	naturalY    int
+	buffer      wi.TextBuffer
 }
 
-func (v *view) Command() wi.CommandDispatcher {
-	return v.cmd_dispatcher
+func (v *view) Commands() wi.Commands {
+	return v.commands
 }
 
-func (v *view) Keyboard() wi.KeyboardDispatcher {
-	return v.key_dispatcher
+func (v *view) KeyBindings() wi.KeyBindings {
+	return v.keyBindings
+}
+
+func (v *view) Title() string {
+	return v.title
+}
+
+func (v *view) IsDirty() bool {
+	return v.isDirty
+}
+
+func (v *view) IsInvalid() bool {
+	return v.isInvalid
+}
+
+func (v *view) NaturalSize() (x, y int) {
+	return v.naturalX, v.naturalY
 }
 
 func (v *view) SetBuffer(buffer wi.TextBuffer) {
@@ -236,31 +278,29 @@ func (v *view) Buffer() wi.TextBuffer {
 	return v.buffer
 }
 
-func (v *view) NaturalSize() (x, y int) {
-	return v.naturalX, v.naturalY
-}
-
 // Empty non-editable window.
-func makeView(cmd_dispatcher wi.CommandDispatcher, key_dispatcher wi.KeyboardDispatcher, naturalX, naturalY int) wi.View {
-	if cmd_dispatcher == nil {
-		cmd_dispatcher = MakeCommandDispatcher()
+func makeView(naturalX, naturalY int) wi.View {
+	return &view{
+		commands:    makeCommands(),
+		keyBindings: makeKeyBindings(),
+		naturalX:    naturalX,
+		naturalY:    naturalY,
 	}
-	return &view{cmd_dispatcher, key_dispatcher, naturalX, naturalY, nil}
 }
 
 // The status line.
 func makeStatusView() wi.View {
-	return makeView(nil, nil, 1, -1)
+	return makeView(1, -1)
 }
 
 // The command box.
 func makeCommandView() wi.View {
-	return makeView(nil, nil, 1, -1)
+	return makeView(1, -1)
 }
 
 // A dismissable modal dialog box.
 func makeAlertView() wi.View {
-	return makeView(nil, nil, 1, 1)
+	return makeView(1, 1)
 }
 
 // Config
@@ -283,37 +323,6 @@ func (c *config) Save() {
 
 func MakeConfig() wi.Config {
 	return &config{}
-}
-
-// Control
-
-type keyboardDispatcher struct {
-	mappings map[string]string
-}
-
-func (k *keyboardDispatcher) OnKey(event termbox.Event) string {
-	key := tulib.KeyToString(event.Key, event.Ch, event.Mod)
-	return k.mappings[key]
-}
-
-func (k *keyboardDispatcher) Register(key string, cmd string) bool {
-	_, ok := k.mappings[key]
-	k.mappings[key] = cmd
-	return !ok
-}
-
-func MakeKeyboardDispatcher() wi.KeyboardDispatcher {
-	return &keyboardDispatcher{make(map[string]string)}
-}
-
-// Registers the default keyboard mapping. Keyboard mapping simply execute the
-// corresponding command. So to add a keyboard map, the corresponding command
-// needs to be added first.
-// TODO(maruel): This should be remappable via a configuration flag, for
-// example vim flavor vs emacs flavor.
-func RegisterDefaultKeyboard(key_dispatcher wi.KeyboardDispatcher) {
-	key_dispatcher.Register("F1", "help")
-	key_dispatcher.Register("Ctrl-C", "quit")
 }
 
 // Plugins
@@ -447,18 +456,17 @@ func main() {
 		}
 	}()
 
-	active := display.ActiveWindow()
 	if *command {
 		for _, i := range flag.Args() {
-			active.View().Command().Execute(active, i)
+			wi.ExecuteCommand(display, i)
 		}
 	} else if flag.NArg() > 0 {
 		for _, i := range flag.Args() {
-			active.View().Command().Execute(active, "open", i)
+			wi.ExecuteCommand(display, "open", i)
 		}
 	} else {
 		// If nothing, opens a blank editor.
-		active.View().Command().Execute(active, "new")
+		wi.ExecuteCommand(display, "new")
 	}
 
 	// Run the message loop.
