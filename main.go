@@ -27,13 +27,20 @@ const (
 
 // UI
 
+type commandQueueItem struct {
+	w    wi.Window
+	cmd  wi.Command
+	args []string
+}
+
 // It is normally expected to be drawn via an ssh/mosh connection so it should
 // be "bandwidth" optimized, where bandwidth doesn't mean 1200 bauds anymore.
 type terminal struct {
-	window       wi.Window
-	lastActive   []wi.Window
-	events       <-chan termbox.Event
-	outputBuffer tulib.Buffer
+	window         wi.Window
+	lastActive     []wi.Window
+	terminalEvents <-chan termbox.Event
+	commandsQueue  chan commandQueueItem
+	outputBuffer   tulib.Buffer
 }
 
 func (t *terminal) Version() string {
@@ -41,6 +48,7 @@ func (t *terminal) Version() string {
 }
 
 func (t *terminal) PostCommand(w wi.Window, cmd wi.Command, args ...string) {
+	t.commandsQueue <- commandQueueItem{w, cmd, args}
 }
 
 func (t *terminal) WaitQueueEmpty() {
@@ -94,29 +102,36 @@ func (t *terminal) onResize() {
 	t.window.SetRect(tulib.Rect{0, 0, t.outputBuffer.Width, t.outputBuffer.Height})
 }
 
+// eventLoop handles both commands and events from the terminal. This function
+// runs in the UI goroutine.
 func (t *terminal) eventLoop() int {
 	for {
-		event := <-t.events
-		switch event.Type {
-		case termbox.EventKey:
-			cmdName := wi.GetKeyBindingCommand(t, keyEventToName(event))
-			if cmdName != "" {
-				cmd := wi.GetCommand(t, cmdName)
-				if cmd != nil {
-					t.PostCommand(t.ActiveWindow(), cmd)
+		select {
+		case i := <-t.commandsQueue:
+			i.cmd.Handle(t, i.w, i.args...)
+
+		case event := <-t.terminalEvents:
+			switch event.Type {
+			case termbox.EventKey:
+				cmdName := wi.GetKeyBindingCommand(t, keyEventToName(event))
+				if cmdName != "" {
+					cmd := wi.GetCommand(t, cmdName)
+					if cmd != nil {
+						t.PostCommand(t.ActiveWindow(), cmd)
+					}
 				}
+			case termbox.EventMouse:
+				// TODO(maruel): MouseDispatcher.
+				break
+			case termbox.EventResize:
+				t.onResize()
+			case termbox.EventError:
+				// TODO(maruel): Not sure what situations can trigger this.
+				os.Stderr.WriteString(event.Err.Error())
+				return 1
 			}
-		case termbox.EventMouse:
-			// TODO(maruel): MouseDispatcher.
-			break
-		case termbox.EventResize:
-			t.onResize()
-		case termbox.EventError:
-			// TODO(maruel): Not sure what situations can trigger this.
-			os.Stderr.WriteString(event.Err.Error())
-			return 1
+			t.Draw()
 		}
-		t.Draw()
 	}
 	return 0
 }
@@ -135,17 +150,18 @@ func makeDisplay() *terminal {
 	// TODO(maruel): Add callback to allow plugins to hook into it
 	// (a)synchronously before creating the root Window.
 	window := makeWindow(nil, rootView, wi.DockingFill)
-	events := make(chan termbox.Event, 32)
+	terminalEvents := make(chan termbox.Event, 32)
 	terminal := &terminal{
-		events:     events,
-		window:     window,
-		lastActive: []wi.Window{window},
+		terminalEvents: terminalEvents,
+		commandsQueue:  make(chan commandQueueItem, 500),
+		window:         window,
+		lastActive:     []wi.Window{window},
 	}
 
 	terminal.onResize()
 	go func() {
 		for {
-			events <- termbox.PollEvent()
+			terminalEvents <- termbox.PollEvent()
 		}
 	}()
 	return terminal
