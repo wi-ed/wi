@@ -5,11 +5,10 @@
 package main
 
 import (
+	"fmt"
 	"github.com/maruel/wi/wi-plugin"
 	"log"
 )
-
-type langMap map[wi.LanguageMode]string
 
 type command struct {
 	handler   wi.CommandHandler
@@ -28,19 +27,11 @@ func (c *command) Category(cd wi.CommandDispatcherFull) wi.CommandCategory {
 }
 
 func (c *command) ShortDesc(cd wi.CommandDispatcherFull) string {
-	desc, ok := c.shortDesc[cd.CurrentLanguage()]
-	if !ok {
-		desc = c.shortDesc[wi.LangEn]
-	}
-	return desc
+	return getStr(cd.CurrentLanguage(), c.shortDesc)
 }
 
 func (c *command) LongDesc(cd wi.CommandDispatcherFull) string {
-	desc, ok := c.longDesc[cd.CurrentLanguage()]
-	if !ok {
-		desc = c.longDesc[wi.LangEn]
-	}
-	return desc
+	return getStr(cd.CurrentLanguage(), c.longDesc)
 }
 
 // commandAlias references another command.
@@ -61,13 +52,11 @@ func (c *commandAlias) Category(cd wi.CommandDispatcherFull) wi.CommandCategory 
 }
 
 func (c *commandAlias) ShortDesc(cd wi.CommandDispatcherFull) string {
-	// TODO(maruel): Translate.
-	return "Alias for \"" + c.command + "\""
+	return fmt.Sprintf(getStr(cd.CurrentLanguage(), aliasFor), c.command)
 }
 
 func (c *commandAlias) LongDesc(cd wi.CommandDispatcherFull) string {
-	// TODO(maruel): Translate.
-	return "Alias for \"" + c.command + "\"."
+	return fmt.Sprintf(getStr(cd.CurrentLanguage(), aliasFor), c.command)
 }
 
 type commands struct {
@@ -107,7 +96,8 @@ func cmdOpen(cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
 
 func cmdNew(cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
 	if len(args) != 0 {
-		cd.PostCommand("alert", "Command 'new' doesn't accept arguments")
+		cmd := wi.GetCommand(cd, nil, "alias")
+		cd.ExecuteCommand(w, "alert", cmd.LongDesc(cd))
 	} else {
 		w.NewChildWindow(makeView(-1, -1), wi.DockingFill)
 	}
@@ -152,10 +142,10 @@ func cmdAlias(cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
 		cd.ExecuteCommand(w, "alert", cmd.LongDesc(cd))
 		return
 	}
-	cmd := wi.GetCommand(cd, w, args[2])
+	cmdName := args[2]
+	cmd := wi.GetCommand(cd, w, cmdName)
 	if cmd == nil {
-		// TODO(maruel): Translate.
-		cd.ExecuteCommand(w, "alert", "Failed to find command \""+args[2]+"\"")
+		cd.ExecuteCommand(w, "alert", fmt.Sprintf(getStr(cd.CurrentLanguage(), notFound), cmdName))
 		return
 	}
 	w.View().Commands().Register(args[1], cmd)

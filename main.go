@@ -58,8 +58,7 @@ func (t *terminal) WaitQueueEmpty() {
 func (t *terminal) ExecuteCommand(w wi.Window, cmdName string, args ...string) {
 	cmd := wi.GetCommand(t, w, cmdName)
 	if cmd == nil {
-		// TODO(maruel): Translate.
-		t.ExecuteCommand(w, "alert", "Command \""+cmdName+"\" is not registered")
+		t.ExecuteCommand(w, "alert", fmt.Sprintf(getStr(t.CurrentLanguage(), notFound), cmdName))
 	} else {
 		cmd.Handle(t, w, args...)
 	}
@@ -85,7 +84,8 @@ func (t *terminal) ActiveWindow() wi.Window {
 
 func (t *terminal) ActivateWindow(w wi.Window) {
 	if w.View().IsDisabled() {
-		panic("Can't activate a disabled view")
+		t.ExecuteCommand(w, "alert", getStr(t.CurrentLanguage(), activateDisabled))
+		return
 	}
 
 	// First remove w from t.lastActive, second add w as t.lastActive[0].
@@ -405,7 +405,6 @@ func MakeConfig() wi.Config {
 
 // loadPlugin starts a plugin and returns the process.
 func loadPlugin(server *rpc.Server, f string) *os.Process {
-	log.Printf("Would have run plugin %s", f)
 	cmd := exec.Command(f)
 	cmd.Env = append(os.Environ(), "WI=plugin")
 

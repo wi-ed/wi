@@ -279,20 +279,6 @@ func GetCommand(cd CommandDispatcherFull, w Window, cmdName string) Command {
 	}
 }
 
-/*
-// PostCommand executes the command if possible or prints an error message
-// otherwise. Use nil for Window if the command should be posted to the active
-// Window.
-func PostCommand(cd CommandDispatcherFull, w Window, cmdName string, args ...string) {
-	cmd := GetCommandWindow(cd, w, cmdName)
-	if cmd == nil {
-		PostCommand(cd, w, "alert", "Command \""+cmdName+"\" is not registered")
-	} else {
-		cd.PostCommand(w, cmd, args...)
-	}
-}
-*/
-
 // GetKeyBindingCommand traverses the Display's Window tree to find a View that
 // has the key binding in its Keyboard mapping.
 func GetKeyBindingCommand(d Display, keyName string) string {
