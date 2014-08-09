@@ -57,8 +57,7 @@ func keyEventToName(event termbox.Event) string {
 // needs to be added first.
 // TODO(maruel): This should be remappable via a configuration flag, for
 // example vim flavor vs emacs flavor.
-func RegisterDefaultKeyBindings(keyBindings wi.KeyBindings) {
-	// TODO(maruel): Use ExecuteCommand() calls instead.
-	keyBindings.Set(wi.AllMode, "F1", "help")
-	keyBindings.Set(wi.AllMode, "Ctrl-C", "quit")
+func RegisterDefaultKeyBindings(cd wi.CommandDispatcher) {
+	cd.PostCommand("keybind", "global", "F1", "help")
+	cd.PostCommand("keybind", "global", "Ctrl-C", "quit")
 }

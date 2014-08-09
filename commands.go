@@ -18,7 +18,7 @@ type command struct {
 	longDesc  langMap
 }
 
-func (c *command) Handle(cd wi.CommandDispatcher, w wi.Window, args ...string) {
+func (c *command) Handle(cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
 	c.handler(cd, w, args...)
 }
 
@@ -49,8 +49,8 @@ type commandAlias struct {
 
 // Alias looks up the Commands to find the aliased command, so it can
 // return the relevant details.
-func (c *commandAlias) Alias(w wi.Window) wi.Command {
-	return wi.GetCommandWindow(w, c.command)
+func (c *commandAlias) Alias(cd wi.CommandDispatcherFull) wi.Command {
+	return wi.GetCommand(cd, nil, c.command)
 }
 
 type commands struct {
@@ -73,32 +73,32 @@ func makeCommands() wi.Commands {
 
 // Default commands
 
-func cmdAlert(cd wi.CommandDispatcher, w wi.Window, args ...string) {
+func cmdAlert(cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
 	wi.RootWindow(w).NewChildWindow(makeView(1, -1), wi.DockingFloating)
 	//w2.Activate()
 }
 
-func cmdAddStatusBar(cd wi.CommandDispatcher, w wi.Window, args ...string) {
+func cmdAddStatusBar(cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
 	w.NewChildWindow(makeStatusView(), wi.DockingBottom)
 }
 
-func cmdOpen(cd wi.CommandDispatcher, w wi.Window, args ...string) {
+func cmdOpen(cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
 	log.Printf("Faking opening a file: %s", args)
 }
 
-func cmdNew(cd wi.CommandDispatcher, w wi.Window, args ...string) {
+func cmdNew(cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
 	if len(args) != 0 {
-		wi.PostCommandWindow(cd, w, "alert", "Command 'new' doesn't accept arguments")
+		cd.PostCommand("alert", "Command 'new' doesn't accept arguments")
 	} else {
 		w.NewChildWindow(makeView(-1, -1), wi.DockingFill)
 	}
 }
 
-func cmdShell(cd wi.CommandDispatcher, w wi.Window, args ...string) {
+func cmdShell(cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
 	log.Printf("Faking opening a new shell: %s", args)
 }
 
-func cmdDoc(cd wi.CommandDispatcher, w wi.Window, args ...string) {
+func cmdDoc(cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
 	// TODO: MakeWindow(Bottom)
 	docArgs := make([]string, len(args)+1)
 	docArgs[0] = "doc"
@@ -106,17 +106,36 @@ func cmdDoc(cd wi.CommandDispatcher, w wi.Window, args ...string) {
 	//dispatcher.Execute(w, "shell", docArgs...)
 }
 
-func cmdQuit(cd wi.CommandDispatcher, w wi.Window, args ...string) {
-	// For all the View, question if fine to quit.
-	// If not fine, "prompt" y/n to force quit. If n, stop there.
+func cmdQuit(cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
+	// TODO(maruel): For all the View, question if fine to quit via
+	// view.IsDirty(). If not fine, "prompt" y/n to force quit. If n, stop there.
 	// - Send a signal to each plugin.
 	// - Send a signal back to the main loop.
 	log.Printf("Faking quit: %s", args)
 }
 
-func cmdHelp(cd wi.CommandDispatcher, w wi.Window, args ...string) {
-	// Creates a new Window with a ViewHelp.
+func cmdHelp(cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
+	// TODO(maruel): Creates a new Window with a ViewHelp.
 	log.Printf("Faking help: %s", args)
+}
+
+func cmdKeyBind(cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
+	if len(args) != 3 {
+		cmd := wi.GetCommand(cd, nil, "keybind")
+		cd.PostCommand("alert", cmd.LongDesc(cd.CurrentLanguage()))
+	}
+	var mode wi.KeyboardMode
+	if args[0] == "command" {
+		mode = wi.CommandMode
+	} else if args[0] == "edit" {
+		mode = wi.CommandMode
+	} else if args[0] == "all" {
+		mode = wi.AllMode
+	} else {
+		cmd := wi.GetCommand(cd, nil, "keybind")
+		cd.PostCommand("alert", cmd.LongDesc(cd.CurrentLanguage()))
+	}
+	w.View().KeyBindings().Set(mode, args[1], args[2])
 }
 
 var defaultCommands = map[string]wi.Command{
@@ -202,6 +221,16 @@ var defaultCommands = map[string]wi.Command{
 		},
 		langMap{
 			wi.LangEn: "Prints general help or help for a particular command.",
+		},
+	},
+	"keybind": &command{
+		cmdKeyBind,
+		wi.CommandsCategory,
+		langMap{
+			wi.LangEn: "Binds a keyboard mapping to a command",
+		},
+		langMap{
+			wi.LangEn: "Usage: keybind [command|edit|all] <key> <command>\nBinds a keyboard mapping to a command. The binding can be to the active view for view-specific key binding or to the root view for global key bindings.",
 		},
 	},
 	// DIRECTION = up/down/left/right

@@ -46,6 +46,9 @@ type CommandCategory int
 const (
 	// Commands relating to manipuling windows and UI in general.
 	WindowCategory CommandCategory = iota
+	// Commands relating to manipulating commands, aliases, keybindings.
+	CommandsCategory
+
 	// TODO(maruel): Add other categories.
 )
 
@@ -69,32 +72,52 @@ const (
 type LanguageMode string
 
 const (
+	// TODO: Add new languages when translating the application.
+
 	LangEn = "en"
 	LangFr = "fr"
 )
 
 type Application interface {
+	// Version returns the version number of this build of wi.
 	Version() string
 }
 
+// CommandDispatcher owns the command queue. Use this interface to enqueue
+// commands for execution.
 type CommandDispatcher interface {
-	PostCommand(w Window, cmd Command, args ...string)
+	// PostCommand appends a Command at the end of the queue.
+	PostCommand(cmdName string, args ...string)
+
+	// WaitQueueEmpty waits for the enqueued commands to complete before moving
+	// on. It can be used for example when quitting the process safely.
 	WaitQueueEmpty()
+}
+
+type CommandDispatcherFull interface {
+	CommandDispatcher
+
+	// ExecuteCommand executes a command now. This is only meant to run a command
+	// reentrantly; e.g. running a command triggers another one. This usually
+	// happens when a command triggers an error.
+	ExecuteCommand(cmdName string, args ...string)
+
+	// ActiveWindow returns the current active Window.
+	ActiveWindow() Window
+	// ActivateWindow activates a Window.
+	ActivateWindow(w Window)
+
+	CurrentLanguage() LanguageMode
 }
 
 // Display is the output device. It shows the root window which covers the
 // whole screen estate.
 type Display interface {
 	Application
-	CommandDispatcher
+	CommandDispatcherFull
 
 	// Redraws all the invalidated windows.
 	Draw()
-
-	// ActiveWindow returns the current active Window.
-	ActiveWindow() Window
-	// ActivateWindow activates a Window.
-	ActivateWindow(w Window)
 }
 
 // Window is a View container. It defines the position, Z-ordering via
@@ -103,7 +126,9 @@ type Display interface {
 // interact with the user, since it only has a non-client area (the border).
 // All the client area is covered by the View.
 type Window interface {
+	// Parent returns the parent Window.
 	Parent() Window
+	// ChildrenWindows returns a copy of the slice of children windows.
 	ChildrenWindows() []Window
 	// TODO(maruel): Accept a Window, not a View. This permits more complex
 	// window creation.
@@ -186,13 +211,13 @@ type Config interface {
 // Control
 
 // CommandHandler executes the command cmd on the Window w.
-type CommandHandler func(cd CommandDispatcher, w Window, args ...string)
+type CommandHandler func(cd CommandDispatcherFull, w Window, args ...string)
 
 // Command describes a registered command that can be triggered directly at the
 // command prompt, via a keybinding or a plugin.
 type Command interface {
 	// Handle executes the command.
-	Handle(cd CommandDispatcher, w Window, args ...string)
+	Handle(cd CommandDispatcherFull, w Window, args ...string)
 	// Category returns the category the command should be bucketed in, for help
 	// documentation purpose.
 	Category() CommandCategory
@@ -232,15 +257,15 @@ type KeyBindings interface {
 	Get(mode KeyboardMode, keyName string) string
 }
 
-// GetCommand traverses the Display's active Window hierarchy tree to find a
-// View that has the command cmd in its Commands mapping.
-func GetCommand(d Display, cmdName string) Command {
-	return GetCommandWindow(d.ActiveWindow(), cmdName)
-}
+// Utility functions.
 
-// GetCommandWindow traverses the Window hierarchy tree to find a View that has
-// the command cmd in its Commands mapping.
-func GetCommandWindow(w Window, cmdName string) Command {
+// GetCommand traverses the Window hierarchy tree to find a View that has
+// the command cmd in its Commands mapping. If Window is nil, it starts with
+// the Display's active Window.
+func GetCommand(cd CommandDispatcherFull, w Window, cmdName string) Command {
+	if w == nil {
+		w = cd.ActiveWindow()
+	}
 	for {
 		cmd := w.View().Commands().Get(cmdName)
 		if cmd != nil {
@@ -253,23 +278,19 @@ func GetCommandWindow(w Window, cmdName string) Command {
 	}
 }
 
+/*
 // PostCommand executes the command if possible or prints an error message
-// otherwise.
-func PostCommand(d Display, cmdName string, args ...string) {
-	PostCommandWindow(d, d.ActiveWindow(), cmdName, args...)
-}
-
-// PostCommandWindow executes the command if possible or prints an error
-// message otherwise.
-func PostCommandWindow(cd CommandDispatcher, w Window, cmdName string, args ...string) {
-	cmd := GetCommandWindow(w, cmdName)
+// otherwise. Use nil for Window if the command should be posted to the active
+// Window.
+func PostCommand(cd CommandDispatcherFull, w Window, cmdName string, args ...string) {
+	cmd := GetCommandWindow(cd, w, cmdName)
 	if cmd == nil {
-		PostCommandWindow(
-			cd, w, "alert", "Command \""+cmdName+"\" is not registered")
+		PostCommand(cd, w, "alert", "Command \""+cmdName+"\" is not registered")
 	} else {
 		cd.PostCommand(w, cmd, args...)
 	}
 }
+*/
 
 // GetKeyBindingCommand traverses the Display's Window tree to find a View that
 // has the key binding in its Keyboard mapping.
@@ -287,7 +308,7 @@ func GetKeyBindingCommand(d Display, keyName string) string {
 	}
 }
 
-// RootWindow, given any Window in the tree, returns the root Window.
+// RootWindow returns the root Window when given any Window in the tree.
 func RootWindow(w Window) Window {
 	for {
 		if w.Parent() == nil {

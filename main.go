@@ -17,6 +17,7 @@ import (
 	"os/exec"
 	"runtime"
 	"strings"
+	"sync"
 )
 
 const (
@@ -28,9 +29,8 @@ const (
 // UI
 
 type commandQueueItem struct {
-	w    wi.Window
-	cmd  wi.Command
-	args []string
+	cmdName string
+	args    []string
 }
 
 // It is normally expected to be drawn via an ssh/mosh connection so it should
@@ -41,17 +41,32 @@ type terminal struct {
 	terminalEvents <-chan termbox.Event
 	commandsQueue  chan commandQueueItem
 	outputBuffer   tulib.Buffer
+	languageMode   wi.LanguageMode
 }
 
 func (t *terminal) Version() string {
 	return version
 }
 
-func (t *terminal) PostCommand(w wi.Window, cmd wi.Command, args ...string) {
-	t.commandsQueue <- commandQueueItem{w, cmd, args}
+func (t *terminal) PostCommand(cmdName string, args ...string) {
+	t.commandsQueue <- commandQueueItem{cmdName, args}
 }
 
 func (t *terminal) WaitQueueEmpty() {
+}
+
+func (t *terminal) ExecuteCommand(cmdName string, args ...string) {
+	cmd := wi.GetCommand(t, nil, cmdName)
+	if cmd == nil {
+		// TODO(maruel): Translate.
+		t.ExecuteCommand("alert", "Command \""+cmdName+"\" is not registered")
+	} else {
+		cmd.Handle(t, t.ActiveWindow(), args...)
+	}
+}
+
+func (t *terminal) CurrentLanguage() wi.LanguageMode {
+	return t.languageMode
 }
 
 func (t *terminal) Draw() {
@@ -108,22 +123,32 @@ func (t *terminal) eventLoop() int {
 	for {
 		select {
 		case i := <-t.commandsQueue:
-			i.cmd.Handle(t, i.w, i.args...)
+			t.ExecuteCommand(i.cmdName, i.args...)
 
 		case event := <-t.terminalEvents:
 			switch event.Type {
 			case termbox.EventKey:
+				// Convert the key press into a command. The trick is that we don't
+				// know the active window, there could be commands already enqueued
+				// that will change the active window, so using the active window
+				// directly or indirectly here is an incorrect assumption.
 				cmdName := wi.GetKeyBindingCommand(t, keyEventToName(event))
 				if cmdName != "" {
-					cmd := wi.GetCommand(t, cmdName)
+					// TODO(maruel): This is wrong, the resolving needs to be done once
+					// the command queue is empty.
+					cmd := wi.GetCommand(t, nil, cmdName)
 					if cmd != nil {
-						t.PostCommand(t.ActiveWindow(), cmd)
+						t.PostCommand(cmdName)
 					}
 				}
 			case termbox.EventMouse:
-				// TODO(maruel): MouseDispatcher.
+				// TODO(maruel): MouseDispatcher. Mouse events are expected to be
+				// resolved to the window that is currently active, unlike key presses.
+				// Life is inconsistent.
 				break
 			case termbox.EventResize:
+				// The terminal window was resized, resize everything, independent of
+				// the enqueued commands.
 				t.onResize()
 			case termbox.EventError:
 				// TODO(maruel): Not sure what situations can trigger this.
@@ -145,7 +170,6 @@ func makeDisplay() *terminal {
 	// up to the plugins to add more global commands on startup.
 	rootView := makeView(-1, -1)
 	RegisterDefaultCommands(rootView.Commands())
-	RegisterDefaultKeyBindings(rootView.KeyBindings())
 
 	// TODO(maruel): Add callback to allow plugins to hook into it
 	// (a)synchronously before creating the root Window.
@@ -156,7 +180,10 @@ func makeDisplay() *terminal {
 		commandsQueue:  make(chan commandQueueItem, 500),
 		window:         window,
 		lastActive:     []wi.Window{window},
+		languageMode:   wi.LangEn,
 	}
+
+	RegisterDefaultKeyBindings(terminal)
 
 	terminal.onResize()
 	go func() {
@@ -451,7 +478,8 @@ func loadPlugins(display wi.Display) []*os.Process {
 		return nil
 	}
 
-	out := []*os.Process{}
+	var wg sync.WaitGroup
+	c := make(chan *os.Process)
 	server := rpc.NewServer()
 	// TODO(maruel): http://golang.org/pkg/net/rpc/#Server.RegisterName
 	// It should be an interface with methods of style DoStuff(Foo, Bar) Baz
@@ -471,8 +499,29 @@ func loadPlugins(display wi.Display) []*os.Process {
 				continue
 			}
 		}
-		out = append(out, loadPlugin(server, name))
+		wg.Add(1)
+		go func(s *rpc.Server, n string) {
+			c <- loadPlugin(s, n)
+			wg.Done()
+		}(server, name)
 	}
+
+	var wg2 sync.WaitGroup
+	out := []*os.Process{}
+	wg2.Add(1)
+	go func() {
+		for i := range c {
+			out = append(out, i)
+		}
+		wg2.Done()
+	}()
+
+	// Wait for all the plugins to be loaded.
+	wg.Wait()
+
+	// Convert to a slice.
+	close(c)
+	wg2.Wait()
 	return out
 }
 
@@ -504,20 +553,21 @@ func main() {
 		}
 	}()
 
-	// Add the status bar.
-	wi.PostCommand(display, "add_status_bar")
+	// Add the status bar. At that point plugins are loaded so they can override
+	// add_status_bar if they want.
+	display.PostCommand("add_status_bar")
 
 	if *command {
 		for _, i := range flag.Args() {
-			wi.PostCommand(display, i)
+			display.PostCommand(i)
 		}
 	} else if flag.NArg() > 0 {
 		for _, i := range flag.Args() {
-			wi.PostCommand(display, "open", i)
+			display.PostCommand("open", i)
 		}
 	} else {
 		// If nothing, opens a blank editor.
-		wi.PostCommand(display, "new")
+		display.PostCommand("new")
 	}
 
 	// Run the message loop.
