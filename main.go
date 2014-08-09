@@ -22,7 +22,7 @@ import (
 const (
 	// Major.Minor.Bugfix. All plugins should be recompiled on Minor version
 	// change.
-	VERSION = "0.0.1"
+	version = "0.0.1"
 )
 
 // UI
@@ -34,6 +34,16 @@ type terminal struct {
 	lastActive   []wi.Window
 	events       <-chan termbox.Event
 	outputBuffer tulib.Buffer
+}
+
+func (t *terminal) Version() string {
+	return version
+}
+
+func (t *terminal) PostCommand(w wi.Window, cmd wi.Command, args ...string) {
+}
+
+func (t *terminal) WaitQueueEmpty() {
 }
 
 func (t *terminal) Draw() {
@@ -93,7 +103,7 @@ func (t *terminal) eventLoop() int {
 			if cmdName != "" {
 				cmd := wi.GetCommand(t, cmdName)
 				if cmd != nil {
-					cmd.Handle(t.ActiveWindow())
+					t.PostCommand(t.ActiveWindow(), cmd)
 				}
 			}
 		case termbox.EventMouse:
@@ -458,7 +468,7 @@ func main() {
 
 	// Process this one early. No one wants version output to take 1s.
 	if *version {
-		println(VERSION)
+		println(version)
 		os.Exit(0)
 	}
 
@@ -479,19 +489,19 @@ func main() {
 	}()
 
 	// Add the status bar.
-	wi.ExecuteCommand(display, "add_status_bar")
+	wi.PostCommand(display, "add_status_bar")
 
 	if *command {
 		for _, i := range flag.Args() {
-			wi.ExecuteCommand(display, i)
+			wi.PostCommand(display, i)
 		}
 	} else if flag.NArg() > 0 {
 		for _, i := range flag.Args() {
-			wi.ExecuteCommand(display, "open", i)
+			wi.PostCommand(display, "open", i)
 		}
 	} else {
 		// If nothing, opens a blank editor.
-		wi.ExecuteCommand(display, "new")
+		wi.PostCommand(display, "new")
 	}
 
 	// Run the message loop.

@@ -65,9 +65,29 @@ const (
 	AllMode
 )
 
+// LanguageMode is a language selection for UI purposes.
+type LanguageMode string
+
+const (
+	LangEn = "en"
+	LangFr = "fr"
+)
+
+type Application interface {
+	Version() string
+}
+
+type CommandDispatcher interface {
+	PostCommand(w Window, cmd Command, args ...string)
+	WaitQueueEmpty()
+}
+
 // Display is the output device. It shows the root window which covers the
 // whole screen estate.
 type Display interface {
+	Application
+	CommandDispatcher
+
 	// Redraws all the invalidated windows.
 	Draw()
 
@@ -166,15 +186,24 @@ type Config interface {
 // Control
 
 // CommandHandler executes the command cmd on the Window w.
-type CommandHandler func(w Window, args ...string)
+type CommandHandler func(cd CommandDispatcher, w Window, args ...string)
 
 // Command describes a registered command that can be triggered directly at the
 // command prompt, via a keybinding or a plugin.
 type Command interface {
-	Handle(w Window, args ...string)
+	// Handle executes the command.
+	Handle(cd CommandDispatcher, w Window, args ...string)
+	// Category returns the category the command should be bucketed in, for help
+	// documentation purpose.
 	Category() CommandCategory
-	ShortDesc() string
-	LongDesc() string
+	// ShortDesc returns a short description of the command in the language
+	// requested. It defaults to English if the description was not translated in
+	// this language.
+	ShortDesc(lang LanguageMode) string
+	// LongDesc returns a long explanation of the command in the language
+	// requested. It defaults to English if the description was not translated in
+	// this language.
+	LongDesc(lang LanguageMode) string
 }
 
 // Commands stores the known commands. This is where plugins can add new
@@ -224,21 +253,21 @@ func GetCommandWindow(w Window, cmdName string) Command {
 	}
 }
 
-// ExecuteCommand executes the command if possible or prints an error message
+// PostCommand executes the command if possible or prints an error message
 // otherwise.
-func ExecuteCommand(d Display, cmdName string, args ...string) {
-	ExecuteCommandWindow(d.ActiveWindow(), cmdName, args...)
+func PostCommand(d Display, cmdName string, args ...string) {
+	PostCommandWindow(d, d.ActiveWindow(), cmdName, args...)
 }
 
-// ExecuteCommandWindow executes the command if possible or prints an error
+// PostCommandWindow executes the command if possible or prints an error
 // message otherwise.
-func ExecuteCommandWindow(w Window, cmdName string, args ...string) {
+func PostCommandWindow(cd CommandDispatcher, w Window, cmdName string, args ...string) {
 	cmd := GetCommandWindow(w, cmdName)
 	if cmd == nil {
-		ExecuteCommandWindow(
-			w, "alert", "Command \""+cmdName+"\" is not registered")
+		PostCommandWindow(
+			cd, w, "alert", "Command \""+cmdName+"\" is not registered")
 	} else {
-		cmd.Handle(w, args...)
+		cd.PostCommand(w, cmd, args...)
 	}
 }
 

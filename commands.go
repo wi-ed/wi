@@ -9,27 +9,37 @@ import (
 	"log"
 )
 
+type langMap map[wi.LanguageMode]string
+
 type command struct {
 	handler   wi.CommandHandler
 	category  wi.CommandCategory
-	shortDesc string
-	longDesc  string
+	shortDesc langMap
+	longDesc  langMap
 }
 
-func (c *command) Handle(w wi.Window, args ...string) {
-	c.handler(w, args...)
+func (c *command) Handle(cd wi.CommandDispatcher, w wi.Window, args ...string) {
+	c.handler(cd, w, args...)
 }
 
 func (c *command) Category() wi.CommandCategory {
 	return c.category
 }
 
-func (c *command) ShortDesc() string {
-	return c.shortDesc
+func (c *command) ShortDesc(lang wi.LanguageMode) string {
+	desc, ok := c.shortDesc[lang]
+	if !ok {
+		desc = c.shortDesc[wi.LangEn]
+	}
+	return desc
 }
 
-func (c *command) LongDesc() string {
-	return c.longDesc
+func (c *command) LongDesc(lang wi.LanguageMode) string {
+	desc, ok := c.longDesc[lang]
+	if !ok {
+		desc = c.longDesc[wi.LangEn]
+	}
+	return desc
 }
 
 // commandAlias references another command.
@@ -63,32 +73,32 @@ func makeCommands() wi.Commands {
 
 // Default commands
 
-func cmdAlert(w wi.Window, args ...string) {
+func cmdAlert(cd wi.CommandDispatcher, w wi.Window, args ...string) {
 	wi.RootWindow(w).NewChildWindow(makeView(1, -1), wi.DockingFloating)
 	//w2.Activate()
 }
 
-func cmdAddStatusBar(w wi.Window, args ...string) {
+func cmdAddStatusBar(cd wi.CommandDispatcher, w wi.Window, args ...string) {
 	w.NewChildWindow(makeStatusView(), wi.DockingBottom)
 }
 
-func cmdOpen(w wi.Window, args ...string) {
+func cmdOpen(cd wi.CommandDispatcher, w wi.Window, args ...string) {
 	log.Printf("Faking opening a file: %s", args)
 }
 
-func cmdNew(w wi.Window, args ...string) {
+func cmdNew(cd wi.CommandDispatcher, w wi.Window, args ...string) {
 	if len(args) != 0 {
-		wi.ExecuteCommandWindow(w, "alert", "Command 'new' doesn't accept arguments")
+		wi.PostCommandWindow(cd, w, "alert", "Command 'new' doesn't accept arguments")
 	} else {
 		w.NewChildWindow(makeView(-1, -1), wi.DockingFill)
 	}
 }
 
-func cmdShell(w wi.Window, args ...string) {
+func cmdShell(cd wi.CommandDispatcher, w wi.Window, args ...string) {
 	log.Printf("Faking opening a new shell: %s", args)
 }
 
-func cmdDoc(w wi.Window, args ...string) {
+func cmdDoc(cd wi.CommandDispatcher, w wi.Window, args ...string) {
 	// TODO: MakeWindow(Bottom)
 	docArgs := make([]string, len(args)+1)
 	docArgs[0] = "doc"
@@ -96,7 +106,7 @@ func cmdDoc(w wi.Window, args ...string) {
 	//dispatcher.Execute(w, "shell", docArgs...)
 }
 
-func cmdQuit(w wi.Window, args ...string) {
+func cmdQuit(cd wi.CommandDispatcher, w wi.Window, args ...string) {
 	// For all the View, question if fine to quit.
 	// If not fine, "prompt" y/n to force quit. If n, stop there.
 	// - Send a signal to each plugin.
@@ -104,7 +114,7 @@ func cmdQuit(w wi.Window, args ...string) {
 	log.Printf("Faking quit: %s", args)
 }
 
-func cmdHelp(w wi.Window, args ...string) {
+func cmdHelp(cd wi.CommandDispatcher, w wi.Window, args ...string) {
 	// Creates a new Window with a ViewHelp.
 	log.Printf("Faking help: %s", args)
 }
@@ -113,54 +123,86 @@ var defaultCommands = map[string]wi.Command{
 	"alert": &command{
 		cmdAlert,
 		wi.WindowCategory,
-		"Shows a modal message",
-		"Prints a message in a modal dialog box.",
+		langMap{
+			wi.LangEn: "Shows a modal message",
+		},
+		langMap{
+			wi.LangEn: "Prints a message in a modal dialog box.",
+		},
 	},
 	"add_status_bar": &command{
 		cmdAddStatusBar,
 		wi.WindowCategory,
-		"Adds the standard status bar",
-		"Adds the standard status bar to the active window. This command exists so it can be overriden by a plugin, so it can create its own status bar.",
+		langMap{
+			wi.LangEn: "Adds the standard status bar",
+		},
+		langMap{
+			wi.LangEn: "Adds the standard status bar to the active window. This command exists so it can be overriden by a plugin, so it can create its own status bar.",
+		},
 	},
 	"open": &command{
 		cmdOpen,
 		wi.WindowCategory,
-		"Opens a file in a new buffer",
-		"Opens a file in a new buffer.",
+		langMap{
+			wi.LangEn: "Opens a file in a new buffer",
+		},
+		langMap{
+			wi.LangEn: "Opens a file in a new buffer.",
+		},
 	},
 	"new": &command{
 		cmdNew,
 		wi.WindowCategory,
-		"Create a new buffer",
-		"Create a new buffer.",
+		langMap{
+			wi.LangEn: "Create a new buffer",
+		},
+		langMap{
+			wi.LangEn: "Create a new buffer.",
+		},
 	},
 
 	// Editor process lifetime management.
 	"quit": &command{
 		cmdQuit,
 		wi.WindowCategory,
-		"Quits",
-		"Quits the editor. Optionally bypasses writing the files to disk.",
+		langMap{
+			wi.LangEn: "Quits",
+		},
+		langMap{
+			wi.LangEn: "Quits the editor. Optionally bypasses writing the files to disk.",
+		},
 	},
 
 	// High level commands.
 	"shell": &command{
 		cmdShell,
 		wi.WindowCategory,
-		"Opens a shell process",
-		"Opens a shell process in a new buffer.",
+		langMap{
+			wi.LangEn: "Opens a shell process",
+		},
+		langMap{
+			wi.LangEn: "Opens a shell process in a new buffer.",
+		},
 	},
 	"doc": &command{
 		cmdDoc,
 		wi.WindowCategory,
-		"Search godoc documentation",
-		"Uses the 'doc' tool to get documentation about the text under the cursor.",
+		langMap{
+			wi.LangEn: "Search godoc documentation",
+		},
+		langMap{
+			wi.LangEn: "Uses the 'doc' tool to get documentation about the text under the cursor.",
+		},
 	},
 	"help": &command{
 		cmdHelp,
 		wi.WindowCategory,
-		"Prints help",
-		"Prints general help or help for a particular command.",
+		langMap{
+			wi.LangEn: "Prints help",
+		},
+		langMap{
+			wi.LangEn: "Prints general help or help for a particular command.",
+		},
 	},
 	// DIRECTION = up/down/left/right
 	// window_DIRECTION
