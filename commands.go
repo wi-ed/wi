@@ -18,24 +18,25 @@ type command struct {
 	longDesc  langMap
 }
 
+// Handle runs the handler.
 func (c *command) Handle(cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
 	c.handler(cd, w, args...)
 }
 
-func (c *command) Category() wi.CommandCategory {
+func (c *command) Category(cd wi.CommandDispatcherFull) wi.CommandCategory {
 	return c.category
 }
 
-func (c *command) ShortDesc(lang wi.LanguageMode) string {
-	desc, ok := c.shortDesc[lang]
+func (c *command) ShortDesc(cd wi.CommandDispatcherFull) string {
+	desc, ok := c.shortDesc[cd.CurrentLanguage()]
 	if !ok {
 		desc = c.shortDesc[wi.LangEn]
 	}
 	return desc
 }
 
-func (c *command) LongDesc(lang wi.LanguageMode) string {
-	desc, ok := c.longDesc[lang]
+func (c *command) LongDesc(cd wi.CommandDispatcherFull) string {
+	desc, ok := c.longDesc[cd.CurrentLanguage()]
 	if !ok {
 		desc = c.longDesc[wi.LangEn]
 	}
@@ -47,10 +48,26 @@ type commandAlias struct {
 	command string
 }
 
-// Alias looks up the Commands to find the aliased command, so it can
-// return the relevant details.
-func (c *commandAlias) Alias(cd wi.CommandDispatcherFull) wi.Command {
-	return wi.GetCommand(cd, nil, c.command)
+func (c *commandAlias) Handle(cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
+	cd.ExecuteCommand(w, c.command, args...)
+}
+
+func (c *commandAlias) Category(cd wi.CommandDispatcherFull) wi.CommandCategory {
+	cmd := wi.GetCommand(cd, nil, c.command)
+	if cmd != nil {
+		return c.Category(cd)
+	}
+	return wi.UnknownCategory
+}
+
+func (c *commandAlias) ShortDesc(cd wi.CommandDispatcherFull) string {
+	// TODO(maruel): Translate.
+	return "Alias for \"" + c.command + "\""
+}
+
+func (c *commandAlias) LongDesc(cd wi.CommandDispatcherFull) string {
+	// TODO(maruel): Translate.
+	return "Alias for \"" + c.command + "\"."
 }
 
 type commands struct {
@@ -83,6 +100,8 @@ func cmdAddStatusBar(cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
 }
 
 func cmdOpen(cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
+	// The Window and View are created synchronously. The View is populated
+	// asynchronously.
 	log.Printf("Faking opening a file: %s", args)
 }
 
@@ -119,10 +138,34 @@ func cmdHelp(cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
 	log.Printf("Faking help: %s", args)
 }
 
+func cmdAlias(cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
+	if len(args) != 3 {
+		cmd := wi.GetCommand(cd, nil, "alias")
+		cd.ExecuteCommand(w, "alert", cmd.LongDesc(cd))
+		return
+	}
+	if args[0] == "window" {
+	} else if args[0] == "global" {
+		w = wi.RootWindow(w)
+	} else {
+		cmd := wi.GetCommand(cd, nil, "alias")
+		cd.ExecuteCommand(w, "alert", cmd.LongDesc(cd))
+		return
+	}
+	cmd := wi.GetCommand(cd, w, args[2])
+	if cmd == nil {
+		// TODO(maruel): Translate.
+		cd.ExecuteCommand(w, "alert", "Failed to find command \""+args[2]+"\"")
+		return
+	}
+	w.View().Commands().Register(args[1], cmd)
+}
+
 func cmdKeyBind(cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
 	if len(args) != 3 {
 		cmd := wi.GetCommand(cd, nil, "keybind")
-		cd.PostCommand("alert", cmd.LongDesc(cd.CurrentLanguage()))
+		cd.ExecuteCommand(w, "alert", cmd.LongDesc(cd))
+		return
 	}
 	var mode wi.KeyboardMode
 	if args[0] == "command" {
@@ -133,12 +176,18 @@ func cmdKeyBind(cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
 		mode = wi.AllMode
 	} else {
 		cmd := wi.GetCommand(cd, nil, "keybind")
-		cd.PostCommand("alert", cmd.LongDesc(cd.CurrentLanguage()))
+		cd.ExecuteCommand(w, "alert", cmd.LongDesc(cd))
+		return
 	}
 	w.View().KeyBindings().Set(mode, args[1], args[2])
 }
 
+// Native commands.
 var defaultCommands = map[string]wi.Command{
+
+	// WindowCategory
+
+	// TODO(maruel): Use a 5 seconds infobar.
 	"alert": &command{
 		cmdAlert,
 		wi.WindowCategory,
@@ -223,6 +272,21 @@ var defaultCommands = map[string]wi.Command{
 			wi.LangEn: "Prints general help or help for a particular command.",
 		},
 	},
+	"q": &commandAlias{"quit"},
+
+	// CommandsCategory
+
+	"alias": &command{
+		cmdAlias,
+		wi.CommandsCategory,
+		langMap{
+			wi.LangEn: "Binds an alias to another command",
+		},
+		langMap{
+			// TODO(maruel): For complex aliasing, use macro?
+			wi.LangEn: "Usage: alias [window|global] <alias> <name>\nBinds an alias to another command. The alias can either be local to the window or global",
+		},
+	},
 	"keybind": &command{
 		cmdKeyBind,
 		wi.CommandsCategory,
@@ -233,6 +297,7 @@ var defaultCommands = map[string]wi.Command{
 			wi.LangEn: "Usage: keybind [command|edit|all] <key> <command>\nBinds a keyboard mapping to a command. The binding can be to the active view for view-specific key binding or to the root view for global key bindings.",
 		},
 	},
+
 	// DIRECTION = up/down/left/right
 	// window_DIRECTION
 	// window_close
@@ -241,8 +306,6 @@ var defaultCommands = map[string]wi.Command{
 	// undo/redo
 	// verb/movement/multiplier
 	// Modes, select (both column and normal), command.
-	// keybind global all Ctrl-C quit
-	// keybind active edit <left> move_left
 	// ...
 }
 

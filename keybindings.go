@@ -48,6 +48,7 @@ func makeKeyBindings() wi.KeyBindings {
 
 // keyEventToName returns the user printable key name like 'a', Ctrl-Alt-<f1>,
 // <delete>, etc.
+// TODO(maruel): I dislike the format of tulib, redo.
 func keyEventToName(event termbox.Event) string {
 	return tulib.KeyToString(event.Key, event.Ch, event.Mod)
 }
@@ -56,7 +57,8 @@ func keyEventToName(event termbox.Event) string {
 // corresponding command. So to add a keyboard map, the corresponding command
 // needs to be added first.
 // TODO(maruel): This should be remappable via a configuration flag, for
-// example vim flavor vs emacs flavor.
+// example vim flavor vs emacs flavor. I'm not sure it's worth supporting this
+// without a restart.
 func RegisterDefaultKeyBindings(cd wi.CommandDispatcher) {
 	cd.PostCommand("keybind", "global", "F1", "help")
 	cd.PostCommand("keybind", "global", "Ctrl-C", "quit")

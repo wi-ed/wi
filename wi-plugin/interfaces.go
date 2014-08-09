@@ -44,8 +44,9 @@ const (
 type CommandCategory int
 
 const (
+	UnknownCategory CommandCategory = iota
 	// Commands relating to manipuling windows and UI in general.
-	WindowCategory CommandCategory = iota
+	WindowCategory
 	// Commands relating to manipulating commands, aliases, keybindings.
 	CommandsCategory
 
@@ -99,8 +100,8 @@ type CommandDispatcherFull interface {
 
 	// ExecuteCommand executes a command now. This is only meant to run a command
 	// reentrantly; e.g. running a command triggers another one. This usually
-	// happens when a command triggers an error.
-	ExecuteCommand(cmdName string, args ...string)
+	// happens for key binding, command aliases, when a command triggers an error.
+	ExecuteCommand(w Window, cmdName string, args ...string)
 
 	// ActiveWindow returns the current active Window.
 	ActiveWindow() Window
@@ -220,15 +221,15 @@ type Command interface {
 	Handle(cd CommandDispatcherFull, w Window, args ...string)
 	// Category returns the category the command should be bucketed in, for help
 	// documentation purpose.
-	Category() CommandCategory
+	Category(cd CommandDispatcherFull) CommandCategory
 	// ShortDesc returns a short description of the command in the language
 	// requested. It defaults to English if the description was not translated in
 	// this language.
-	ShortDesc(lang LanguageMode) string
+	ShortDesc(cd CommandDispatcherFull) string
 	// LongDesc returns a long explanation of the command in the language
 	// requested. It defaults to English if the description was not translated in
 	// this language.
-	LongDesc(lang LanguageMode) string
+	LongDesc(cd CommandDispatcherFull) string
 }
 
 // Commands stores the known commands. This is where plugins can add new

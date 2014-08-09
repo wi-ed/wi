@@ -55,13 +55,13 @@ func (t *terminal) PostCommand(cmdName string, args ...string) {
 func (t *terminal) WaitQueueEmpty() {
 }
 
-func (t *terminal) ExecuteCommand(cmdName string, args ...string) {
-	cmd := wi.GetCommand(t, nil, cmdName)
+func (t *terminal) ExecuteCommand(w wi.Window, cmdName string, args ...string) {
+	cmd := wi.GetCommand(t, w, cmdName)
 	if cmd == nil {
 		// TODO(maruel): Translate.
-		t.ExecuteCommand("alert", "Command \""+cmdName+"\" is not registered")
+		t.ExecuteCommand(w, "alert", "Command \""+cmdName+"\" is not registered")
 	} else {
-		cmd.Handle(t, t.ActiveWindow(), args...)
+		cmd.Handle(t, w, args...)
 	}
 }
 
@@ -123,7 +123,7 @@ func (t *terminal) eventLoop() int {
 	for {
 		select {
 		case i := <-t.commandsQueue:
-			t.ExecuteCommand(i.cmdName, i.args...)
+			t.ExecuteCommand(t.ActiveWindow(), i.cmdName, i.args...)
 
 		case event := <-t.terminalEvents:
 			switch event.Type {
