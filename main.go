@@ -359,13 +359,26 @@ func makeView(naturalX, naturalY int) wi.View {
 	}
 }
 
-// The status line.
-// TODO(maruel): The status line is going to be a hierarchy of Window, one for
-// each element, each showing a single item.
-func makeStatusView() wi.View {
+// The status line is a hierarchy of Window, one for each element, each showing
+// a single item.
+func makeStatusViewCenter() wi.View {
 	// TODO(maruel): OnResize(), query the root Window size, if y<=5 or x<=15,
 	// set the root status Window to y=0, so that it becomes effectively
 	// invisible when the editor window is too small.
+	return makeView(1, -1)
+}
+
+func makeStatusViewName() wi.View {
+	// View name.
+	// TODO(maruel): Register events of Window activation, make itself Invalidate().
+	// TODO(maruel): Drawing code.
+	return makeView(1, -1)
+}
+
+func makeStatusViewPosition() wi.View {
+	// Position, % of file.
+	// TODO(maruel): Register events of movement, make itself Invalidate().
+	// TODO(maruel): Drawing code.
 	return makeView(1, -1)
 }
 
