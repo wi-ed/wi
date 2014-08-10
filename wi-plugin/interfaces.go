@@ -112,6 +112,8 @@ type CommandDispatcherFull interface {
 type Editor interface {
 	CommandDispatcherFull
 
+	KeyboardMode() KeyboardMode
+
 	// Version returns the version number of this build of wi.
 	Version() string
 }
@@ -282,10 +284,10 @@ func GetCommand(cd CommandDispatcherFull, w Window, cmdName string) Command {
 
 // GetKeyBindingCommand traverses the Editor's Window tree to find a View that
 // has the key binding in its Keyboard mapping.
-func GetKeyBindingCommand(e Editor, keyName string) string {
+func GetKeyBindingCommand(e Editor, mode KeyboardMode, keyName string) string {
 	active := e.ActiveWindow()
 	for {
-		cmdName := active.View().KeyBindings().Get(AllMode, keyName)
+		cmdName := active.View().KeyBindings().Get(mode, keyName)
 		if cmdName != "" {
 			return cmdName
 		}

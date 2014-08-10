@@ -41,6 +41,7 @@ type terminal struct {
 	commandsQueue  chan commandQueueItem
 	outputBuffer   tulib.Buffer
 	languageMode   wi.LanguageMode
+	keyboardMode   wi.KeyboardMode
 }
 
 func (t *terminal) Version() string {
@@ -69,6 +70,10 @@ func (t *terminal) ExecuteCommand(w wi.Window, cmdName string, args ...string) {
 
 func (t *terminal) CurrentLanguage() wi.LanguageMode {
 	return t.languageMode
+}
+
+func (t *terminal) KeyboardMode() wi.KeyboardMode {
+	return t.keyboardMode
 }
 
 func drawRecurse(w wi.Window, buffer tulib.Buffer) {
@@ -140,6 +145,7 @@ func (t *terminal) onResize() {
 func (t *terminal) eventLoop() int {
 	fakeChan := make(chan time.Time)
 	var drawTimer <-chan time.Time = fakeChan
+	keyBuffer := ""
 	for {
 		select {
 		case i := <-t.commandsQueue:
@@ -148,9 +154,16 @@ func (t *terminal) eventLoop() int {
 				// know the active window, there could be commands already enqueued
 				// that will change the active window, so using the active window
 				// directly or indirectly here is an incorrect assumption.
-				cmdName := wi.GetKeyBindingCommand(t, i.keyName)
-				if cmdName != "" {
-					t.ExecuteCommand(t.ActiveWindow(), cmdName)
+				if i.keyName == "<enter>" {
+					t.ExecuteCommand(t.ActiveWindow(), keyBuffer)
+					keyBuffer = ""
+				} else {
+					cmdName := wi.GetKeyBindingCommand(t, t.KeyboardMode(), i.keyName)
+					if cmdName != "" {
+						t.ExecuteCommand(t.ActiveWindow(), cmdName)
+					} else if len(i.keyName) == 1 {
+						keyBuffer += i.keyName
+					}
 				}
 			} else {
 				t.ExecuteCommand(t.ActiveWindow(), i.cmdName, i.args...)
@@ -214,6 +227,7 @@ func makeEditor() *terminal {
 		rootWindow:     rootWindow,
 		lastActive:     []wi.WindowFull{rootWindow},
 		languageMode:   wi.LangEn,
+		keyboardMode:   wi.EditMode,
 	}
 
 	RegisterDefaultKeyBindings(terminal)
