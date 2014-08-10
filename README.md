@@ -20,6 +20,7 @@ Features
   - Fully asynchronous processing. No hang due to I/O ever.
   - Extremely extensible. Everything can be overriden.
   - Can be translated.
+  - Integrated auto-generated help.
   - Uses go's native distribution mechanism for both the editor and plugins.
   - The only editor (worth installing) that has to be installed from sources!
 

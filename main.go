@@ -444,7 +444,7 @@ func makeAlertView() wi.View {
 	return makeView(1, 1)
 }
 
-func main() {
+func Main() int {
 	log.SetFlags(log.Lmicroseconds)
 	command := flag.Bool("c", false, "Runs the commands specified on startup")
 	version := flag.Bool("v", false, "Prints version and exit")
@@ -498,5 +498,9 @@ func main() {
 	if err := termbox.Flush(); err != nil {
 		panic(err)
 	}
-	os.Exit(out)
+	return out
+}
+
+func main() {
+	os.Exit(Main())
 }
