@@ -117,11 +117,26 @@ func cmdShell(cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
 }
 
 func cmdDoc(cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
-	// TODO: MakeWindow(Bottom)
+	// TODO(maruel): Grab the current word under selection if no args is
+	// provided. Pass this token to shell.
 	docArgs := make([]string, len(args)+1)
 	docArgs[0] = "doc"
 	copy(docArgs[1:], args)
 	//dispatcher.Execute(w, "shell", docArgs...)
+}
+
+func isDirtyRecurse(cd wi.CommandDispatcherFull, w wi.Window) bool {
+	for _, child := range w.ChildrenWindows() {
+		if isDirtyRecurse(cd, child) {
+			return true
+		}
+		v := child.View()
+		if v.IsDirty() {
+			cd.ExecuteCommand(w, "alert", fmt.Sprintf(getStr(cd.CurrentLanguage(), viewDirty), v.Title()))
+			return true
+		}
+	}
+	return false
 }
 
 func cmdQuit(cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
@@ -129,7 +144,10 @@ func cmdQuit(cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
 	// view.IsDirty(). If not fine, "prompt" y/n to force quit. If n, stop there.
 	// - Send a signal to each plugin.
 	// - Send a signal back to the main loop.
-	log.Printf("Faking quit: %s", args)
+	root := wi.RootWindow(w)
+	if !isDirtyRecurse(cd, root) {
+		quitFlag = true
+	}
 }
 
 func cmdHelp(cd wi.CommandDispatcherFull, w wi.Window, args ...string) {

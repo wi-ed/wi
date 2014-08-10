@@ -10,16 +10,20 @@ import (
 
 type langMap map[wi.LanguageMode]string
 
-var notFound = langMap{
-	wi.LangEn: "Command \"%s\" is not registered.",
-}
-
 var activateDisabled = langMap{
 	wi.LangEn: "Can't activate a disabled view.",
 }
 
 var aliasFor = langMap{
 	wi.LangEn: "Alias for \"%s\".",
+}
+
+var notFound = langMap{
+	wi.LangEn: "Command \"%s\" is not registered.",
+}
+
+var viewDirty = langMap{
+	wi.LangEn: "View \"%s\" is not saved, aborting quit.",
 }
 
 // getStr returns the string for the language if present, defaults to wi.LangEn.

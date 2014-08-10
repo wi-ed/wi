@@ -2,15 +2,7 @@
 // Use of this source code is governed under the Apache License, Version 2.0
 // that can be found in the LICENSE file.
 
+// wi (wi-plugin) implements all the interfaces to be shared between the wi
+// editor process and its plugins. It is strongly versioned via the SHA-1 of
+// its interface.
 package wi
-
-import (
-	"testing"
-)
-
-func TestCalculateVersion(t *testing.T) {
-	v := CalculateVersion()
-	if v != "6bef60c9b4f7f514b2cc7ba66ecd26610e7b80e1" {
-		t.Fatal(v)
-	}
-}

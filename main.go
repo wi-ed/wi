@@ -2,6 +2,7 @@
 // Use of this source code is governed under the Apache License, Version 2.0
 // that can be found in the LICENSE file.
 
+// wi - right after vi. See README.md for more details.
 package main
 
 import (
@@ -21,6 +22,8 @@ const (
 	version = "0.0.1"
 )
 
+var quitFlag = false
+
 // UI
 
 type commandQueueItem struct {
@@ -32,7 +35,7 @@ type commandQueueItem struct {
 // It is normally expected to be drawn via an ssh/mosh connection so it should
 // be "bandwidth" optimized, where bandwidth doesn't mean 1200 bauds anymore.
 type terminal struct {
-	window         wi.WindowFull
+	rootWindow     wi.WindowFull
 	lastActive     []wi.WindowFull
 	terminalEvents <-chan termbox.Event
 	commandsQueue  chan commandQueueItem
@@ -68,13 +71,21 @@ func (t *terminal) CurrentLanguage() wi.LanguageMode {
 	return t.languageMode
 }
 
-func (t *terminal) Draw() {
-	// Descend the whole Window tree and find the invalidated window to redraw.
-	// TODO(maruel): Optimize: If a floating window is invalidated, redraw all
-	// visible windows.
-	// Do a depth first search.
-	/*for _, window := range t.window.ChildrenWindows() {
-	}*/
+func drawRecurse(w wi.Window, buffer tulib.Buffer) {
+	for _, child := range w.ChildrenWindows() {
+		drawRecurse(child, buffer)
+		// TODO(maruel): Draw non-client area.
+		if child.View().IsInvalid() {
+			child.View().DrawInto(buffer)
+		}
+	}
+}
+
+// draw descends the whole Window tree and find the invalidated window to
+// redraw.
+func (t *terminal) draw() {
+	drawRecurse(t.rootWindow, t.outputBuffer)
+
 	if err := termbox.Flush(); err != nil {
 		panic(err)
 	}
@@ -114,11 +125,14 @@ func (t *terminal) ActivateWindow(w wi.Window) {
 func (t *terminal) onResize() {
 	// Recreate the buffer, which queries the new sizes.
 	t.outputBuffer = tulib.TermboxBuffer()
-	if err := termbox.Clear(termbox.ColorDefault, termbox.ColorDefault); err != nil {
-		panic(err)
-	}
-	// Resize the Windows.
-	t.window.SetRect(tulib.Rect{0, 0, t.outputBuffer.Width, t.outputBuffer.Height})
+	/*
+		if err := termbox.Clear(termbox.ColorDefault, termbox.ColorDefault); err != nil {
+			panic(err)
+		}
+	*/
+	// Resize the Windows. This also invalidates it, which will also force a
+	// redraw.
+	t.rootWindow.SetRect(tulib.Rect{0, 0, t.outputBuffer.Width, t.outputBuffer.Height})
 }
 
 // eventLoop handles both commands and events from the terminal. This function
@@ -141,8 +155,12 @@ func (t *terminal) eventLoop() int {
 			} else {
 				t.ExecuteCommand(t.ActiveWindow(), i.cmdName, i.args...)
 			}
-			// TODO(maruel): Only trigger when a Window was invalidated.
-			drawTimer = time.After(15 * time.Millisecond)
+			if quitFlag {
+				drawTimer = time.After(1 * time.Millisecond)
+			} else {
+				// TODO(maruel): Only trigger when a Window was invalidated.
+				drawTimer = time.After(15 * time.Millisecond)
+			}
 
 		case event := <-t.terminalEvents:
 			switch event.Type {
@@ -163,13 +181,15 @@ func (t *terminal) eventLoop() int {
 			case termbox.EventError:
 				// TODO(maruel): Not sure what situations can trigger this.
 				t.PostCommand("alert", event.Err.Error())
-				return 1
 			}
 			// TODO(maruel): Only trigger when a Window was invalidated.
 			drawTimer = time.After(15 * time.Millisecond)
 
 		case <-drawTimer:
-			t.Draw()
+			if quitFlag {
+				return 0
+			}
+			t.draw()
 			drawTimer = fakeChan
 		}
 	}
@@ -186,15 +206,13 @@ func makeEditor() *terminal {
 	rootView := makeView(-1, -1)
 	RegisterDefaultCommands(rootView.Commands())
 
-	// TODO(maruel): Add callback to allow plugins to hook into it
-	// (a)synchronously before creating the root Window.
-	window := makeWindow(nil, rootView, wi.DockingFill)
+	rootWindow := makeWindow(nil, rootView, wi.DockingFill)
 	terminalEvents := make(chan termbox.Event, 32)
 	terminal := &terminal{
 		terminalEvents: terminalEvents,
 		commandsQueue:  make(chan commandQueueItem, 500),
-		window:         window,
-		lastActive:     []wi.WindowFull{window},
+		rootWindow:     rootWindow,
+		lastActive:     []wi.WindowFull{rootWindow},
 		languageMode:   wi.LangEn,
 	}
 
@@ -312,6 +330,9 @@ func makeWindow(parent wi.Window, view wi.View, docking wi.DockingType) wi.Windo
 	}
 }
 
+// TODO(maruel): Plugable drawing function.
+type drawInto func(v wi.View, buffer tulib.Buffer)
+
 type view struct {
 	commands    wi.Commands
 	keyBindings wi.KeyBindings
@@ -349,6 +370,7 @@ func (v *view) IsDisabled() bool {
 }
 
 func (v *view) DrawInto(buffer tulib.Buffer) {
+	// TODO(maruel): Plugable drawing function.
 	buffer.Set(0, 0, termbox.Cell{'A', termbox.ColorRed, termbox.ColorRed})
 }
 

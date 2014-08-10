@@ -16,12 +16,17 @@ import (
 
 type set map[string]bool
 
+func write(h io.Writer, item string) {
+	h.Write([]byte(item))
+	h.Write([]byte{0})
+}
+
 func recurseType(h io.Writer, t reflect.Type, seen set) {
 	kind := t.Kind()
-	h.Write([]byte(kind.String()))
+	write(h, kind.String())
 	if kind == reflect.Interface {
 		name := t.Name()
-		h.Write([]byte(name))
+		write(h, name)
 		if seen[name] {
 			return
 		}
@@ -31,14 +36,14 @@ func recurseType(h io.Writer, t reflect.Type, seen set) {
 		}
 	} else if kind == reflect.Struct {
 		name := t.Name()
-		h.Write([]byte(name))
+		write(h, name)
 		if seen[name] {
 			return
 		}
 		seen[name] = true
 		for i := 0; i < t.NumField(); i++ {
 			f := t.Field(i)
-			h.Write([]byte(f.Name))
+			write(h, f.Name)
 			recurseType(h, f.Type, seen)
 		}
 		for i := 0; i < t.NumMethod(); i++ {
@@ -57,7 +62,7 @@ func recurseType(h io.Writer, t reflect.Type, seen set) {
 }
 
 func recurseMethod(h io.Writer, m reflect.Method, seen set) {
-	h.Write([]byte(m.Name))
+	write(h, m.Name)
 	for i := 0; i < m.Type.NumIn(); i++ {
 		recurseType(h, m.Type.In(i), seen)
 	}

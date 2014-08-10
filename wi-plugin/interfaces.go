@@ -114,9 +114,6 @@ type Editor interface {
 
 	// Version returns the version number of this build of wi.
 	Version() string
-
-	// Redraws all the invalidated windows.
-	Draw()
 }
 
 // Window is a View container. It defines the position, Z-ordering via
