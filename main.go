@@ -2,7 +2,7 @@
 // Use of this source code is governed under the Apache License, Version 2.0
 // that can be found in the LICENSE file.
 
-// wi - right after vi. See README.md for more details.
+// wi - Bringing text based editor technology past 1200 bauds. See README.md for more details.
 package main
 
 import (

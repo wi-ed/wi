@@ -3,6 +3,7 @@
 // that can be found in the LICENSE file.
 
 // wi (wi-plugin) implements all the interfaces to be shared between the wi
-// editor process and its plugins. It is strongly versioned via the SHA-1 of
-// its interface.
+// editor process and its plugins.
+//
+// It is strongly versioned via the SHA-1 of its interface.
 package wi
