@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"github.com/maruel/wi/wi-plugin"
 	"log"
+	"time"
 )
 
 type command struct {
@@ -80,8 +81,13 @@ func makeCommands() wi.Commands {
 // Default commands
 
 func cmdAlert(cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
+	// TODO(maruel): Create an infobar that automatically dismiss itself after 5s.
 	wi.RootWindow(w).NewChildWindow(makeView(1, -1), wi.DockingFloating)
 	//w2.Activate()
+	go func() {
+		<-time.After(5 * time.Second)
+		// TODO(maruel): Dismiss.
+	}()
 }
 
 func cmdAddStatusBar(cd wi.CommandDispatcherFull, w wi.Window, args ...string) {

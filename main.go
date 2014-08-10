@@ -10,19 +10,14 @@ import (
 	"github.com/maruel/wi/wi-plugin"
 	"github.com/nsf/termbox-go"
 	"github.com/nsf/tulib"
-	"io/ioutil"
 	"log"
-	"net/rpc"
 	"os"
-	"os/exec"
-	"runtime"
-	"strings"
-	"sync"
+	"time"
 )
 
 const (
-	// Major.Minor.Bugfix. All plugins should be recompiled on Minor version
-	// change.
+	// Major.Minor.Bugfix. All plugins should be recompiled with wi-plugin
+	// changes.
 	version = "0.0.1"
 )
 
@@ -31,6 +26,7 @@ const (
 type commandQueueItem struct {
 	cmdName string
 	args    []string
+	keyName string
 }
 
 // It is normally expected to be drawn via an ssh/mosh connection so it should
@@ -49,7 +45,11 @@ func (t *terminal) Version() string {
 }
 
 func (t *terminal) PostCommand(cmdName string, args ...string) {
-	t.commandsQueue <- commandQueueItem{cmdName, args}
+	t.commandsQueue <- commandQueueItem{cmdName, args, ""}
+}
+
+func (t *terminal) postKey(keyName string) {
+	t.commandsQueue <- commandQueueItem{keyName: keyName}
 }
 
 func (t *terminal) WaitQueueEmpty() {
@@ -124,26 +124,32 @@ func (t *terminal) onResize() {
 // eventLoop handles both commands and events from the terminal. This function
 // runs in the UI goroutine.
 func (t *terminal) eventLoop() int {
+	fakeChan := make(chan time.Time)
+	var drawTimer <-chan time.Time = fakeChan
 	for {
 		select {
 		case i := <-t.commandsQueue:
-			t.ExecuteCommand(t.ActiveWindow(), i.cmdName, i.args...)
-
-		case event := <-t.terminalEvents:
-			switch event.Type {
-			case termbox.EventKey:
+			if i.keyName != "" {
 				// Convert the key press into a command. The trick is that we don't
 				// know the active window, there could be commands already enqueued
 				// that will change the active window, so using the active window
 				// directly or indirectly here is an incorrect assumption.
-				cmdName := wi.GetKeyBindingCommand(t, keyEventToName(event))
+				cmdName := wi.GetKeyBindingCommand(t, i.keyName)
 				if cmdName != "" {
-					// TODO(maruel): This is wrong, the resolving needs to be done once
-					// the command queue is empty.
-					cmd := wi.GetCommand(t, nil, cmdName)
-					if cmd != nil {
-						t.PostCommand(cmdName)
-					}
+					t.ExecuteCommand(t.ActiveWindow(), cmdName)
+				}
+			} else {
+				t.ExecuteCommand(t.ActiveWindow(), i.cmdName, i.args...)
+			}
+			// TODO(maruel): Only trigger when a Window was invalidated.
+			drawTimer = time.After(15 * time.Millisecond)
+
+		case event := <-t.terminalEvents:
+			switch event.Type {
+			case termbox.EventKey:
+				k := keyEventToName(event)
+				if k != "" {
+					t.postKey(k)
 				}
 			case termbox.EventMouse:
 				// TODO(maruel): MouseDispatcher. Mouse events are expected to be
@@ -159,7 +165,12 @@ func (t *terminal) eventLoop() int {
 				t.PostCommand("alert", event.Err.Error())
 				return 1
 			}
+			// TODO(maruel): Only trigger when a Window was invalidated.
+			drawTimer = time.After(15 * time.Millisecond)
+
+		case <-drawTimer:
 			t.Draw()
+			drawTimer = fakeChan
 		}
 	}
 	return 0
@@ -391,154 +402,10 @@ func makeCommandView() wi.View {
 	return makeView(1, -1)
 }
 
-// A dismissable modal dialog box.
+// A dismissable modal dialog box. TODO(maruel): An infobar that auto-dismiss
+// itself after 5s.
 func makeAlertView() wi.View {
 	return makeView(1, 1)
-}
-
-// Config
-
-type config struct {
-	ints    map[string]int
-	strings map[string]string
-}
-
-func (c *config) GetInt(name string) int {
-	return c.ints[name]
-}
-
-func (c *config) GetString(name string) string {
-	return c.strings[name]
-}
-
-func (c *config) Save() {
-}
-
-func MakeConfig() wi.Config {
-	return &config{}
-}
-
-// Plugins
-
-// loadPlugin starts a plugin and returns the process.
-func loadPlugin(server *rpc.Server, f string) *os.Process {
-	cmd := exec.Command(f)
-	cmd.Env = append(os.Environ(), "WI=plugin")
-
-	stdin, err := cmd.StdinPipe()
-	if err != nil {
-		panic(err)
-	}
-
-	stdout, err := cmd.StdoutPipe()
-	if err != nil {
-		panic(err)
-	}
-
-	stderr, err := cmd.StderrPipe()
-	if err != nil {
-		panic(err)
-	}
-	if err := cmd.Start(); err != nil {
-		// Surface the error as an "alert", since it's not a fatal error.
-		log.Fatal(err)
-	}
-
-	// Fail on any write to Stderr.
-	go func() {
-		buf := make([]byte, 2048)
-		n, _ := stderr.Read(buf)
-		if n != 0 {
-			panic(fmt.Sprintf("Plugin %s failed: %s", f, buf))
-		}
-	}()
-
-	// Before starting the RPC, ensures the version matches.
-	expectedVersion := wi.CalculateVersion()
-	b := make([]byte, 40)
-	n, err := stdout.Read(b)
-	if err != nil {
-		// Surface the error as an "alert", since it's not a fatal error.
-		log.Fatal(err)
-	}
-	if n != 40 {
-		// Surface the error as an "alert", since it's not a fatal error.
-		log.Fatal("Unexpected size")
-	}
-	actualVersion := string(b)
-	if expectedVersion != actualVersion {
-		// Surface the error as an "alert", since it's not a fatal error.
-		log.Fatalf("For %s; expected %s, got %s", f, expectedVersion, actualVersion)
-	}
-
-	// Start the RPC server for this plugin.
-	go func() {
-		server.ServeConn(wi.MakeReadWriteCloser(stdout, stdin))
-	}()
-
-	return cmd.Process
-}
-
-// loadPlugins loads all the plugins and returns the process handles.
-func loadPlugins(e wi.Editor) []*os.Process {
-	// TODO(maruel): Get the path of the executable. It's a bit involved since
-	// very OS specific but it's doable. Then all plugins in the same directory
-	// are access.
-	searchDir := "."
-	files, err := ioutil.ReadDir(searchDir)
-	if err != nil {
-		return nil
-	}
-	if len(files) == 0 {
-		// Save registering RPC stuff when unnecessary.
-		return nil
-	}
-
-	var wg sync.WaitGroup
-	c := make(chan *os.Process)
-	server := rpc.NewServer()
-	// TODO(maruel): http://golang.org/pkg/net/rpc/#Server.RegisterName
-	// It should be an interface with methods of style DoStuff(Foo, Bar) Baz
-	//server.RegisterName("Editor", e)
-	for _, f := range files {
-		name := f.Name()
-		if !strings.HasPrefix(name, "wi-plugin-") {
-			continue
-		}
-		// Crude check for executable test.
-		if runtime.GOOS == "windows" {
-			if !strings.HasSuffix(name, ".exe") {
-				continue
-			}
-		} else {
-			if f.Mode()&0111 == 0 {
-				continue
-			}
-		}
-		wg.Add(1)
-		go func(s *rpc.Server, n string) {
-			c <- loadPlugin(s, n)
-			wg.Done()
-		}(server, name)
-	}
-
-	var wg2 sync.WaitGroup
-	out := []*os.Process{}
-	wg2.Add(1)
-	go func() {
-		for i := range c {
-			out = append(out, i)
-		}
-		wg2.Done()
-	}()
-
-	// Wait for all the plugins to be loaded.
-	wg.Wait()
-
-	// Convert to a slice.
-	close(c)
-	wg2.Wait()
-	return out
 }
 
 func main() {
