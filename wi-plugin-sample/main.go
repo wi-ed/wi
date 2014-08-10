@@ -5,9 +5,9 @@
 // wi-plugin-sample is an example plugin for wi.
 //
 // This plugin serves two purposes:
-// - Ensure that the plugin system is actually working.
-// - Serve as a copy-pastable skeleton to help people who would like to write a
-//   plugin.
+//   - Ensure that the plugin system is actually working.
+//   - Serve as a copy-pastable skeleton to help people who would like to write
+//     a plugin.
 package main
 
 import (
