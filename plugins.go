@@ -100,6 +100,9 @@ func loadPlugins(e wi.Editor) []*os.Process {
 	// It should be an interface with methods of style DoStuff(Foo, Bar) Baz
 	//server.RegisterName("Editor", e)
 	for _, f := range files {
+		if f.IsDir() {
+			continue
+		}
 		name := f.Name()
 		if !strings.HasPrefix(name, "wi-plugin-") {
 			continue
