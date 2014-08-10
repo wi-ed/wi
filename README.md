@@ -17,9 +17,11 @@ Features
   - Out of process plugins for today's 2Mb RAM systems.
   - Gorgeous EGA colours!
   - Single language to rule both the program itself and its macros.
-  - Fully asynchronous processing.
+  - Fully asynchronous processing. No hang due to I/O ever.
+  - Extremely extensible. Everything can be overriden.
+  - Can be translated.
   - Uses go's native distribution mechanism for both the editor and plugins.
-  - The only editor that has to be installed from sources!
+  - The only editor (worth installing) that has to be installed from sources!
 
 
 Setup
@@ -114,4 +116,5 @@ so he's doing vim. Because of reasons.
 
 Thanks to no.smile.face@gmail.com for the inspiration
 [godit](https://github.com/nsf/godit). This project is using several libraries
-from him which helped bootstrapping this project much more quickly.
+from him which helped bootstrapping this project much more quickly. Kamil
+Kisiel's vigo was also an inspiration.

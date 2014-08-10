@@ -36,8 +36,8 @@ type commandQueueItem struct {
 // It is normally expected to be drawn via an ssh/mosh connection so it should
 // be "bandwidth" optimized, where bandwidth doesn't mean 1200 bauds anymore.
 type terminal struct {
-	window         wi.Window
-	lastActive     []wi.Window
+	window         wi.WindowFull
+	lastActive     []wi.WindowFull
 	terminalEvents <-chan termbox.Event
 	commandsQueue  chan commandQueueItem
 	outputBuffer   tulib.Buffer
@@ -75,7 +75,9 @@ func (t *terminal) Draw() {
 	// Do a depth first search.
 	/*for _, window := range t.window.ChildrenWindows() {
 	}*/
-	termbox.Flush()
+	if err := termbox.Flush(); err != nil {
+		panic(err)
+	}
 }
 
 func (t *terminal) ActiveWindow() wi.Window {
@@ -112,7 +114,9 @@ func (t *terminal) ActivateWindow(w wi.Window) {
 func (t *terminal) onResize() {
 	// Recreate the buffer, which queries the new sizes.
 	t.outputBuffer = tulib.TermboxBuffer()
-	termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
+	if err := termbox.Clear(termbox.ColorDefault, termbox.ColorDefault); err != nil {
+		panic(err)
+	}
 	// Resize the Windows.
 	t.window.SetRect(tulib.Rect{0, 0, t.outputBuffer.Width, t.outputBuffer.Height})
 }
@@ -152,7 +156,7 @@ func (t *terminal) eventLoop() int {
 				t.onResize()
 			case termbox.EventError:
 				// TODO(maruel): Not sure what situations can trigger this.
-				os.Stderr.WriteString(event.Err.Error())
+				t.PostCommand("alert", event.Err.Error())
 				return 1
 			}
 			t.Draw()
@@ -161,10 +165,10 @@ func (t *terminal) eventLoop() int {
 	return 0
 }
 
-// makeDisplay creates the Display object. The root window doesn't have
+// makeEditor creates the Editor object. The root window doesn't have
 // anything to view in it. It will contain two child windows, the main content
 // window and the status bar.
-func makeDisplay() *terminal {
+func makeEditor() *terminal {
 	// The root view is important, it defines all the global commands. It is
 	// pre-filled with the default native commands and keyboard mapping, and it's
 	// up to the plugins to add more global commands on startup.
@@ -179,7 +183,7 @@ func makeDisplay() *terminal {
 		terminalEvents: terminalEvents,
 		commandsQueue:  make(chan commandQueueItem, 500),
 		window:         window,
-		lastActive:     []wi.Window{window},
+		lastActive:     []wi.WindowFull{window},
 		languageMode:   wi.LangEn,
 	}
 
@@ -476,7 +480,7 @@ func loadPlugin(server *rpc.Server, f string) *os.Process {
 }
 
 // loadPlugins loads all the plugins and returns the process handles.
-func loadPlugins(display wi.Display) []*os.Process {
+func loadPlugins(e wi.Editor) []*os.Process {
 	// TODO(maruel): Get the path of the executable. It's a bit involved since
 	// very OS specific but it's doable. Then all plugins in the same directory
 	// are access.
@@ -495,7 +499,7 @@ func loadPlugins(display wi.Display) []*os.Process {
 	server := rpc.NewServer()
 	// TODO(maruel): http://golang.org/pkg/net/rpc/#Server.RegisterName
 	// It should be an interface with methods of style DoStuff(Foo, Bar) Baz
-	//server.RegisterName("Display", display)
+	//server.RegisterName("Editor", e)
 	for _, f := range files {
 		name := f.Name()
 		if !strings.HasPrefix(name, "wi-plugin-") {
@@ -549,45 +553,47 @@ func main() {
 		os.Exit(0)
 	}
 
-	err := termbox.Init()
-	if err != nil {
+	if err := termbox.Init(); err != nil {
 		panic(err)
 	}
 	defer termbox.Close()
-	termbox.SetInputMode(termbox.InputAlt)
+	termbox.SetInputMode(termbox.InputAlt | termbox.InputMouse)
 
-	display := makeDisplay()
-	plugins := loadPlugins(display)
+	editor := makeEditor()
+	plugins := loadPlugins(editor)
 	defer func() {
 		for _, p := range plugins {
 			// TODO(maruel): Nicely terminate them.
-			p.Kill()
+			if err := p.Kill(); err != nil {
+				panic(err)
+			}
 		}
 	}()
 
 	// Add the status bar. At that point plugins are loaded so they can override
 	// add_status_bar if they want.
-	display.PostCommand("add_status_bar")
+	editor.PostCommand("add_status_bar")
 
 	if *command {
 		for _, i := range flag.Args() {
-			display.PostCommand(i)
+			editor.PostCommand(i)
 		}
 	} else if flag.NArg() > 0 {
 		for _, i := range flag.Args() {
-			display.PostCommand("open", i)
+			editor.PostCommand("open", i)
 		}
 	} else {
 		// If nothing, opens a blank editor.
-		display.PostCommand("new")
+		editor.PostCommand("new")
 	}
 
 	// Run the message loop.
-	out := display.eventLoop()
+	out := editor.eventLoop()
 
 	// Normal exit.
 	termbox.SetCursor(0, 0)
-	termbox.Flush()
-
+	if err := termbox.Flush(); err != nil {
+		panic(err)
+	}
 	os.Exit(out)
 }

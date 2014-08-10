@@ -69,12 +69,12 @@ func recurseMethod(h io.Writer, m reflect.Method, seen set) {
 // CalculateVersion returns the hex string of the hash of the primary
 // interfaces for this package.
 //
-// It traverses the Display type recursively, expanding all types referenced
+// It traverses the Editor type recursively, expanding all types referenced
 // recursively. This data is used to generate an hash, that will represent the
 // version of this interface.
 func CalculateVersion() string {
 	h := sha1.New()
-	recurseType(h, reflect.TypeOf((*Display)(nil)).Elem(), make(set))
+	recurseType(h, reflect.TypeOf((*Editor)(nil)).Elem(), make(set))
 	return hex.EncodeToString(h.Sum(nil))
 }
 
@@ -110,7 +110,7 @@ func Main() {
 
 	client := rpc.NewClient(MakeReadWriteCloser(os.Stdin, os.Stdout))
 	// Do something with client.
-	err := client.Call("Display", "Height", nil)
+	err := client.Call("Editor", "Height", nil)
 	if err != nil {
 		panic(err)
 	}

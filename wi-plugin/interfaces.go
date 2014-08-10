@@ -76,13 +76,9 @@ const (
 	// TODO: Add new languages when translating the application.
 
 	LangEn = "en"
+	LangEs = "es"
 	LangFr = "fr"
 )
-
-type Application interface {
-	// Version returns the version number of this build of wi.
-	Version() string
-}
 
 // CommandDispatcher owns the command queue. Use this interface to enqueue
 // commands for execution.
@@ -111,11 +107,13 @@ type CommandDispatcherFull interface {
 	CurrentLanguage() LanguageMode
 }
 
-// Display is the output device. It shows the root window which covers the
-// whole screen estate.
-type Display interface {
-	Application
+// Editor is the output device and the main process context. It shows the root
+// window which covers the whole screen estate.
+type Editor interface {
 	CommandDispatcherFull
+
+	// Version returns the version number of this build of wi.
+	Version() string
 
 	// Redraws all the invalidated windows.
 	Draw()
@@ -138,7 +136,8 @@ type Window interface {
 	// not remove the active Window.
 	Remove(w Window)
 
-	// Rect returns the position based on the Display, not the parent Window.
+	// Rect returns the position based on the Editor's root Window, not the
+	// parent Window.
 	Rect() tulib.Rect
 	SetRect(rect tulib.Rect)
 
@@ -156,6 +155,11 @@ type Window interface {
 	SetView(view View)
 	// This will forces an invalidation.
 	View() View
+}
+
+// WindowFull is the internal access of the Window.
+type WindowFull interface {
+	Window
 }
 
 // TextBuffer is the content. It may only contain partial information in the
@@ -262,7 +266,7 @@ type KeyBindings interface {
 
 // GetCommand traverses the Window hierarchy tree to find a View that has
 // the command cmd in its Commands mapping. If Window is nil, it starts with
-// the Display's active Window.
+// the Editor's active Window.
 func GetCommand(cd CommandDispatcherFull, w Window, cmdName string) Command {
 	if w == nil {
 		w = cd.ActiveWindow()
@@ -279,10 +283,10 @@ func GetCommand(cd CommandDispatcherFull, w Window, cmdName string) Command {
 	}
 }
 
-// GetKeyBindingCommand traverses the Display's Window tree to find a View that
+// GetKeyBindingCommand traverses the Editor's Window tree to find a View that
 // has the key binding in its Keyboard mapping.
-func GetKeyBindingCommand(d Display, keyName string) string {
-	active := d.ActiveWindow()
+func GetKeyBindingCommand(e Editor, keyName string) string {
+	active := e.ActiveWindow()
 	for {
 		cmdName := active.View().KeyBindings().Get(AllMode, keyName)
 		if cmdName != "" {
