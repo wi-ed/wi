@@ -10,7 +10,9 @@ import (
 
 func TestCalculateVersion(t *testing.T) {
 	v := CalculateVersion()
-	if v != "6bef60c9b4f7f514b2cc7ba66ecd26610e7b80e1" {
+	// TODO(maruel): We don't care about the actual version. Just test the
+	// underlying code to calculate a version is working.
+	if v != "db335aa4fab8cb1f37618eb612b5a28386526070" {
 		t.Fatal(v)
 	}
 }

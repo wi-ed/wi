@@ -115,7 +115,19 @@ in 2012 and sanity prevailed, the whole project is being written in
 [Go](https://golang.org). Then he realized that someone had done an emacs clone,
 so he's doing vim. Because of reasons.
 
-Thanks to no.smile.face@gmail.com for the inspiration
-[godit](https://github.com/nsf/godit). This project is using several libraries
-from him which helped bootstrapping this project much more quickly. Kamil
-Kisiel's vigo was also an inspiration.
+
+Thanks
+------
+
+  - no.smile.face@gmail.com for the inspiration
+    [godit](https://github.com/nsf/godit). This project is using several
+    libraries from him which helped bootstrapping this project much more
+    quickly.
+  - Kamil Kisiel's [vigo](https://github.com/kisielk/vigo) was also an
+    inspiration.
+
+
+Contributing
+------------
+
+Please run `./presubmit.sh` first before doing a pull request.

@@ -19,5 +19,10 @@ go test
 go test ./wi-plugin
 
 # Third, ensure error return values are checked.
-# go install github.com/kisielk/errcheck
+if ! hash errcheck 2>/dev/null; then
+  echo "Warning: installing github.com/kisielk/errcheck"
+  go install github.com/kisielk/errcheck
+fi
 errcheck
+
+echo "Presubmit checks succeeded!"
