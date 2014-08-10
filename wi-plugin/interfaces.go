@@ -140,11 +140,15 @@ type Window interface {
 	Rect() tulib.Rect
 	SetRect(rect tulib.Rect)
 
+	IsInvalid() bool
 	// Invalidate forces the Window to be redrawn at next drawing. Otherwise
-	// drawing this Window will be skipped.
+	// drawing this Window will be skipped. In general the View should be
+	// invalidated, not the Window. This is relevant when the non-client area
+	// needs an update.
 	Invalidate()
 
-	// Buffer returns the display buffer for this Window.
+	// Buffer returns the display buffer for this Window. This indirectly clears
+	// the Invalid bit.
 	Buffer() tulib.Buffer
 
 	Docking() DockingType
@@ -154,11 +158,6 @@ type Window interface {
 	SetView(view View)
 	// This will forces an invalidation.
 	View() View
-}
-
-// WindowFull is the internal access of the Window.
-type WindowFull interface {
-	Window
 }
 
 // TextBuffer is the content. It may only contain partial information in the

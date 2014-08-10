@@ -2,7 +2,8 @@
 // Use of this source code is governed under the Apache License, Version 2.0
 // that can be found in the LICENSE file.
 
-// wi - Bringing text based editor technology past 1200 bauds. See README.md for more details.
+// wi - Bringing text based editor technology past 1200 bauds. See README.md
+// for more details.
 package main
 
 import (
@@ -35,8 +36,8 @@ type commandQueueItem struct {
 // It is normally expected to be drawn via an ssh/mosh connection so it should
 // be "bandwidth" optimized, where bandwidth doesn't mean 1200 bauds anymore.
 type terminal struct {
-	rootWindow     wi.WindowFull
-	lastActive     []wi.WindowFull
+	rootWindow     wi.Window
+	lastActive     []wi.Window
 	terminalEvents <-chan termbox.Event
 	commandsQueue  chan commandQueueItem
 	outputBuffer   tulib.Buffer
@@ -79,9 +80,8 @@ func (t *terminal) KeyboardMode() wi.KeyboardMode {
 func drawRecurse(w wi.Window, buffer tulib.Buffer) {
 	for _, child := range w.ChildrenWindows() {
 		drawRecurse(child, buffer)
-		// TODO(maruel): Draw non-client area.
-		if child.View().IsInvalid() {
-			child.View().DrawInto(buffer)
+		if child.IsInvalid() {
+			// TODO(maruel): buffer.Blit(dst, x, y, child.Buffer())
 		}
 	}
 }
@@ -225,7 +225,7 @@ func makeEditor() *terminal {
 		terminalEvents: terminalEvents,
 		commandsQueue:  make(chan commandQueueItem, 500),
 		rootWindow:     rootWindow,
-		lastActive:     []wi.WindowFull{rootWindow},
+		lastActive:     []wi.Window{rootWindow},
 		languageMode:   wi.LangEn,
 		keyboardMode:   wi.EditMode,
 	}
@@ -288,6 +288,10 @@ func (w *window) SetRect(rect tulib.Rect) {
 	w.rect = rect
 	w.buffer = tulib.NewBuffer(rect.Width, rect.Height)
 	w.Invalidate()
+}
+
+func (w *window) IsInvalid() bool {
+	return w.isInvalid || w.View().IsInvalid()
 }
 
 func (w *window) Invalidate() {
