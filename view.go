@@ -8,6 +8,7 @@ import (
 	"github.com/maruel/wi/wi-plugin"
 	"github.com/nsf/termbox-go"
 	"github.com/nsf/tulib"
+	"log"
 )
 
 // TODO(maruel): Plugable drawing function.
@@ -53,7 +54,16 @@ func (v *view) NaturalSize() (x, y int) {
 	return v.naturalX, v.naturalY
 }
 
+func (v *view) SetSize(x, y int) {
+	log.Printf("View(%s).SetSize(%d, %d)", v.Title(), x, y)
+	v.naturalX = x
+	v.naturalY = y
+	v.isInvalid = true
+	v.buffer = tulib.NewBuffer(x, y)
+}
+
 func (v *view) Buffer() *tulib.Buffer {
+	log.Printf("View(%s).Buffer(%d, %d)", v.Title(), v.naturalX, v.naturalY)
 	// TODO(maruel): Plugable drawing function.
 	v.buffer.Set(0, 0, termbox.Cell{'A', termbox.ColorRed, termbox.ColorRed})
 	v.isInvalid = false
@@ -61,10 +71,11 @@ func (v *view) Buffer() *tulib.Buffer {
 }
 
 // Empty non-editable window.
-func makeView(naturalX, naturalY int) wi.View {
+func makeView(title string, naturalX, naturalY int) wi.View {
 	return &view{
 		commands:    makeCommands(),
 		keyBindings: makeKeyBindings(),
+		title:       title,
 		naturalX:    naturalX,
 		naturalY:    naturalY,
 	}
@@ -76,30 +87,30 @@ func makeStatusViewCenter() wi.View {
 	// TODO(maruel): OnResize(), query the root Window size, if y<=5 or x<=15,
 	// set the root status Window to y=0, so that it becomes effectively
 	// invisible when the editor window is too small.
-	return makeView(1, -1)
+	return makeView("Status Center", 1, -1)
 }
 
 func makeStatusViewName() wi.View {
 	// View name.
 	// TODO(maruel): Register events of Window activation, make itself Invalidate().
 	// TODO(maruel): Drawing code.
-	return makeView(1, -1)
+	return makeView("Status Name", 1, -1)
 }
 
 func makeStatusViewPosition() wi.View {
 	// Position, % of file.
 	// TODO(maruel): Register events of movement, make itself Invalidate().
 	// TODO(maruel): Drawing code.
-	return makeView(1, -1)
+	return makeView("Status Position", 1, -1)
 }
 
 // The command box.
 func makeCommandView() wi.View {
-	return makeView(1, -1)
+	return makeView("Command", 1, -1)
 }
 
 // A dismissable modal dialog box. TODO(maruel): An infobar that auto-dismiss
 // itself after 5s.
-func makeAlertView() wi.View {
-	return makeView(1, 1)
+func makeAlertView(text string) wi.View {
+	return makeView("Alert:"+text, 1, 1)
 }

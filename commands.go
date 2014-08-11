@@ -82,7 +82,11 @@ func makeCommands() wi.Commands {
 
 func cmdAlert(cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
 	// TODO(maruel): Create an infobar that automatically dismiss itself after 5s.
-	wi.RootWindow(w).NewChildWindow(makeView(1, -1), wi.DockingFloating)
+	if len(args) != 1 {
+		cmd := wi.GetCommand(cd, nil, "alert")
+		cd.ExecuteCommand(w, "alert", cmd.LongDesc(cd))
+	}
+	wi.RootWindow(w).NewChildWindow(makeAlertView(args[0]), wi.DockingFloating)
 	//w2.Activate()
 	go func() {
 		<-time.After(5 * time.Second)
@@ -108,7 +112,7 @@ func cmdNew(cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
 		cmd := wi.GetCommand(cd, nil, "alias")
 		cd.ExecuteCommand(w, "alert", cmd.LongDesc(cd))
 	} else {
-		w.NewChildWindow(makeView(-1, -1), wi.DockingFill)
+		w.NewChildWindow(makeView("New doc", -1, -1), wi.DockingFill)
 	}
 }
 
@@ -179,24 +183,37 @@ func cmdAlias(cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
 }
 
 func cmdKeyBind(cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
-	if len(args) != 3 {
+	if len(args) != 4 {
 		cmd := wi.GetCommand(cd, nil, "keybind")
 		cd.ExecuteCommand(w, "alert", cmd.LongDesc(cd))
 		return
 	}
+	location := args[0]
+	modeName := args[1]
+	keyName := args[2]
+	cmdName := args[3]
+
+	if location == "global" {
+		w = wi.RootWindow(w)
+	} else if location != "window" {
+		cmd := wi.GetCommand(cd, nil, "keybind")
+		cd.ExecuteCommand(w, "alert", cmd.LongDesc(cd))
+		return
+	}
+
 	var mode wi.KeyboardMode
-	if args[0] == "command" {
+	if modeName == "command" {
 		mode = wi.CommandMode
-	} else if args[0] == "edit" {
+	} else if modeName == "edit" {
 		mode = wi.CommandMode
-	} else if args[0] == "all" {
+	} else if modeName == "all" {
 		mode = wi.AllMode
 	} else {
 		cmd := wi.GetCommand(cd, nil, "keybind")
 		cd.ExecuteCommand(w, "alert", cmd.LongDesc(cd))
 		return
 	}
-	w.View().KeyBindings().Set(mode, args[1], args[2])
+	w.View().KeyBindings().Set(mode, keyName, cmdName)
 }
 
 // Native commands.
@@ -311,7 +328,7 @@ var defaultCommands = map[string]wi.Command{
 			wi.LangEn: "Binds a keyboard mapping to a command",
 		},
 		langMap{
-			wi.LangEn: "Usage: keybind [command|edit|all] <key> <command>\nBinds a keyboard mapping to a command. The binding can be to the active view for view-specific key binding or to the root view for global key bindings.",
+			wi.LangEn: "Usage: keybind [window|global] [command|edit|all] <key> <command>\nBinds a keyboard mapping to a command. The binding can be to the active view for view-specific key binding or to the root view for global key bindings.",
 		},
 	},
 

@@ -201,6 +201,7 @@ type View interface {
 	// NaturalSize returns the natural size of the content. It can be -1 for as
 	// long/large as possible, 0 if indeterminate.
 	NaturalSize() (x, y int)
+	SetSize(x, y int)
 }
 
 // Config

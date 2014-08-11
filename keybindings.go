@@ -60,6 +60,6 @@ func keyEventToName(event termbox.Event) string {
 // example vim flavor vs emacs flavor. I'm not sure it's worth supporting this
 // without a restart.
 func RegisterDefaultKeyBindings(cd wi.CommandDispatcher) {
-	cd.PostCommand("keybind", "global", "F1", "help")
-	cd.PostCommand("keybind", "global", "Ctrl-C", "quit")
+	cd.PostCommand("keybind", "global", "all", "F1", "help")
+	cd.PostCommand("keybind", "global", "all", "Ctrl-C", "quit")
 }

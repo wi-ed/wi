@@ -64,6 +64,7 @@ func (t *terminal) WaitQueueEmpty() {
 }
 
 func (t *terminal) ExecuteCommand(w wi.Window, cmdName string, args ...string) {
+	log.Printf("ExecuteCommand(%s)", cmdName)
 	cmd := wi.GetCommand(t, w, cmdName)
 	if cmd == nil {
 		t.ExecuteCommand(w, "alert", fmt.Sprintf(getStr(t.CurrentLanguage(), notFound), cmdName))
@@ -80,23 +81,26 @@ func (t *terminal) KeyboardMode() wi.KeyboardMode {
 	return t.keyboardMode
 }
 
-func drawRecurse(w wi.Window, buffer *tulib.Buffer) {
+func drawRecurse(w wi.Window, buffer *tulib.Buffer) bool {
+	drew := false
 	for _, child := range w.ChildrenWindows() {
-		drawRecurse(child, buffer)
+		drew = drawRecurse(child, buffer) || drew
 		if child.IsInvalid() {
+			drew = true
 			buffer.Blit(child.Rect(), 0, 0, child.Buffer())
 		}
 	}
+	return drew
 }
 
 // draw descends the whole Window tree and find the invalidated window to
 // redraw.
 func (t *terminal) draw() {
 	log.Print("draw()")
-	drawRecurse(t.rootWindow, &t.outputBuffer)
-
-	if err := termbox.Flush(); err != nil {
-		panic(err)
+	if drawRecurse(t.rootWindow, &t.outputBuffer) {
+		if err := termbox.Flush(); err != nil {
+			panic(err)
+		}
 	}
 }
 
@@ -135,11 +139,6 @@ func (t *terminal) ActivateWindow(w wi.Window) {
 func (t *terminal) onResize() {
 	// Recreate the buffer, which queries the new sizes.
 	t.outputBuffer = tulib.TermboxBuffer()
-	/*
-		if err := termbox.Clear(termbox.ColorDefault, termbox.ColorDefault); err != nil {
-			panic(err)
-		}
-	*/
 	// Resize the Windows. This also invalidates it, which will also force a
 	// redraw.
 	t.rootWindow.SetRect(tulib.Rect{0, 0, t.outputBuffer.Width, t.outputBuffer.Height})
@@ -221,7 +220,7 @@ func makeEditor() *terminal {
 	// The root view is important, it defines all the global commands. It is
 	// pre-filled with the default native commands and keyboard mapping, and it's
 	// up to the plugins to add more global commands on startup.
-	rootView := makeView(-1, -1)
+	rootView := makeView("Root", -1, -1)
 	RegisterDefaultCommands(rootView.Commands())
 
 	rootWindow := makeWindow(nil, rootView, wi.DockingFill)
@@ -270,6 +269,8 @@ func (w *window) ChildrenWindows() []wi.Window {
 
 func (w *window) NewChildWindow(view wi.View, docking wi.DockingType) wi.Window {
 	child := makeWindow(w, view, docking)
+	// TODO(maruel): Docking.
+	child.SetRect(w.rect)
 	w.childrenWindows = append(w.childrenWindows, child)
 	return child
 }
@@ -298,11 +299,12 @@ var singleBorder = []rune{'\u2500', '\u2502', '\u250D', '\u2510', '\u2514', '\u2
 var doubleBorder = []rune{'\u2550', '\u2551', '\u2554', '\u2557', '\u255a', '\u255d'}
 
 func (w *window) SetRect(rect tulib.Rect) {
+	/* TODO(maruel): Most take in account new children window.
 	if isEqual(w.rect, rect) {
 		return
 	}
+	*/
 	w.rect = rect
-	w.Invalidate()
 	if w.border != wi.BorderNone {
 		// Draw the borders right away.
 		w.windowBuffer = tulib.NewBuffer(rect.Width, rect.Height)
@@ -318,8 +320,14 @@ func (w *window) SetRect(rect tulib.Rect) {
 		w.windowBuffer.Fill(tulib.Rect{1, rect.Height - 1, rect.Width - 2, rect.Height - 1}, termbox.Cell{s[0], w.fg, w.bg})
 		w.windowBuffer.Fill(tulib.Rect{0, 1, 0, rect.Height - 2}, termbox.Cell{s[1], w.fg, w.bg})
 		w.windowBuffer.Fill(tulib.Rect{rect.Width - 1, 1, rect.Width - 1, rect.Height - 2}, termbox.Cell{s[1], w.fg, w.bg})
+		w.view.SetSize(rect.Width-2, rect.Height-2)
 	} else {
 		w.windowBuffer = tulib.NewBuffer(0, 0)
+		w.view.SetSize(rect.Width, rect.Height)
+	}
+	for _, child := range w.childrenWindows {
+		// TODO(maruel): Handle docking.
+		child.SetRect(rect)
 	}
 }
 
@@ -392,7 +400,7 @@ func Main() int {
 	}
 
 	if *verbose {
-		if f, err := os.OpenFile("wi.log", os.O_CREATE|os.O_WRONLY, 0666); err == nil {
+		if f, err := os.OpenFile("wi.log", os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0666); err == nil {
 			defer func() {
 				_ = f.Close()
 			}()
