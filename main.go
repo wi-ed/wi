@@ -393,7 +393,9 @@ func Main() int {
 
 	if *verbose {
 		if f, err := os.OpenFile("wi.log", os.O_CREATE|os.O_WRONLY, 0666); err == nil {
-			defer f.Close()
+			defer func() {
+				_ = f.Close()
+			}()
 			log.SetOutput(f)
 		}
 	}
