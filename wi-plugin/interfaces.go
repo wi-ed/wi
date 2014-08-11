@@ -149,7 +149,7 @@ type Window interface {
 
 	// Buffer returns the display buffer for this Window. This indirectly clears
 	// the Invalid bit.
-	Buffer() tulib.Buffer
+	Buffer() *tulib.Buffer
 
 	Docking() DockingType
 	// This will forces an invalidation.
@@ -160,11 +160,13 @@ type Window interface {
 	View() View
 }
 
+/*
 // TextBuffer is the content. It may only contain partial information in the
 // case of large file or file opened via high latency I/O.
 type TextBuffer interface {
 	Lines() int
 }
+*/
 
 // View is content presented in a Window. For example it can be a TextBuffer or
 // a command box. View define the key binding and commands supported so it
@@ -192,14 +194,13 @@ type View interface {
 	// inputs at all.
 	IsDisabled() bool
 
-	// Draws itself into a buffer.
-	DrawInto(buffer tulib.Buffer)
+	// Buffer returns the display buffer for this Window. This indirectly clears
+	// the Invalid bit.
+	Buffer() *tulib.Buffer
 
 	// NaturalSize returns the natural size of the content. It can be -1 for as
 	// long/large as possible, 0 if indeterminate.
 	NaturalSize() (x, y int)
-	SetBuffer(buffer TextBuffer)
-	Buffer() TextBuffer
 }
 
 // Config

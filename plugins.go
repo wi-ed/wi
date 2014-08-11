@@ -21,6 +21,7 @@ import (
 
 // loadPlugin starts a plugin and returns the process.
 func loadPlugin(server *rpc.Server, f string) *os.Process {
+	log.Printf("loadPlugin(%s)", f)
 	cmd := exec.Command(f)
 	cmd.Env = append(os.Environ(), "WI=plugin")
 

@@ -22,7 +22,7 @@ type view struct {
 	isDisabled  bool
 	naturalX    int
 	naturalY    int
-	buffer      wi.TextBuffer
+	buffer      tulib.Buffer
 }
 
 func (v *view) Commands() wi.Commands {
@@ -49,21 +49,15 @@ func (v *view) IsDisabled() bool {
 	return v.isDisabled
 }
 
-func (v *view) DrawInto(buffer tulib.Buffer) {
-	// TODO(maruel): Plugable drawing function.
-	buffer.Set(0, 0, termbox.Cell{'A', termbox.ColorRed, termbox.ColorRed})
-}
-
 func (v *view) NaturalSize() (x, y int) {
 	return v.naturalX, v.naturalY
 }
 
-func (v *view) SetBuffer(buffer wi.TextBuffer) {
-	v.buffer = buffer
-}
-
-func (v *view) Buffer() wi.TextBuffer {
-	return v.buffer
+func (v *view) Buffer() *tulib.Buffer {
+	// TODO(maruel): Plugable drawing function.
+	v.buffer.Set(0, 0, termbox.Cell{'A', termbox.ColorRed, termbox.ColorRed})
+	v.isInvalid = false
+	return &v.buffer
 }
 
 // Empty non-editable window.

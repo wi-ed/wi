@@ -50,14 +50,17 @@ func (t *terminal) Version() string {
 }
 
 func (t *terminal) PostCommand(cmdName string, args ...string) {
+	log.Printf("PostCommand(%s, %s)", cmdName, args)
 	t.commandsQueue <- commandQueueItem{cmdName, args, ""}
 }
 
 func (t *terminal) postKey(keyName string) {
+	log.Printf("PostKey(%s)", keyName)
 	t.commandsQueue <- commandQueueItem{keyName: keyName}
 }
 
 func (t *terminal) WaitQueueEmpty() {
+	panic("Oops")
 }
 
 func (t *terminal) ExecuteCommand(w wi.Window, cmdName string, args ...string) {
@@ -77,11 +80,11 @@ func (t *terminal) KeyboardMode() wi.KeyboardMode {
 	return t.keyboardMode
 }
 
-func drawRecurse(w wi.Window, buffer tulib.Buffer) {
+func drawRecurse(w wi.Window, buffer *tulib.Buffer) {
 	for _, child := range w.ChildrenWindows() {
 		drawRecurse(child, buffer)
 		if child.IsInvalid() {
-			// TODO(maruel): buffer.Blit(dst, x, y, child.Buffer())
+			buffer.Blit(child.Rect(), 0, 0, child.Buffer())
 		}
 	}
 }
@@ -89,7 +92,8 @@ func drawRecurse(w wi.Window, buffer tulib.Buffer) {
 // draw descends the whole Window tree and find the invalidated window to
 // redraw.
 func (t *terminal) draw() {
-	drawRecurse(t.rootWindow, t.outputBuffer)
+	log.Print("draw()")
+	drawRecurse(t.rootWindow, &t.outputBuffer)
 
 	if err := termbox.Flush(); err != nil {
 		panic(err)
@@ -101,6 +105,7 @@ func (t *terminal) ActiveWindow() wi.Window {
 }
 
 func (t *terminal) ActivateWindow(w wi.Window) {
+	log.Printf("ActivateWindow(%s)", w.View().Title())
 	if w.View().IsDisabled() {
 		t.ExecuteCommand(w, "alert", getStr(t.CurrentLanguage(), activateDisabled))
 		return
@@ -244,12 +249,14 @@ func makeEditor() *terminal {
 // window implements Window. It keeps its own buffer of its display.
 type window struct {
 	parent          wi.Window
-	buffer          tulib.Buffer // includes the border
+	windowBuffer    tulib.Buffer // includes the border
 	rect            tulib.Rect
 	childrenWindows []wi.Window
 	view            wi.View
 	docking         wi.DockingType
 	border          wi.BorderType
+	fg              termbox.Attribute
+	bg              termbox.Attribute
 	isInvalid       bool
 }
 
@@ -283,11 +290,37 @@ func (w *window) Rect() tulib.Rect {
 	return w.rect
 }
 
+func isEqual(lhs tulib.Rect, rhs tulib.Rect) bool {
+	return lhs.X == rhs.X && lhs.Y == rhs.Y && lhs.Width == rhs.Width && lhs.Height == rhs.Height
+}
+
+var singleBorder = []rune{'\u2500', '\u2502', '\u250D', '\u2510', '\u2514', '\u2518'}
+var doubleBorder = []rune{'\u2550', '\u2551', '\u2554', '\u2557', '\u255a', '\u255d'}
+
 func (w *window) SetRect(rect tulib.Rect) {
-	// TODO(maruel): Add if !w.rect.IsEqual(rect) {}
+	if isEqual(w.rect, rect) {
+		return
+	}
 	w.rect = rect
-	w.buffer = tulib.NewBuffer(rect.Width, rect.Height)
 	w.Invalidate()
+	if w.border != wi.BorderNone {
+		// Draw the borders right away.
+		w.windowBuffer = tulib.NewBuffer(rect.Width, rect.Height)
+		s := doubleBorder
+		if w.border == wi.BorderSingle {
+			s = singleBorder
+		}
+		w.windowBuffer.Set(0, 0, termbox.Cell{s[3], w.fg, w.bg})
+		w.windowBuffer.Set(0, rect.Height-1, termbox.Cell{s[5], w.fg, w.bg})
+		w.windowBuffer.Set(rect.Width-1, 0, termbox.Cell{s[4], w.fg, w.bg})
+		w.windowBuffer.Set(rect.Width-1, rect.Height-1, termbox.Cell{s[6], w.fg, w.bg})
+		w.windowBuffer.Fill(tulib.Rect{1, 0, rect.Width - 2, 0}, termbox.Cell{s[0], w.fg, w.bg})
+		w.windowBuffer.Fill(tulib.Rect{1, rect.Height - 1, rect.Width - 2, rect.Height - 1}, termbox.Cell{s[0], w.fg, w.bg})
+		w.windowBuffer.Fill(tulib.Rect{0, 1, 0, rect.Height - 2}, termbox.Cell{s[1], w.fg, w.bg})
+		w.windowBuffer.Fill(tulib.Rect{rect.Width - 1, 1, rect.Width - 1, rect.Height - 2}, termbox.Cell{s[1], w.fg, w.bg})
+	} else {
+		w.windowBuffer = tulib.NewBuffer(0, 0)
+	}
 }
 
 func (w *window) IsInvalid() bool {
@@ -298,22 +331,17 @@ func (w *window) Invalidate() {
 	w.isInvalid = true
 }
 
-func (w *window) Buffer() tulib.Buffer {
-	if w.isInvalid {
-		// Ask the view to draw into its buffer.
-		buffer := w.buffer
-		if w.border != wi.BorderNone {
-			// Create a temporary buffer for the view to draw into.
-			// TODO(maruel): Make it smarter so we do not need to double-copy the data
-			// constantly. It's very inefficient. At least it's bearable since the
-			// amount of data will usually be under 200x200=40000 elements.
-			buffer = tulib.NewBuffer(w.rect.Width-1, w.rect.Height-1)
-			// TODO(maruel): Draw border.
-		}
-		w.view.DrawInto(buffer)
-		// TODO(maruel): Copy back.
+func (w *window) Buffer() *tulib.Buffer {
+	if w.border == wi.BorderNone {
+		w.isInvalid = false
+		return w.view.Buffer()
 	}
-	return w.buffer
+	if w.isInvalid {
+		w.isInvalid = false
+		// Ask the view to draw into its buffer.
+		w.windowBuffer.Blit(tulib.Rect{1, 1, w.rect.Width - 2, w.rect.Height - 2}, 0, 0, w.view.Buffer())
+	}
+	return &w.windowBuffer
 }
 
 func (w *window) Docking() wi.DockingType {
@@ -345,19 +373,29 @@ func makeWindow(parent wi.Window, view wi.View, docking wi.DockingType) wi.Windo
 		docking:   docking,
 		border:    wi.BorderNone,
 		isInvalid: true,
+		fg:        termbox.ColorWhite,
+		bg:        termbox.ColorBlack,
 	}
 }
 
 func Main() int {
-	log.SetFlags(log.Lmicroseconds)
+	log.SetFlags(log.Lmicroseconds | log.Lshortfile)
 	command := flag.Bool("c", false, "Runs the commands specified on startup")
 	version := flag.Bool("v", false, "Prints version and exit")
+	verbose := flag.Bool("verbose", false, "Logs debugging information to wi.log")
 	flag.Parse()
 
 	// Process this one early. No one wants version output to take 1s.
 	if *version {
 		println(version)
 		os.Exit(0)
+	}
+
+	if *verbose {
+		if f, err := os.OpenFile("wi.log", os.O_CREATE|os.O_WRONLY, 0666); err == nil {
+			defer f.Close()
+			log.SetOutput(f)
+		}
 	}
 
 	if err := termbox.Init(); err != nil {
