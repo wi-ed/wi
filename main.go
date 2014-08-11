@@ -386,6 +386,12 @@ func makeWindow(parent wi.Window, view wi.View, docking wi.DockingType) wi.Windo
 	}
 }
 
+type nullWriter int
+
+func (nullWriter) Write([]byte) (int, error) {
+	return 0, nil
+}
+
 func Main() int {
 	log.SetFlags(log.Lmicroseconds | log.Lshortfile)
 	command := flag.Bool("c", false, "Runs the commands specified on startup")
@@ -406,6 +412,8 @@ func Main() int {
 			}()
 			log.SetOutput(f)
 		}
+	} else {
+		log.SetOutput(new(nullWriter))
 	}
 
 	if err := termbox.Init(); err != nil {
