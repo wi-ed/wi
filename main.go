@@ -41,7 +41,6 @@ type terminal struct {
 	terminalEvents <-chan termbox.Event
 	viewReady      chan bool // A View.Buffer() is ready to be drawn.
 	commandsQueue  chan commandQueueItem
-	outputBuffer   tulib.Buffer
 	languageMode   wi.LanguageMode
 	keyboardMode   wi.KeyboardMode
 }
@@ -93,7 +92,8 @@ func drawRecurse(w wi.Window, buffer *tulib.Buffer) {
 // draw descends the whole Window tree and redraw Windows.
 func (t *terminal) draw() {
 	log.Print("draw()")
-	drawRecurse(t.rootWindow, &t.outputBuffer)
+	b := tulib.TermboxBuffer()
+	drawRecurse(t.rootWindow, &b)
 	// TODO(maruel): Determine if Flush() is intelligent and skip the forced draw
 	// when nothing changed.
 	if err := termbox.Flush(); err != nil {
@@ -140,18 +140,17 @@ func (t *terminal) ViewReady(v wi.View) {
 }
 
 func (t *terminal) onResize() {
-	// Recreate the buffer, which queries the new sizes.
-	t.outputBuffer = tulib.TermboxBuffer()
 	// Resize the Windows. This also invalidates it, which will also force a
-	// redraw.
-	t.rootWindow.SetRect(tulib.Rect{0, 0, t.outputBuffer.Width, t.outputBuffer.Height})
+	// redraw if the size changed.
+	w, h := termbox.Size()
+	t.rootWindow.SetRect(tulib.Rect{0, 0, w, h})
 }
 
 // eventLoop handles both commands and events from the terminal. This function
 // runs in the UI goroutine.
 func (t *terminal) eventLoop() int {
 	fakeChan := make(chan time.Time)
-	var drawTimer <-chan time.Time = fakeChan
+	var drawTimer <-chan time.Time = time.After(5 * time.Millisecond)
 	keyBuffer := ""
 	for {
 		select {
@@ -312,23 +311,12 @@ func (w *window) SetRect(rect tulib.Rect) {
 	w.windowBuffer = tulib.NewBuffer(rect.Width, rect.Height)
 	if w.border != wi.BorderNone {
 		w.viewRect = tulib.Rect{1, 1, w.rect.Height - 1, w.rect.Height - 1}
-		// Draw the borders right away.
-		s := doubleBorder
-		if w.border == wi.BorderSingle {
-			s = singleBorder
-		}
-		w.windowBuffer.Set(0, 0, w.cell(s[3]))
-		w.windowBuffer.Set(0, w.rect.Height-1, w.cell(s[5]))
-		w.windowBuffer.Set(w.rect.Width-1, 0, w.cell(s[4]))
-		w.windowBuffer.Set(w.rect.Width-1, w.rect.Height-1, w.cell(s[6]))
-		w.windowBuffer.Fill(tulib.Rect{1, 0, w.rect.Width - 2, 0}, w.cell(s[0]))
-		w.windowBuffer.Fill(tulib.Rect{1, w.rect.Height - 1, w.rect.Width - 2, w.rect.Height - 1}, w.cell(s[0]))
-		w.windowBuffer.Fill(tulib.Rect{0, 1, 0, w.rect.Height - 2}, w.cell(s[1]))
-		w.windowBuffer.Fill(tulib.Rect{w.rect.Width - 1, 1, w.rect.Width - 1, w.rect.Height - 2}, w.cell(s[1]))
+		w.drawBorder()
 	} else {
 		w.viewRect = w.rect
 	}
 	w.view.SetSize(w.viewRect.Width, w.viewRect.Height)
+	w.windowBuffer.Fill(w.viewRect, w.cell('X'))
 	/*
 		for _, child := range w.childrenWindows {
 			// TODO(maruel): Handle docking.
@@ -338,10 +326,10 @@ func (w *window) SetRect(rect tulib.Rect) {
 }
 
 func (w *window) Buffer() *tulib.Buffer {
-	if w.View().IsInvalid() {
-		w.windowBuffer.Blit(w.viewRect, 0, 0, w.view.Buffer())
-		//w.windowBuffer.Fill(w.viewRect, w.cell(' '))
-	}
+	//if w.View().IsInvalid() {
+	w.windowBuffer.Blit(w.viewRect, 0, 0, w.view.Buffer())
+	//w.windowBuffer.Fill(w.viewRect, w.cell(' '))
+	//}
 	return &w.windowBuffer
 }
 
@@ -358,13 +346,24 @@ func (w *window) SetDocking(docking wi.DockingType) {
 func (w *window) SetView(view wi.View) {
 	if view != w.view {
 		w.view = view
-		cell := termbox.Cell{' ', w.fg, w.bg}
-		if w.border != wi.BorderNone {
-			w.windowBuffer.Fill(tulib.Rect{1, 1, w.rect.Width - 1, w.rect.Height - 1}, cell)
-		} else {
-			w.windowBuffer.Fill(tulib.Rect{0, 0, w.rect.Width, w.rect.Height}, cell)
-		}
+		w.windowBuffer.Fill(w.viewRect, w.cell('x'))
 	}
+}
+
+// drawBorder draws the borders right away in the Window's buffer.
+func (w *window) drawBorder() {
+	s := doubleBorder
+	if w.border == wi.BorderSingle {
+		s = singleBorder
+	}
+	w.windowBuffer.Set(0, 0, w.cell(s[3]))
+	w.windowBuffer.Set(0, w.rect.Height-1, w.cell(s[5]))
+	w.windowBuffer.Set(w.rect.Width-1, 0, w.cell(s[4]))
+	w.windowBuffer.Set(w.rect.Width-1, w.rect.Height-1, w.cell(s[6]))
+	w.windowBuffer.Fill(tulib.Rect{1, 0, w.rect.Width - 2, 0}, w.cell(s[0]))
+	w.windowBuffer.Fill(tulib.Rect{1, w.rect.Height - 1, w.rect.Width - 2, w.rect.Height - 1}, w.cell(s[0]))
+	w.windowBuffer.Fill(tulib.Rect{0, 1, 0, w.rect.Height - 2}, w.cell(s[1]))
+	w.windowBuffer.Fill(tulib.Rect{w.rect.Width - 1, 1, w.rect.Width - 1, w.rect.Height - 2}, w.cell(s[1]))
 }
 
 func (w *window) cell(r rune) termbox.Cell {
