@@ -130,4 +130,4 @@ Thanks
 Contributing
 ------------
 
-Please run `./presubmit.sh` first before doing a pull request.
+Please run `./presubmit.py` first before doing a pull request.
