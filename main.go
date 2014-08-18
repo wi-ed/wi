@@ -39,6 +39,7 @@ type terminal struct {
 	rootWindow     wi.Window
 	lastActive     []wi.Window
 	terminalEvents <-chan termbox.Event
+	viewReady      chan bool // A View.Buffer() is ready to be drawn.
 	commandsQueue  chan commandQueueItem
 	outputBuffer   tulib.Buffer
 	languageMode   wi.LanguageMode
@@ -81,26 +82,22 @@ func (t *terminal) KeyboardMode() wi.KeyboardMode {
 	return t.keyboardMode
 }
 
-func drawRecurse(w wi.Window, buffer *tulib.Buffer) bool {
-	drew := false
+func drawRecurse(w wi.Window, buffer *tulib.Buffer) {
+	// TODO(maruel): Only draw the non-occuled frames!
 	for _, child := range w.ChildrenWindows() {
-		drew = drawRecurse(child, buffer) || drew
-		if child.IsInvalid() {
-			drew = true
-			buffer.Blit(child.Rect(), 0, 0, child.Buffer())
-		}
+		drawRecurse(child, buffer)
+		buffer.Blit(child.Rect(), 0, 0, child.Buffer())
 	}
-	return drew
 }
 
-// draw descends the whole Window tree and find the invalidated window to
-// redraw.
+// draw descends the whole Window tree and redraw Windows.
 func (t *terminal) draw() {
 	log.Print("draw()")
-	if drawRecurse(t.rootWindow, &t.outputBuffer) {
-		if err := termbox.Flush(); err != nil {
-			panic(err)
-		}
+	drawRecurse(t.rootWindow, &t.outputBuffer)
+	// TODO(maruel): Determine if Flush() is intelligent and skip the forced draw
+	// when nothing changed.
+	if err := termbox.Flush(); err != nil {
+		panic(err)
 	}
 }
 
@@ -134,6 +131,12 @@ func (t *terminal) ActivateWindow(w wi.Window) {
 	t.lastActive = append(t.lastActive, nil)
 	copy(t.lastActive[:l], t.lastActive[1:l])
 	t.lastActive[0] = w
+}
+
+func (t *terminal) ViewReady(v wi.View) {
+	go func() {
+		t.viewReady <- true
+	}()
 }
 
 func (t *terminal) onResize() {
@@ -172,12 +175,6 @@ func (t *terminal) eventLoop() int {
 			} else {
 				t.ExecuteCommand(t.ActiveWindow(), i.cmdName, i.args...)
 			}
-			if quitFlag {
-				drawTimer = time.After(1 * time.Millisecond)
-			} else {
-				// TODO(maruel): Only trigger when a Window was invalidated.
-				drawTimer = time.After(15 * time.Millisecond)
-			}
 
 		case event := <-t.terminalEvents:
 			switch event.Type {
@@ -199,8 +196,14 @@ func (t *terminal) eventLoop() int {
 				// TODO(maruel): Not sure what situations can trigger this.
 				t.PostCommand("alert", event.Err.Error())
 			}
-			// TODO(maruel): Only trigger when a Window was invalidated.
-			drawTimer = time.After(15 * time.Millisecond)
+
+		case <-t.viewReady:
+			// Taking in account a 60hz frame is 18.8ms, 5ms is going to be generally
+			// processed within the same frame. This delaying results in significant
+			// bandwidth saving on loading.
+			if drawTimer == fakeChan {
+				drawTimer = time.After(5 * time.Millisecond)
+			}
 
 		case <-drawTimer:
 			if quitFlag {
@@ -228,6 +231,7 @@ func makeEditor() *terminal {
 	terminal := &terminal{
 		terminalEvents: terminalEvents,
 		commandsQueue:  make(chan commandQueueItem, 500),
+		viewReady:      make(chan bool),
 		rootWindow:     rootWindow,
 		lastActive:     []wi.Window{rootWindow},
 		languageMode:   wi.LangEn,
@@ -250,13 +254,13 @@ type window struct {
 	parent          wi.Window
 	windowBuffer    tulib.Buffer // includes the border
 	rect            tulib.Rect
+	viewRect        tulib.Rect
 	childrenWindows []wi.Window
 	view            wi.View
 	docking         wi.DockingType
 	border          wi.BorderType
 	fg              termbox.Attribute
 	bg              termbox.Attribute
-	isInvalid       bool
 }
 
 func (w *window) Parent() wi.Window {
@@ -299,55 +303,44 @@ var singleBorder = []rune{'\u2500', '\u2502', '\u250D', '\u2510', '\u2514', '\u2
 var doubleBorder = []rune{'\u2550', '\u2551', '\u2554', '\u2557', '\u255a', '\u255d'}
 
 func (w *window) SetRect(rect tulib.Rect) {
-	/* TODO(maruel): Most take in account new children window.
+	// SetRect() recreates the buffer and immediately draws the borders.
+	// TODO(maruel): Most take in account new children window.
 	if isEqual(w.rect, rect) {
 		return
 	}
-	*/
 	w.rect = rect
+	w.windowBuffer = tulib.NewBuffer(rect.Width, rect.Height)
 	if w.border != wi.BorderNone {
+		w.viewRect = tulib.Rect{1, 1, w.rect.Height - 1, w.rect.Height - 1}
 		// Draw the borders right away.
-		w.windowBuffer = tulib.NewBuffer(rect.Width, rect.Height)
 		s := doubleBorder
 		if w.border == wi.BorderSingle {
 			s = singleBorder
 		}
-		w.windowBuffer.Set(0, 0, termbox.Cell{s[3], w.fg, w.bg})
-		w.windowBuffer.Set(0, rect.Height-1, termbox.Cell{s[5], w.fg, w.bg})
-		w.windowBuffer.Set(rect.Width-1, 0, termbox.Cell{s[4], w.fg, w.bg})
-		w.windowBuffer.Set(rect.Width-1, rect.Height-1, termbox.Cell{s[6], w.fg, w.bg})
-		w.windowBuffer.Fill(tulib.Rect{1, 0, rect.Width - 2, 0}, termbox.Cell{s[0], w.fg, w.bg})
-		w.windowBuffer.Fill(tulib.Rect{1, rect.Height - 1, rect.Width - 2, rect.Height - 1}, termbox.Cell{s[0], w.fg, w.bg})
-		w.windowBuffer.Fill(tulib.Rect{0, 1, 0, rect.Height - 2}, termbox.Cell{s[1], w.fg, w.bg})
-		w.windowBuffer.Fill(tulib.Rect{rect.Width - 1, 1, rect.Width - 1, rect.Height - 2}, termbox.Cell{s[1], w.fg, w.bg})
-		w.view.SetSize(rect.Width-2, rect.Height-2)
+		w.windowBuffer.Set(0, 0, w.cell(s[3]))
+		w.windowBuffer.Set(0, w.rect.Height-1, w.cell(s[5]))
+		w.windowBuffer.Set(w.rect.Width-1, 0, w.cell(s[4]))
+		w.windowBuffer.Set(w.rect.Width-1, w.rect.Height-1, w.cell(s[6]))
+		w.windowBuffer.Fill(tulib.Rect{1, 0, w.rect.Width - 2, 0}, w.cell(s[0]))
+		w.windowBuffer.Fill(tulib.Rect{1, w.rect.Height - 1, w.rect.Width - 2, w.rect.Height - 1}, w.cell(s[0]))
+		w.windowBuffer.Fill(tulib.Rect{0, 1, 0, w.rect.Height - 2}, w.cell(s[1]))
+		w.windowBuffer.Fill(tulib.Rect{w.rect.Width - 1, 1, w.rect.Width - 1, w.rect.Height - 2}, w.cell(s[1]))
 	} else {
-		w.windowBuffer = tulib.NewBuffer(0, 0)
-		w.view.SetSize(rect.Width, rect.Height)
+		w.viewRect = w.rect
 	}
-	for _, child := range w.childrenWindows {
-		// TODO(maruel): Handle docking.
-		child.SetRect(rect)
-	}
-}
-
-func (w *window) IsInvalid() bool {
-	return w.isInvalid || w.View().IsInvalid()
-}
-
-func (w *window) Invalidate() {
-	w.isInvalid = true
+	w.view.SetSize(w.viewRect.Width, w.viewRect.Height)
+	/*
+		for _, child := range w.childrenWindows {
+			// TODO(maruel): Handle docking.
+			child.SetRect(rect)
+		}
+	*/
 }
 
 func (w *window) Buffer() *tulib.Buffer {
-	if w.border == wi.BorderNone {
-		w.isInvalid = false
-		return w.view.Buffer()
-	}
-	if w.isInvalid {
-		w.isInvalid = false
-		// Ask the view to draw into its buffer.
-		w.windowBuffer.Blit(tulib.Rect{1, 1, w.rect.Width - 2, w.rect.Height - 2}, 0, 0, w.view.Buffer())
+	if w.View().IsInvalid() {
+		w.windowBuffer.Blit(w.viewRect, 0, 0, w.view.Buffer())
+		//w.windowBuffer.Fill(w.viewRect, w.cell(' '))
 	}
 	return &w.windowBuffer
 }
@@ -359,15 +352,23 @@ func (w *window) Docking() wi.DockingType {
 func (w *window) SetDocking(docking wi.DockingType) {
 	if w.docking != docking {
 		w.docking = docking
-		w.Invalidate()
 	}
 }
 
 func (w *window) SetView(view wi.View) {
 	if view != w.view {
 		w.view = view
-		w.Invalidate()
+		cell := termbox.Cell{' ', w.fg, w.bg}
+		if w.border != wi.BorderNone {
+			w.windowBuffer.Fill(tulib.Rect{1, 1, w.rect.Width - 1, w.rect.Height - 1}, cell)
+		} else {
+			w.windowBuffer.Fill(tulib.Rect{0, 0, w.rect.Width, w.rect.Height}, cell)
+		}
 	}
+}
+
+func (w *window) cell(r rune) termbox.Cell {
+	return termbox.Cell{r, w.fg, w.bg}
 }
 
 func (w *window) View() wi.View {
@@ -376,13 +377,12 @@ func (w *window) View() wi.View {
 
 func makeWindow(parent wi.Window, view wi.View, docking wi.DockingType) wi.Window {
 	return &window{
-		parent:    parent,
-		view:      view,
-		docking:   docking,
-		border:    wi.BorderNone,
-		isInvalid: true,
-		fg:        termbox.ColorWhite,
-		bg:        termbox.ColorBlack,
+		parent:  parent,
+		view:    view,
+		docking: docking,
+		border:  wi.BorderNone,
+		fg:      termbox.ColorWhite,
+		bg:      termbox.ColorBlack,
 	}
 }
 

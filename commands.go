@@ -151,6 +151,9 @@ func cmdQuit(cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
 	root := wi.RootWindow(w)
 	if !isDirtyRecurse(cd, root) {
 		quitFlag = true
+		// ViewReady will wake up the command event loop so it detects it's time to
+		// quit.
+		cd.ViewReady(w.View())
 	}
 }
 
@@ -340,6 +343,7 @@ var defaultCommands = map[string]wi.Command{
 	// undo/redo
 	// verb/movement/multiplier
 	// Modes, select (both column and normal), command.
+	// 'screenshot', mainly for unit test; open a new buffer with the screenshot, so it can be saved with 'w'.
 	// ...
 }
 
