@@ -272,9 +272,8 @@ func (w *window) ChildrenWindows() []wi.Window {
 
 func (w *window) NewChildWindow(view wi.View, docking wi.DockingType) wi.Window {
 	child := makeWindow(w, view, docking)
-	// TODO(maruel): Docking.
-	child.SetRect(w.rect)
 	w.childrenWindows = append(w.childrenWindows, child)
+	w.resizeChildren()
 	return child
 }
 
@@ -317,12 +316,39 @@ func (w *window) SetRect(rect tulib.Rect) {
 	}
 	w.view.SetSize(w.viewRect.Width, w.viewRect.Height)
 	w.windowBuffer.Fill(w.viewRect, w.cell('X'))
-	/*
-		for _, child := range w.childrenWindows {
-			// TODO(maruel): Handle docking.
-			child.SetRect(rect)
+	w.resizeChildren()
+}
+
+// resizeChildren() resizes all the children Window.
+func (w *window) resizeChildren() {
+	remaining := w.viewRect
+	for _, child := range w.childrenWindows {
+		switch child.Docking() {
+		case wi.DockingFill:
+			// Should be last.
+			child.SetRect(remaining)
+
+		case wi.DockingFloating:
+			// Ignore.
+
+		case wi.DockingLeft:
+
+		case wi.DockingRight:
+
+		case wi.DockingTop:
+			//_, h := child.View().NaturalSize()
+			child.SetRect(remaining)
+			remaining = remaining
+
+		case wi.DockingBottom:
+			//_, h := child.View().NaturalSize()
+			child.SetRect(remaining)
+			remaining = remaining
+
+		default:
+			panic("Fill me")
 		}
-	*/
+	}
 }
 
 func (w *window) Buffer() *tulib.Buffer {

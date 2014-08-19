@@ -18,14 +18,14 @@ import (
 type DockingType int
 
 const (
-	// The window is not constrained by the parent window size and location.
+	// The Window uses all the available space.
 	DockingFill DockingType = iota
+	// The Window is not constrained by the parent window size and location.
 	DockingFloating
 	DockingLeft
 	DockingRight
 	DockingTop
 	DockingBottom
-	DockingCenter
 )
 
 // BorderType defines the type of border for a Window.
@@ -104,6 +104,7 @@ type CommandDispatcherFull interface {
 	// ActivateWindow activates a Window.
 	ActivateWindow(w Window)
 
+	// Signal the terminal that an invalidated View is now ready to render.
 	ViewReady(v View)
 
 	CurrentLanguage() LanguageMode
@@ -196,7 +197,7 @@ type View interface {
 
 	// NaturalSize returns the natural size of the content. It can be -1 for as
 	// long/large as possible, 0 if indeterminate.
-	NaturalSize() (x, y int)
+	NaturalSize() (width, height int)
 	SetSize(x, y int)
 }
 
