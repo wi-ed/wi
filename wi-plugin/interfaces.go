@@ -8,7 +8,9 @@
 package wi
 
 import (
-	// TODO(maruel): Stop leaking this modules in the interface.
+	// TODO(maruel): Stop leaking this modules in the interface. We can't "type
+	// Buffer tulib.Buffer" or else we lose all the methods and will have to
+	// reimplement them here.
 	"github.com/nsf/tulib"
 )
 

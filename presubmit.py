@@ -39,6 +39,8 @@ def drain(proc):
 def main():
   start = time.time()
   # Builds all the prerequisite first, this accelerates the following calls.
+  # TODO(maruel): This *installs* stuff, which is definitely not going to be
+  # appreciated by folks, so it's likely better to remove this call.
   out = drain(call(['go', 'test', '-i'], '.'))
   if out:
     print out
