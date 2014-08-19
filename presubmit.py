@@ -54,8 +54,10 @@ def main():
     #call(['go', 'test'], 'wi-plugin-sample'),
     errcheck('.'),
   ]
+  failed = False
   out = drain(procs.pop(0))
   if out:
+    failed = True
     print out
 
   if sys.platform == 'win32':
@@ -66,9 +68,13 @@ def main():
   for p in procs:
     out = drain(p)
     if out:
+      failed = True
       print out
 
   end = time.time()
+  if failed:
+    print('Presubmit checks failed in %1.3fs!' % (end-start))
+    return 1
   print('Presubmit checks succeeded in %1.3fs!' % (end-start))
   return 0
 
