@@ -171,9 +171,24 @@ type Editor interface {
 
 // Window is a View container. It defines the position, Z-ordering via
 // hierarchy and decoration. It can have multiple child windows. The child
-// windows are not bounded by the parent window. The Window itself doesn't
-// interact with the user, since it only has a non-client area (the border).
-// All the client area is covered by the View.
+// windows are not bounded by the parent window if DockingFloating is used. The
+// Window itself doesn't interact with the user, since it only has a non-client
+// area (the border). All the client area is covered by the View.
+//
+// Split view is not supported. A 4-way merge setup can be created with the
+// following Window setup as 4 child Window of the root Window:
+//
+//    +-----------+-----------+------------+
+//    |  Remote   |Merge Base |   Local    |
+//    |DockingLeft|DockingFill|DockingRight|
+//    |           |           |            |
+//    +-----------+-----------+------------+
+//    |              Result                |
+//    |           DockingBottom            |
+//    |                                    |
+//    +------------------------------------+
+//
+// This doesn't require any "split" support.
 type Window interface {
 	fmt.Stringer
 
