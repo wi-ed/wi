@@ -9,6 +9,7 @@ import (
 	"github.com/nsf/termbox-go"
 	"github.com/nsf/tulib"
 	"log"
+	"unicode/utf8"
 )
 
 // TODO(maruel): Plugable drawing function.
@@ -23,6 +24,8 @@ type view struct {
 	isDisabled  bool
 	naturalX    int
 	naturalY    int
+	actualX     int
+	actualY     int
 	buffer      tulib.Buffer
 }
 
@@ -56,16 +59,25 @@ func (v *view) NaturalSize() (x, y int) {
 
 func (v *view) SetSize(x, y int) {
 	log.Printf("View(%s).SetSize(%d, %d)", v.Title(), x, y)
-	v.naturalX = x
-	v.naturalY = y
+	v.actualX = x
+	v.actualY = y
 	v.isInvalid = true
 	v.buffer = tulib.NewBuffer(x, y)
 }
 
 func (v *view) Buffer() *tulib.Buffer {
-	log.Printf("View(%s).Buffer(%d, %d)", v.Title(), v.naturalX, v.naturalY)
-	// TODO(maruel): Plugable drawing function.
-	v.buffer.Set(0, 0, termbox.Cell{'A', termbox.ColorRed, termbox.ColorRed})
+	log.Printf("View(%s).Buffer(%d, %d)", v.Title(), v.actualX, v.actualY)
+	r, _ := utf8.DecodeRuneInString(v.Title())
+	v.buffer.Fill(tulib.Rect{0, 0, v.actualX, v.actualY}, termbox.Cell{r, termbox.ColorRed, termbox.ColorBlack})
+	l := tulib.LabelParams{
+		termbox.ColorBlue,
+		termbox.ColorBlack,
+		//tulib.AlignRight,
+		tulib.AlignLeft,
+		'b',
+		true,
+	}
+	v.buffer.DrawLabel(tulib.Rect{0, 0, v.actualX, 1}, &l, []byte(v.Title()))
 	v.isInvalid = false
 	return &v.buffer
 }
@@ -87,21 +99,21 @@ func makeStatusViewCenter() wi.View {
 	// TODO(maruel): OnResize(), query the root Window size, if y<=5 or x<=15,
 	// set the root status Window to y=0, so that it becomes effectively
 	// invisible when the editor window is too small.
-	return makeView("Status Center", 1, -1)
+	return makeView("Status Center", 1, 1)
 }
 
 func makeStatusViewName() wi.View {
 	// View name.
 	// TODO(maruel): Register events of Window activation, make itself Invalidate().
 	// TODO(maruel): Drawing code.
-	return makeView("Status Name", 1, -1)
+	return makeView("Status Name", 1, 10)
 }
 
 func makeStatusViewPosition() wi.View {
 	// Position, % of file.
 	// TODO(maruel): Register events of movement, make itself Invalidate().
 	// TODO(maruel): Drawing code.
-	return makeView("Status Position", 1, -1)
+	return makeView("Status Position", 1, 10)
 }
 
 // The command box.

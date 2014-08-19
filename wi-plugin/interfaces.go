@@ -8,6 +8,7 @@
 package wi
 
 import (
+	"fmt"
 	// TODO(maruel): Stop leaking this modules in the interface. We can't "type
 	// Buffer tulib.Buffer" or else we lose all the methods and will have to
 	// reimplement them here.
@@ -174,6 +175,8 @@ type Editor interface {
 // interact with the user, since it only has a non-client area (the border).
 // All the client area is covered by the View.
 type Window interface {
+	fmt.Stringer
+
 	// Parent returns the parent Window.
 	Parent() Window
 	// ChildrenWindows returns a copy of the slice of children windows.
@@ -186,8 +189,8 @@ type Window interface {
 	// not remove the active Window.
 	Remove(w Window)
 
-	// Rect returns the position based on the Editor's root Window, not the
-	// parent Window.
+	// Rect returns the position based on the parent Window, except if Docking()
+	// is DockingFloating.
 	Rect() tulib.Rect
 	SetRect(rect tulib.Rect)
 
