@@ -54,6 +54,15 @@ def main():
     #call(['go', 'test'], 'wi-plugin-sample'),
     errcheck('.'),
   ]
+  out = drain(procs.pop(0))
+  if out:
+    print out
+
+  if sys.platform == 'win32':
+    procs.append(call(['wi.exe', '-c', 'quit'], '.'))
+  else:
+    procs.append(call(['./wi', '-c', 'quit'], '.'))
+
   for p in procs:
     out = drain(p)
     if out:
