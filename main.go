@@ -160,7 +160,7 @@ func (t *terminal) eventLoop() int {
 				// know the active window, there could be commands already enqueued
 				// that will change the active window, so using the active window
 				// directly or indirectly here is an incorrect assumption.
-				if i.keyName == "<enter>" {
+				if i.keyName == "Enter" {
 					t.ExecuteCommand(t.ActiveWindow(), keyBuffer)
 					keyBuffer = ""
 				} else {
@@ -271,6 +271,13 @@ func (w *window) ChildrenWindows() []wi.Window {
 }
 
 func (w *window) NewChildWindow(view wi.View, docking wi.DockingType) wi.Window {
+	log.Printf("Window(%s).NewChildWindow(%s, %s)", w.View().Title(), view.Title(), docking)
+	for _, child := range w.childrenWindows {
+		if child.Docking() == docking {
+			panic("TODO(maruel): Likely not a panic, maybe a fallback?")
+			return nil
+		}
+	}
 	child := makeWindow(w, view, docking)
 	w.childrenWindows = append(w.childrenWindows, child)
 	w.resizeChildren()
@@ -322,32 +329,63 @@ func (w *window) SetRect(rect tulib.Rect) {
 // resizeChildren() resizes all the children Window.
 func (w *window) resizeChildren() {
 	remaining := w.viewRect
+	var fill wi.Window
 	for _, child := range w.childrenWindows {
 		switch child.Docking() {
 		case wi.DockingFill:
-			// Should be last.
-			child.SetRect(remaining)
+			fill = child
 
 		case wi.DockingFloating:
 			// Ignore.
 
 		case wi.DockingLeft:
+			w, _ := child.View().NaturalSize()
+			if w > remaining.Width {
+				w = remaining.Width
+			}
+			tmp := remaining
+			tmp.Width = w
+			child.SetRect(tmp)
+			remaining.Y += w
+			remaining.Width -= w
 
 		case wi.DockingRight:
+			w, _ := child.View().NaturalSize()
+			if w > remaining.Width {
+				w = remaining.Width
+			}
+			tmp := remaining
+			tmp.Y = tmp.Width - w
+			child.SetRect(tmp)
+			remaining.Width -= w
 
 		case wi.DockingTop:
-			//_, h := child.View().NaturalSize()
-			child.SetRect(remaining)
-			remaining = remaining
+			_, h := child.View().NaturalSize()
+			if h > remaining.Height {
+				h = remaining.Height
+			}
+			tmp := remaining
+			tmp.Height = h
+			child.SetRect(tmp)
+			remaining.X += h
+			remaining.Height -= h
 
 		case wi.DockingBottom:
-			//_, h := child.View().NaturalSize()
-			child.SetRect(remaining)
-			remaining = remaining
+			_, h := child.View().NaturalSize()
+			if h > remaining.Height {
+				h = remaining.Height
+			}
+			tmp := remaining
+			tmp.X = tmp.Height - h
+			child.SetRect(tmp)
+			remaining.Height -= h
 
 		default:
 			panic("Fill me")
 		}
+	}
+	if fill != nil {
+		fill.SetRect(remaining)
 	}
 }
 

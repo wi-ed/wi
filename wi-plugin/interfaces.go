@@ -30,6 +30,25 @@ const (
 	DockingBottom
 )
 
+func (d DockingType) String() string {
+	switch d {
+	case DockingFill:
+		return "DockingFill"
+	case DockingFloating:
+		return "DockingFloating"
+	case DockingLeft:
+		return "DockingLeft"
+	case DockingRight:
+		return "DockingRight"
+	case DockingTop:
+		return "DockingTop"
+	case DockingBottom:
+		return "DockingBottom"
+	default:
+		panic("Unknown DockingType")
+	}
+}
+
 // BorderType defines the type of border for a Window.
 type BorderType int
 
@@ -41,6 +60,19 @@ const (
 	// Despite its name, width is 1.
 	BorderDouble
 )
+
+func (b BorderType) String() string {
+	switch b {
+	case BorderNone:
+		return "BorderNone"
+	case BorderSingle:
+		return "BorderSingle"
+	case BorderDouble:
+		return "BorderDouble"
+	default:
+		panic("Unknown BorderType")
+	}
+}
 
 // CommandCategory is used to put commands into sections for help purposes.
 type CommandCategory int
@@ -54,6 +86,19 @@ const (
 
 	// TODO(maruel): Add other categories.
 )
+
+func (c CommandCategory) String() string {
+	switch c {
+	case UnknownCategory:
+		return "UnknownCategory"
+	case WindowCategory:
+		return "WindowCategory"
+	case CommandsCategory:
+		return "CommandsCategory"
+	default:
+		panic("Unknown CommandCategory")
+	}
+}
 
 // Switches keyboard mapping based on the input mode. These modes are hardcode;
 // adding a new mode would require rebuilding the editor (2 seconds, really).
@@ -133,8 +178,9 @@ type Window interface {
 	Parent() Window
 	// ChildrenWindows returns a copy of the slice of children windows.
 	ChildrenWindows() []Window
-	// TODO(maruel): Accept a Window, not a View. This permits more complex
-	// window creation.
+	// NewChildWindow() adds a View in a new child Window located at 'docking'
+	// position. It is invalid to add a child Window with the same docking as one
+	// already present. In this case, nil is returned.
 	NewChildWindow(view View, docking DockingType) Window
 	// Remove detaches a child window tree from the tree. Care should be taken to
 	// not remove the active Window.
