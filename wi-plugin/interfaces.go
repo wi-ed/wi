@@ -12,7 +12,7 @@ import (
 	// TODO(maruel): Stop leaking this modules in the interface. We can't "type
 	// Buffer tulib.Buffer" or else we lose all the methods and will have to
 	// reimplement them here.
-	"github.com/nsf/tulib"
+	"github.com/maruel/tulib"
 )
 
 // UI

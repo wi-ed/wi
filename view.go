@@ -7,7 +7,7 @@ package main
 import (
 	"github.com/maruel/wi/wi-plugin"
 	"github.com/nsf/termbox-go"
-	"github.com/nsf/tulib"
+	"github.com/maruel/tulib"
 	"log"
 	"unicode/utf8"
 )
