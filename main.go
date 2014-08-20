@@ -86,7 +86,8 @@ func drawRecurse(w *window, offsetX, offsetY int, out *tulib.Buffer) {
 	out.Blit(w.Rect(), offsetX, offsetY, w.Buffer())
 	// TODO(maruel): Only draw the non-occuled frames!
 	for _, child := range w.childrenWindows {
-		drawRecurse(child, offsetX+w.viewRect.X, offsetY+w.viewRect.Y, out)
+		// TODO(maruel): Handle DockingFloating.
+		drawRecurse(child, offsetX+w.rect.X+w.viewRect.X, offsetY+w.rect.Y+w.viewRect.Y, out)
 	}
 }
 
@@ -313,6 +314,10 @@ func (w *window) Rect() tulib.Rect {
 	return w.rect
 }
 
+func (w *window) ViewRect() tulib.Rect {
+	return w.viewRect
+}
+
 func isEqual(lhs tulib.Rect, rhs tulib.Rect) bool {
 	return lhs.X == rhs.X && lhs.Y == rhs.Y && lhs.Width == rhs.Width && lhs.Height == rhs.Height
 }
@@ -323,14 +328,9 @@ var doubleBorder = []rune{'\u2550', '\u2551', '\u2554', '\u2557', '\u255a', '\u2
 func (w *window) SetRect(rect tulib.Rect) {
 	log.Printf("%s.SetRect(%v)", w, rect)
 	// SetRect() recreates the buffer and immediately draws the borders.
-	// TODO(maruel): Most take in account new children window.
-	if isEqual(w.rect, rect) {
-		return
-	}
-
-	w.rect = rect
-	// Internal consistency check.
-	/*
+	if !isEqual(w.rect, rect) {
+		w.rect = rect
+		// Internal consistency check.
 		if w.parent != nil {
 			parentViewRect := w.parent.viewRect
 			if parentViewRect.Width < w.rect.X+w.rect.Width {
@@ -340,21 +340,21 @@ func (w *window) SetRect(rect tulib.Rect) {
 				panic(fmt.Sprintf("Child %v Height is greater than parent %v", w, w.parent))
 			}
 		}
-	*/
-	w.windowBuffer = tulib.NewBuffer(w.rect.Width, w.rect.Height)
-	if w.effectiveBorder() != wi.BorderNone {
-		w.viewRect = tulib.Rect{1, 1, w.rect.Width - 2, w.rect.Height - 2}
-		w.drawBorder()
-	} else {
-		w.viewRect = tulib.Rect{0, 0, w.rect.Width, w.rect.Height}
+		w.windowBuffer = tulib.NewBuffer(w.rect.Width, w.rect.Height)
+		if w.effectiveBorder() != wi.BorderNone {
+			w.viewRect = tulib.Rect{1, 1, w.rect.Width - 2, w.rect.Height - 2}
+			w.drawBorder()
+		} else {
+			w.viewRect = tulib.Rect{0, 0, w.rect.Width, w.rect.Height}
+		}
+		if w.viewRect.Width < 0 {
+			w.viewRect.Width = 0
+		}
+		if w.viewRect.Height < 0 {
+			w.viewRect.Height = 0
+		}
+		w.view.SetSize(w.viewRect.Width, w.viewRect.Height)
 	}
-	if w.viewRect.Width < 0 {
-		w.viewRect.Width = 0
-	}
-	if w.viewRect.Height < 0 {
-		w.viewRect.Height = 0
-	}
-	w.view.SetSize(w.viewRect.Width, w.viewRect.Height)
 	w.resizeChildren()
 }
 
@@ -369,7 +369,8 @@ func (w *window) resizeChildren() {
 			fill = child
 
 		case wi.DockingFloating:
-			// Ignore.
+			// Floating uses its own thing.
+			child.SetRect(child.Rect())
 
 		case wi.DockingLeft:
 			w, _ := child.View().NaturalSize()
@@ -409,9 +410,13 @@ func (w *window) resizeChildren() {
 			if h > remaining.Height {
 				h = remaining.Height
 			}
+			log.Printf("Argh %v", w.rect)
+			log.Printf("Argh %v", remaining)
+			log.Printf("Argh %v", w.viewRect)
 			tmp := remaining
 			tmp.Y += (remaining.Height - h)
 			tmp.Height = h
+			log.Printf("Argh %v", tmp)
 			child.SetRect(tmp)
 			remaining.Height -= h
 

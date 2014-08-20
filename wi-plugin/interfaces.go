@@ -179,7 +179,7 @@ type Editor interface {
 // following Window setup as 4 child Window of the root Window:
 //
 //    +-----------+-----------+------------+
-//    |  Remote   |Merge Base |   Local    |
+//    |  Remote   |Merge Base*|   Local    |
 //    |DockingLeft|DockingFill|DockingRight|
 //    |           |           |            |
 //    +-----------+-----------+------------+
@@ -188,7 +188,13 @@ type Editor interface {
 //    |                                    |
 //    +------------------------------------+
 //
-// This doesn't require any "split" support.
+// * The Merge Base View can be either:
+//   - The root Window's View that is constained.
+//   - A child Window set as DockingFill. In this case, the root Window View is
+//     not visible.
+//
+// The end result is that this use case doesn't require any "split" support.
+// Further subdivision can be done via Window containment.
 type Window interface {
 	fmt.Stringer
 
@@ -204,9 +210,15 @@ type Window interface {
 	// not remove the active Window.
 	Remove(w Window)
 
-	// Rect returns the position based on the parent Window, except if Docking()
-	// is DockingFloating.
+	// Rect returns the position based on the parent Window View area, except if
+	// Docking() is DockingFloating. The parent Window's View is covered by this
+	// Window.
 	Rect() tulib.Rect
+	// ViewRect returns the useable client area inside the Window.
+	ViewRect() tulib.Rect
+	// SetRect sets the rect of this Window, based on the parent's Window View
+	// area. It updates Rect() and ViewRect(), and will synchronously update the
+	// child Window that are not DockingFloating.
 	SetRect(rect tulib.Rect)
 
 	// Buffer returns the display buffer for this Window. The Window
@@ -370,4 +382,30 @@ func RootWindow(w Window) Window {
 		}
 		w = w.Parent()
 	}
+}
+
+// PositionOnScreen returns the exact position on screen of a Window.
+func PositionOnScreen(w Window) tulib.Rect {
+	out := w.Rect()
+	if w.Docking() == DockingFloating {
+		return out
+	}
+	for {
+		w = w.Parent()
+		if w == nil {
+			break
+		}
+		// Take in account the non-client area.
+		r := w.ViewRect()
+		out.X += r.X
+		out.Y += r.Y
+		// Take in account the parent Window position.
+		r = w.Rect()
+		out.X += r.X
+		out.Y += r.Y
+		if w.Docking() == DockingFloating {
+			break
+		}
+	}
+	return out
 }
