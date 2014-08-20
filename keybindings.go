@@ -183,4 +183,5 @@ func keyEventToName(event termbox.Event) string {
 func RegisterDefaultKeyBindings(cd wi.CommandDispatcher) {
 	cd.PostCommand("keybind", "global", "all", "F1", "help")
 	cd.PostCommand("keybind", "global", "all", "Ctrl-C", "quit")
+	cd.PostCommand("keybind", "global", "command", ":", "show_command_window")
 }

@@ -219,6 +219,19 @@ func cmdKeyBind(cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
 	w.View().KeyBindings().Set(mode, keyName, cmdName)
 }
 
+func cmdShowCommandWindow(cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
+	if len(args) != 0 {
+		cmd := wi.GetCommand(cd, nil, "show_command_window")
+		cd.ExecuteCommand(w, "alert", cmd.LongDesc(cd))
+		return
+	}
+
+	// Create the Window with the command view and attach it to the currently
+	// focused Window.
+	cmdWindow := makeCommandView()
+	w.NewChildWindow(cmdWindow, wi.DockingFloating)
+}
+
 // Native commands.
 var defaultCommands = map[string]wi.Command{
 
@@ -332,6 +345,16 @@ var defaultCommands = map[string]wi.Command{
 		},
 		langMap{
 			wi.LangEn: "Usage: keybind [window|global] [command|edit|all] <key> <command>\nBinds a keyboard mapping to a command. The binding can be to the active view for view-specific key binding or to the root view for global key bindings.",
+		},
+	},
+	"show_command_window": &command{
+		cmdShowCommandWindow,
+		wi.CommandsCategory,
+		langMap{
+			wi.LangEn: "Shows the interactive command window",
+		},
+		langMap{
+			wi.LangEn: "This commands exists so it can be bound to a key to pop up the interactive command window.",
 		},
 	},
 
