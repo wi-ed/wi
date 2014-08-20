@@ -210,15 +210,20 @@ type Window interface {
 	// not remove the active Window.
 	Remove(w Window)
 
-	// Rect returns the position based on the parent Window View area, except if
-	// Docking() is DockingFloating. The parent Window's View is covered by this
-	// Window.
+	// Rect returns the position based on the parent Window area, except if
+	// Docking() is DockingFloating.
 	Rect() tulib.Rect
-	// ViewRect returns the useable client area inside the Window.
-	ViewRect() tulib.Rect
-	// SetRect sets the rect of this Window, based on the parent's Window View
-	// area. It updates Rect() and ViewRect(), and will synchronously update the
-	// child Window that are not DockingFloating.
+
+	/*
+		// ViewRect returns the useable client area inside the Window. It has
+		// non-zero .X and .Y when using borders or when child Window are docked. It
+		// is empty when a child Window with DockingFill is present.
+		ViewRect() tulib.Rect
+	*/
+
+	// SetRect sets the rect of this Window, based on the parent's Window own
+	// Rect(). It updates Rect() and synchronously updates the child Window that
+	// are not DockingFloating.
 	SetRect(rect tulib.Rect)
 
 	// Buffer returns the display buffer for this Window. The Window
@@ -395,12 +400,8 @@ func PositionOnScreen(w Window) tulib.Rect {
 		if w == nil {
 			break
 		}
-		// Take in account the non-client area.
-		r := w.ViewRect()
-		out.X += r.X
-		out.Y += r.Y
 		// Take in account the parent Window position.
-		r = w.Rect()
+		r := w.Rect()
 		out.X += r.X
 		out.Y += r.Y
 		if w.Docking() == DockingFloating {
