@@ -5,9 +5,9 @@
 package main
 
 import (
+	"github.com/maruel/tulib"
 	"github.com/maruel/wi/wi-plugin"
 	"github.com/nsf/termbox-go"
-	"github.com/maruel/tulib"
 	"log"
 	"unicode/utf8"
 )
@@ -95,11 +95,11 @@ func makeView(title string, naturalX, naturalY int) wi.View {
 
 // The status line is a hierarchy of Window, one for each element, each showing
 // a single item.
-func makeStatusViewCenter() wi.View {
+func makeStatusViewRoot() wi.View {
 	// TODO(maruel): OnResize(), query the root Window size, if y<=5 or x<=15,
 	// set the root status Window to y=0, so that it becomes effectively
 	// invisible when the editor window is too small.
-	return makeView("Status Center", 1, 1)
+	return makeView("Status Root", 1, 1)
 }
 
 func makeStatusViewName() wi.View {

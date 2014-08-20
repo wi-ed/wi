@@ -6,9 +6,9 @@ package main
 
 import (
 	"fmt"
+	"github.com/maruel/tulib"
 	"github.com/maruel/wi/wi-plugin"
 	"github.com/nsf/termbox-go"
-	"github.com/maruel/tulib"
 	"log"
 )
 
@@ -89,14 +89,12 @@ func (w *window) SetRect(rect tulib.Rect) {
 	// SetRect() recreates the buffer and immediately draws the borders.
 	if !isEqual(w.rect, rect) {
 		w.rect = rect
-		/*
-			// Internal consistency check.
-			if w.parent != nil {
-				if !w.rect.FitsIn(w.parent.clientAreaRect) {
-					panic(fmt.Sprintf("Child %v doesn't fit parent's client area %v: %v; %v", w, w.parent, w.parent.clientAreaRect, w.rect.Intersection(w.parent.clientAreaRect)))
-				}
+		// Internal consistency check.
+		if w.parent != nil {
+			if !w.rect.FitsIn(w.parent.clientAreaRect) {
+				panic(fmt.Sprintf("Child %v doesn't fit parent's client area %v: %v; %v", w, w.parent, w.parent.clientAreaRect, w.rect.Intersection(w.parent.clientAreaRect)))
 			}
-		*/
+		}
 		w.windowBuffer = tulib.NewBuffer(w.rect.Width, w.rect.Height)
 		if w.effectiveBorder() != wi.BorderNone {
 			w.clientAreaRect = tulib.Rect{1, 1, w.rect.Width - 2, w.rect.Height - 2}
@@ -119,6 +117,7 @@ func (w *window) SetRect(rect tulib.Rect) {
 
 // resizeChildren() resizes all the children Window.
 func (w *window) resizeChildren() {
+	log.Printf("%s.resizeChildren()", w)
 	// When borders are used, w.clientAreaRect.X and .Y are likely 1.
 	remaining := w.clientAreaRect
 	var fill wi.Window
@@ -132,37 +131,40 @@ func (w *window) resizeChildren() {
 			child.SetRect(child.Rect())
 
 		case wi.DockingLeft:
-			w, _ := child.View().NaturalSize()
-			if w > remaining.Width {
-				w = remaining.Width
+			width, _ := child.View().NaturalSize()
+			if width > remaining.Width {
+				width = remaining.Width
 			}
 			tmp := remaining
-			tmp.Width = w
+			tmp.Width = width
 			child.SetRect(tmp)
-			remaining.Y += w
-			remaining.Width -= w
+			remaining.Y += width
+			remaining.Width -= width
 
 		case wi.DockingRight:
-			w, _ := child.View().NaturalSize()
-			if w > remaining.Width {
-				w = remaining.Width
+			width, _ := child.View().NaturalSize()
+			if width > remaining.Width {
+				width = remaining.Width
 			}
 			tmp := remaining
-			tmp.X += (remaining.Width - w)
-			tmp.Width = w
+			tmp.X += (remaining.Width - width)
+			tmp.Width = width
+			log.Printf("Just before; %s", w)
+			log.Printf("Just before; %v", w.clientAreaRect)
+			log.Printf("Just before; %v", remaining)
 			child.SetRect(tmp)
-			remaining.Width -= w
+			remaining.Width -= width
 
 		case wi.DockingTop:
-			_, h := child.View().NaturalSize()
-			if h > remaining.Height {
-				h = remaining.Height
+			_, height := child.View().NaturalSize()
+			if height > remaining.Height {
+				height = remaining.Height
 			}
 			tmp := remaining
-			tmp.Height = h
+			tmp.Height = height
 			child.SetRect(tmp)
-			remaining.X += h
-			remaining.Height -= h
+			remaining.X += height
+			remaining.Height -= height
 
 		case wi.DockingBottom:
 			_, h := child.View().NaturalSize()

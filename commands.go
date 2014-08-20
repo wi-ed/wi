@@ -96,9 +96,9 @@ func cmdAlert(cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
 
 func cmdAddStatusBar(cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
 	// Create a tree of views that is used for alignment.
-	w2 := w.NewChildWindow(makeStatusViewCenter(), wi.DockingBottom)
-	w2.NewChildWindow(makeStatusViewName(), wi.DockingLeft)
-	w2.NewChildWindow(makeStatusViewPosition(), wi.DockingRight)
+	statusWindowRoot := w.NewChildWindow(makeStatusViewRoot(), wi.DockingBottom)
+	statusWindowRoot.NewChildWindow(makeStatusViewName(), wi.DockingLeft)
+	statusWindowRoot.NewChildWindow(makeStatusViewPosition(), wi.DockingRight)
 }
 
 func cmdOpen(cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
