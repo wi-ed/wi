@@ -214,13 +214,6 @@ type Window interface {
 	// Docking() is DockingFloating.
 	Rect() tulib.Rect
 
-	/*
-		// ViewRect returns the useable client area inside the Window. It has
-		// non-zero .X and .Y when using borders or when child Window are docked. It
-		// is empty when a child Window with DockingFill is present.
-		ViewRect() tulib.Rect
-	*/
-
 	// SetRect sets the rect of this Window, based on the parent's Window own
 	// Rect(). It updates Rect() and synchronously updates the child Window that
 	// are not DockingFloating.

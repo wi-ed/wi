@@ -106,14 +106,14 @@ func makeStatusViewName() wi.View {
 	// View name.
 	// TODO(maruel): Register events of Window activation, make itself Invalidate().
 	// TODO(maruel): Drawing code.
-	return makeView("Status Name", 1, 10)
+	return makeView("Status Name", 15, 1)
 }
 
 func makeStatusViewPosition() wi.View {
 	// Position, % of file.
 	// TODO(maruel): Register events of movement, make itself Invalidate().
 	// TODO(maruel): Drawing code.
-	return makeView("Status Position", 1, 10)
+	return makeView("Status Position", 15, 1)
 }
 
 // The command box.
