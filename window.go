@@ -256,10 +256,10 @@ func makeWindow(parent *window, view wi.View, docking wi.DockingType) *window {
 		parent:  parent,
 		view:    view,
 		docking: docking,
-		//border:  wi.BorderNone,
-		border: wi.BorderDouble,
-		fg:     termbox.ColorWhite,
-		bg:     termbox.ColorBlack,
+		border:  wi.BorderNone,
+		//border: wi.BorderDouble,
+		fg: termbox.ColorWhite,
+		bg: termbox.ColorBlack,
 	}
 }
 
