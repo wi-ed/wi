@@ -265,10 +265,16 @@ func makeWindow(parent *window, view wi.View, docking wi.DockingType) *window {
 
 func drawRecurse(w *window, offsetX, offsetY int, out *tulib.Buffer) {
 	log.Printf("drawRecurse(%s, %d, %d); %v", w.View().Title(), offsetX, offsetY, w.Rect())
-	out.Blit(w.Rect(), offsetX, offsetY, w.Buffer())
+	if w.Docking() == wi.DockingFloating {
+		// Floating Window are relative to the screen, not the parent Window.
+		offsetX = 0
+		offsetY = 0
+	}
 	// TODO(maruel): Only draw the non-occuled frames!
+	out.Blit(w.Rect(), offsetX, offsetY, w.Buffer())
+	offsetX += w.rect.X
+	offsetY += w.rect.Y
 	for _, child := range w.childrenWindows {
-		// TODO(maruel): Handle DockingFloating.
-		drawRecurse(child, offsetX+w.rect.X, offsetY+w.rect.Y, out)
+		drawRecurse(child, offsetX, offsetY, out)
 	}
 }
