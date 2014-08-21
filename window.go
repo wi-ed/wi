@@ -85,7 +85,6 @@ func (w *window) Rect() tulib.Rect {
 }
 
 func (w *window) SetRect(rect tulib.Rect) {
-	log.Printf("%s.SetRect(%v)", w, rect)
 	// SetRect() recreates the buffer and immediately draws the borders.
 	if !isEqual(w.rect, rect) {
 		w.rect = rect
@@ -103,12 +102,13 @@ func (w *window) SetRect(rect tulib.Rect) {
 			w.clientAreaRect = tulib.Rect{0, 0, w.rect.Width, w.rect.Height}
 		}
 		if w.clientAreaRect.Width < 0 {
+			panic("Fix this case")
 			w.clientAreaRect.Width = 0
 		}
 		if w.clientAreaRect.Height < 0 {
+			panic("Fix this case")
 			w.clientAreaRect.Height = 0
 		}
-		log.Printf("%s.SetRect() client area: %v", w, w.clientAreaRect)
 	}
 	// Still flow the call through children Window, so DockingFloating are
 	// properly updated.
@@ -137,9 +137,9 @@ func (w *window) resizeChildren() {
 			}
 			tmp := remaining
 			tmp.Width = width
-			child.SetRect(tmp)
-			remaining.Y += width
+			remaining.X += width
 			remaining.Width -= width
+			child.SetRect(tmp)
 
 		case wi.DockingRight:
 			width, _ := child.View().NaturalSize()
@@ -149,11 +149,8 @@ func (w *window) resizeChildren() {
 			tmp := remaining
 			tmp.X += (remaining.Width - width)
 			tmp.Width = width
-			log.Printf("Just before; %s", w)
-			log.Printf("Just before; %v", w.clientAreaRect)
-			log.Printf("Just before; %v", remaining)
-			child.SetRect(tmp)
 			remaining.Width -= width
+			child.SetRect(tmp)
 
 		case wi.DockingTop:
 			_, height := child.View().NaturalSize()
@@ -162,9 +159,9 @@ func (w *window) resizeChildren() {
 			}
 			tmp := remaining
 			tmp.Height = height
-			child.SetRect(tmp)
 			remaining.X += height
 			remaining.Height -= height
+			child.SetRect(tmp)
 
 		case wi.DockingBottom:
 			_, h := child.View().NaturalSize()
@@ -174,8 +171,8 @@ func (w *window) resizeChildren() {
 			tmp := remaining
 			tmp.Y += (remaining.Height - h)
 			tmp.Height = h
-			child.SetRect(tmp)
 			remaining.Height -= h
+			child.SetRect(tmp)
 
 		default:
 			panic("Fill me")
