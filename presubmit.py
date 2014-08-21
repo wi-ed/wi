@@ -24,7 +24,7 @@ def errcheck(reldir):
     return call(cmd, reldir)
   except OSError:
     print('Warning: installing github.com/kisielk/errcheck')
-    out = drain(call(['go', 'install', 'github.com/kisielk/errcheck']))
+    out = drain(call(['go', 'get', '-u', 'github.com/kisielk/errcheck'], '.'))
     if out:
       print out
     return call(cmd, reldir)
