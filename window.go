@@ -372,10 +372,11 @@ func drawRecurse(w *window, offsetX, offsetY int, out *tulib.Buffer) {
 		offsetY = 0
 	}
 	// TODO(maruel): Only draw the non-occuled frames!
-	out.Blit(w.Rect(), offsetX, offsetY, w.Buffer())
-	offsetX += w.rect.X
-	offsetY += w.rect.Y
+	dest := w.Rect()
+	dest.X += offsetX
+	dest.Y += offsetY
+	out.Blit(dest, 0, 0, w.Buffer())
 	for _, child := range w.childrenWindows {
-		drawRecurse(child, offsetX, offsetY, out)
+		drawRecurse(child, dest.X, dest.Y, out)
 	}
 }
