@@ -87,6 +87,7 @@ func cmdAlert(cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
 		cd.ExecuteCommand(w, "alert", cmd.LongDesc(cd))
 	}
 	wi.RootWindow(w).NewChildWindow(makeAlertView(args[0]), wi.DockingFloating)
+	log.Printf("Tree:\n%s", wi.RootWindow(w).Tree())
 	//w2.Activate()
 	go func() {
 		<-time.After(5 * time.Second)

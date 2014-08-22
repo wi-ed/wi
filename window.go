@@ -82,7 +82,7 @@ func (w *window) ChildrenWindows() []wi.Window {
 }
 
 func (w *window) NewChildWindow(view wi.View, docking wi.DockingType) wi.Window {
-	log.Printf("Window(%s).NewChildWindow(%s, %s)", w.View().Title(), view.Title(), docking)
+	log.Printf("%s.NewChildWindow(%s, %s)", w, view.Title(), docking)
 	for _, child := range w.childrenWindows {
 		if child.Docking() == docking {
 			panic("TODO(maruel): Likely not a panic, maybe a fallback?")
@@ -90,8 +90,18 @@ func (w *window) NewChildWindow(view wi.View, docking wi.DockingType) wi.Window 
 		}
 	}
 	child := makeWindow(w, view, docking)
+	if docking == wi.DockingFloating {
+		width, height := view.NaturalSize()
+		// TODO(maruel): Not clean. Doesn't handle root Window resize properly.
+		rootRect := wi.RootWindow(w).Rect()
+		child.rect.X = (rootRect.Width - width - 1) / 2
+		child.rect.Y = (rootRect.Height - height - 1) / 2
+		child.rect.Width = width
+		child.rect.Height = height
+	}
 	w.childrenWindows = append(w.childrenWindows, child)
 	w.resizeChildren()
+	// TODO(maruel): cd.ViewReady(view)
 	return child
 }
 
@@ -101,6 +111,7 @@ func (w *window) Remove(child wi.Window) {
 			copy(w.childrenWindows[i:], w.childrenWindows[i+1:])
 			w.childrenWindows[len(w.childrenWindows)-1] = nil
 			w.childrenWindows = w.childrenWindows[:len(w.childrenWindows)-1]
+			// TODO(maruel): cd.ViewReady(view)
 			return
 		}
 	}
@@ -184,6 +195,7 @@ func (w *window) resizeChildren() {
 
 		case wi.DockingFloating:
 			// Floating uses its own thing.
+			// TODO(maruel): Not clean. Doesn't handle root Window resize properly.
 			child.SetRect(child.Rect())
 
 		case wi.DockingLeft:

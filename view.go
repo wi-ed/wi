@@ -116,13 +116,17 @@ func makeStatusViewPosition() wi.View {
 	return makeView("Status Position", 15, 1)
 }
 
-// The command box.
+// The command dialog box.
+// TODO(maruel): Position it 5 lines below the cursor in the parent Window's
+// View.
 func makeCommandView() wi.View {
-	return makeView("Command", 1, -1)
+	return makeView("Command", 30, 1)
 }
 
 // A dismissable modal dialog box. TODO(maruel): An infobar that auto-dismiss
 // itself after 5s.
 func makeAlertView(text string) wi.View {
-	return makeView("Alert:"+text, 1, 1)
+	out := "Alert:" + text
+	l := utf8.RuneCountInString(out)
+	return makeView(out, l, 1)
 }
