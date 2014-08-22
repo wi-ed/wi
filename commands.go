@@ -232,6 +232,16 @@ func cmdShowCommandWindow(cd wi.CommandDispatcherFull, w wi.Window, args ...stri
 	w.NewChildWindow(cmdWindow, wi.DockingFloating)
 }
 
+func cmdLogWindowTree(cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
+	if len(args) != 0 {
+		cmd := wi.GetCommand(cd, nil, "log_window_tree")
+		cd.ExecuteCommand(w, "alert", cmd.LongDesc(cd))
+		return
+	}
+	root := wi.RootWindow(w)
+	log.Printf("Window tree:\n%s", root.Tree())
+}
+
 // Native commands.
 var defaultCommands = map[string]wi.Command{
 
@@ -355,6 +365,18 @@ var defaultCommands = map[string]wi.Command{
 		},
 		langMap{
 			wi.LangEn: "This commands exists so it can be bound to a key to pop up the interactive command window.",
+		},
+	},
+
+	// Debugging.
+	"log_window_tree": &command{
+		cmdLogWindowTree,
+		wi.DebugCategory,
+		langMap{
+			wi.LangEn: "Logs the tree in the log file",
+		},
+		langMap{
+			wi.LangEn: "Logs the tree in the log file, this is only relevant if -verbose is used.",
 		},
 	},
 

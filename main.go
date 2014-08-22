@@ -9,9 +9,9 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/maruel/tulib"
 	"github.com/maruel/wi/wi-plugin"
 	"github.com/nsf/termbox-go"
-	"github.com/maruel/tulib"
 	"log"
 	"os"
 	"time"
@@ -305,6 +305,8 @@ func Main() int {
 		// If nothing, opens a blank editor.
 		editor.PostCommand("new")
 	}
+
+	editor.PostCommand("log_window_tree")
 
 	// Run the message loop.
 	return editor.eventLoop()

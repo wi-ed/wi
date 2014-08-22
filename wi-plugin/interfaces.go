@@ -84,6 +84,8 @@ const (
 	WindowCategory
 	// Commands relating to manipulating commands, aliases, keybindings.
 	CommandsCategory
+	// Commands relating to debugging the app itself or plugins.
+	DebugCategory
 
 	// TODO(maruel): Add other categories.
 )
@@ -96,6 +98,8 @@ func (c CommandCategory) String() string {
 		return "WindowCategory"
 	case CommandsCategory:
 		return "CommandsCategory"
+	case DebugCategory:
+		return "DebugCategory"
 	default:
 		panic("Unknown CommandCategory")
 	}
@@ -197,6 +201,9 @@ type Editor interface {
 // Further subdivision can be done via Window containment.
 type Window interface {
 	fmt.Stringer
+
+	// Tree returns a textual representation of the Window hierarchy.
+	Tree() string
 
 	// Parent returns the parent Window.
 	Parent() Window

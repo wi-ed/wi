@@ -10,6 +10,7 @@ import (
 	"github.com/maruel/wi/wi-plugin"
 	"github.com/nsf/termbox-go"
 	"log"
+	"strings"
 )
 
 var singleBorder = []rune{'\u2500', '\u2502', '\u250D', '\u2510', '\u2514', '\u2518'}
@@ -48,6 +49,20 @@ type window struct {
 
 func (w *window) String() string {
 	return fmt.Sprintf("Window(%s, %v)", w.View().Title(), w.Rect())
+}
+
+// Returns a string representing the tree.
+func (w *window) Tree() string {
+	// Not the most performant implementation but does the job.
+	out := w.String() + "\n"
+	for _, child := range w.childrenWindows {
+		for _, line := range strings.Split(child.Tree(), "\n") {
+			if line != "" {
+				out += ("  " + line + "\n")
+			}
+		}
+	}
+	return out
 }
 
 func (w *window) Parent() wi.Window {
