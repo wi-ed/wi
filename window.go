@@ -307,7 +307,7 @@ func (w *window) updateBorder() {
 
 	case drawnBorderRight:
 		w.clientAreaRect = tulib.Rect{0, 0, w.rect.Width - 1, w.rect.Height}
-		w.windowBuffer.Fill(tulib.Rect{w.rect.Width - 1, 1, 0, w.rect.Height}, w.cell(s[1]))
+		w.windowBuffer.Fill(tulib.Rect{w.rect.Width - 1, 0, 1, w.rect.Height}, w.cell(s[1]))
 
 	case drawnBorderTop:
 		w.clientAreaRect = tulib.Rect{0, 1, w.rect.Width, w.rect.Height - 1}
