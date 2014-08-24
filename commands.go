@@ -110,6 +110,7 @@ func cmdAlert(c *command, cd wi.CommandDispatcherFull, w wi.Window, args ...stri
 		cd.ExecuteCommand(w, "alert", c.LongDesc(cd, w))
 		return
 	}
+	// TODO(maruel): Use a 5 seconds infobar.
 	wi.RootWindow(w).NewChildWindow(makeAlertView(args[0]), wi.DockingFloating)
 	log.Printf("Tree:\n%s", wi.RootWindow(w).Tree())
 	//w2.Activate()
@@ -268,10 +269,6 @@ func cmdLogWindowTree(c *command, cd wi.CommandDispatcherFull, w wi.Window, args
 
 // Native commands.
 var defaultCommands = []wi.Command{
-
-	// WindowCategory
-
-	// TODO(maruel): Use a 5 seconds infobar.
 	&command{
 		"alert",
 		cmdAlert,
@@ -295,14 +292,14 @@ var defaultCommands = []wi.Command{
 		},
 	},
 	&command{
-		"open",
-		cmdOpen,
+		"help",
+		cmdHelp,
 		wi.WindowCategory,
 		langMap{
-			wi.LangEn: "Opens a file in a new buffer",
+			wi.LangEn: "Prints help",
 		},
 		langMap{
-			wi.LangEn: "Opens a file in a new buffer.",
+			wi.LangEn: "Prints general help or help for a particular command.",
 		},
 	},
 	&command{
@@ -316,8 +313,17 @@ var defaultCommands = []wi.Command{
 			wi.LangEn: "Create a new buffer.",
 		},
 	},
-
-	// Editor process lifetime management.
+	&command{
+		"open",
+		cmdOpen,
+		wi.WindowCategory,
+		langMap{
+			wi.LangEn: "Opens a file in a new buffer",
+		},
+		langMap{
+			wi.LangEn: "Opens a file in a new buffer.",
+		},
+	},
 	&command{
 		"quit",
 		cmdQuit,
@@ -329,8 +335,6 @@ var defaultCommands = []wi.Command{
 			wi.LangEn: "Quits the editor. Optionally bypasses writing the files to disk.",
 		},
 	},
-
-	// High level commands.
 	&command{
 		"shell",
 		cmdShell,
@@ -353,20 +357,6 @@ var defaultCommands = []wi.Command{
 			wi.LangEn: "Uses the 'doc' tool to get documentation about the text under the cursor.",
 		},
 	},
-	&command{
-		"help",
-		cmdHelp,
-		wi.WindowCategory,
-		langMap{
-			wi.LangEn: "Prints help",
-		},
-		langMap{
-			wi.LangEn: "Prints general help or help for a particular command.",
-		},
-	},
-	&commandAlias{"q", "quit"},
-
-	// CommandsCategory
 
 	&command{
 		"alias",
@@ -403,7 +393,6 @@ var defaultCommands = []wi.Command{
 		},
 	},
 
-	// Debugging.
 	&command{
 		"log_window_tree",
 		cmdLogWindowTree,
@@ -415,6 +404,8 @@ var defaultCommands = []wi.Command{
 			wi.LangEn: "Logs the tree in the log file, this is only relevant if -verbose is used.",
 		},
 	},
+
+	&commandAlias{"q", "quit"},
 
 	// DIRECTION = up/down/left/right
 	// window_DIRECTION
