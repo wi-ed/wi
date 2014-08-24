@@ -27,6 +27,7 @@ var quitFlag = false
 
 // UI
 
+// commandQueueItem is a command pending to be executed.
 type commandQueueItem struct {
 	cmdName string
 	args    []string
@@ -126,7 +127,6 @@ func (t *terminal) ActivateWindow(w wi.Window) {
 }
 
 func (t *terminal) PostDraw() {
-	log.Printf("PostDraw()")
 	go func() {
 		t.viewReady <- true
 	}()
