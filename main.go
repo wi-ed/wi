@@ -143,7 +143,7 @@ func (t *terminal) onResize() {
 // runs in the UI goroutine.
 func (t *terminal) eventLoop() int {
 	fakeChan := make(chan time.Time)
-	var drawTimer <-chan time.Time = time.After(5 * time.Millisecond)
+	var drawTimer <-chan time.Time = fakeChan
 	keyBuffer := ""
 	for {
 		select {
@@ -201,6 +201,17 @@ func (t *terminal) eventLoop() int {
 			if quitFlag {
 				return 0
 			}
+
+			// Empty t.viewReady first.
+		EmptyViewReady:
+			for {
+				select {
+				case <-t.viewReady:
+				default:
+					break EmptyViewReady
+				}
+			}
+
 			t.draw()
 			drawTimer = fakeChan
 		}

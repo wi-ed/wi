@@ -107,7 +107,6 @@ func (w *window) NewChildWindow(view wi.View, docking wi.DockingType) wi.Window 
 	}
 	w.childrenWindows = append(w.childrenWindows, child)
 	w.resizeChildren()
-	w.cd.PostDraw()
 	return child
 }
 
@@ -281,6 +280,7 @@ func (w *window) resizeChildren() {
 		w.viewRect = remaining
 		w.view.SetSize(w.viewRect.Width, w.viewRect.Height)
 	}
+	w.cd.PostDraw()
 }
 
 func (w *window) Buffer() *tulib.Buffer {
@@ -297,6 +297,7 @@ func (w *window) Docking() wi.DockingType {
 func (w *window) SetDocking(docking wi.DockingType) {
 	if w.docking != docking {
 		w.docking = docking
+		w.cd.PostDraw()
 	}
 }
 
@@ -305,6 +306,7 @@ func (w *window) SetView(view wi.View) {
 	if view != w.view {
 		w.view = view
 		w.windowBuffer.Fill(w.viewRect, w.cell(' '))
+		w.cd.PostDraw()
 	}
 }
 
@@ -397,6 +399,7 @@ func makeWindow(parent *window, view wi.View, docking wi.DockingType) *window {
 	}
 }
 
+// drawRecurse recursively draws the Window tree into buffer out.
 func drawRecurse(w *window, offsetX, offsetY int, out *tulib.Buffer) {
 	log.Printf("drawRecurse(%s, %d, %d); %v", w.View().Title(), offsetX, offsetY, w.Rect())
 	if w.Docking() == wi.DockingFloating {
@@ -404,12 +407,22 @@ func drawRecurse(w *window, offsetX, offsetY int, out *tulib.Buffer) {
 		offsetX = 0
 		offsetY = 0
 	}
-	// TODO(maruel): Only draw the non-occuled frames!
+	// TODO(maruel): Only draw non-occuled Windows!
 	dest := w.Rect()
 	dest.X += offsetX
 	dest.Y += offsetY
 	out.Blit(dest, 0, 0, w.Buffer())
+	// In the case of DockingFill, only the first one should be drawn. In
+	// particular, the DockingFloating child of an hidden DockingFill will not be
+	// drawn.
+	fillFound := false
 	for _, child := range w.childrenWindows {
+		if child.docking == wi.DockingFill {
+			if fillFound {
+				continue
+			}
+			fillFound = true
+		}
 		drawRecurse(child, dest.X, dest.Y, out)
 	}
 }

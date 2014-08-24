@@ -66,7 +66,7 @@ func (v *view) SetSize(x, y int) {
 }
 
 func (v *view) Buffer() *tulib.Buffer {
-	log.Printf("View(%s).Buffer(%d, %d)", v.Title(), v.actualX, v.actualY)
+	//log.Printf("View(%s).Buffer(%d, %d)", v.Title(), v.actualX, v.actualY)
 	r, _ := utf8.DecodeRuneInString(v.Title())
 	v.buffer.Fill(tulib.Rect{0, 0, v.actualX, v.actualY}, termbox.Cell{r, termbox.ColorRed, termbox.ColorBlack})
 	l := tulib.LabelParams{
@@ -126,7 +126,7 @@ func makeCommandView() wi.View {
 // A dismissable modal dialog box. TODO(maruel): An infobar that auto-dismiss
 // itself after 5s.
 func makeAlertView(text string) wi.View {
-	out := "Alert:" + text
+	out := "Alert: " + text
 	l := utf8.RuneCountInString(out)
 	return makeView(out, l, 1)
 }
