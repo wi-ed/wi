@@ -18,6 +18,10 @@ var aliasFor = langMap{
 	wi.LangEn: "Alias for \"%s\".",
 }
 
+var aliasNotFound = langMap{
+	wi.LangEn: "\"%s\" is an alias to command \"%s\" but this command is not registered.",
+}
+
 var notFound = langMap{
 	wi.LangEn: "Command \"%s\" is not registered.",
 }

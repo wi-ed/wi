@@ -13,6 +13,7 @@ import (
 
 type CommandHandler func(c *command, cd wi.CommandDispatcherFull, w wi.Window, args ...string)
 
+// command is the boilerplate wi.Command implementation.
 type command struct {
 	name      string
 	handler   CommandHandler
@@ -29,19 +30,21 @@ func (c *command) Handle(cd wi.CommandDispatcherFull, w wi.Window, args ...strin
 	c.handler(c, cd, w, args...)
 }
 
-func (c *command) Category(cd wi.CommandDispatcherFull) wi.CommandCategory {
+func (c *command) Category(cd wi.CommandDispatcherFull, w wi.Window) wi.CommandCategory {
 	return c.category
 }
 
-func (c *command) ShortDesc(cd wi.CommandDispatcherFull) string {
+func (c *command) ShortDesc(cd wi.CommandDispatcherFull, w wi.Window) string {
 	return getStr(cd.CurrentLanguage(), c.shortDesc)
 }
 
-func (c *command) LongDesc(cd wi.CommandDispatcherFull) string {
+func (c *command) LongDesc(cd wi.CommandDispatcherFull, w wi.Window) string {
 	return getStr(cd.CurrentLanguage(), c.longDesc)
 }
 
-// commandAlias references another command.
+// commandAlias references another command by its name. It's important to not
+// bind directly to the wi.Command reference, so that if a command is replaced
+// by a plugin, that the replacement command is properly called by the alias.
 type commandAlias struct {
 	name    string
 	command string
@@ -52,22 +55,31 @@ func (c *commandAlias) Name() string {
 }
 
 func (c *commandAlias) Handle(cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
-	cd.ExecuteCommand(w, c.command, args...)
+	// The alias is executed inline. This is important for command queue
+	// ordering.
+	cmd := wi.GetCommand(cd, w, c.command)
+	if cmd != nil {
+		cmd.Handle(cd, w, args...)
+	} else {
+		cmd = wi.GetCommand(cd, w, "alert")
+		txt := fmt.Sprintf(getStr(cd.CurrentLanguage(), aliasNotFound), c.name, c.command)
+		cmd.Handle(cd, w, txt)
+	}
 }
 
-func (c *commandAlias) Category(cd wi.CommandDispatcherFull) wi.CommandCategory {
-	cmd := wi.GetCommand(cd, nil, c.command)
+func (c *commandAlias) Category(cd wi.CommandDispatcherFull, w wi.Window) wi.CommandCategory {
+	cmd := wi.GetCommand(cd, w, c.command)
 	if cmd != nil {
-		return c.Category(cd)
+		return c.Category(cd, w)
 	}
 	return wi.UnknownCategory
 }
 
-func (c *commandAlias) ShortDesc(cd wi.CommandDispatcherFull) string {
+func (c *commandAlias) ShortDesc(cd wi.CommandDispatcherFull, w wi.Window) string {
 	return fmt.Sprintf(getStr(cd.CurrentLanguage(), aliasFor), c.command)
 }
 
-func (c *commandAlias) LongDesc(cd wi.CommandDispatcherFull) string {
+func (c *commandAlias) LongDesc(cd wi.CommandDispatcherFull, w wi.Window) string {
 	return fmt.Sprintf(getStr(cd.CurrentLanguage(), aliasFor), c.command)
 }
 
@@ -95,7 +107,7 @@ func makeCommands() wi.Commands {
 func cmdAlert(c *command, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
 	// TODO(maruel): Create an infobar that automatically dismiss itself after 5s.
 	if len(args) != 1 {
-		cd.ExecuteCommand(w, "alert", c.LongDesc(cd))
+		cd.ExecuteCommand(w, "alert", c.LongDesc(cd, w))
 		return
 	}
 	wi.RootWindow(w).NewChildWindow(makeAlertView(args[0]), wi.DockingFloating)
@@ -110,7 +122,7 @@ func cmdAlert(c *command, cd wi.CommandDispatcherFull, w wi.Window, args ...stri
 func cmdAddStatusBar(c *command, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
 	// Create a tree of views that is used for alignment.
 	if len(args) != 0 {
-		cd.ExecuteCommand(w, "alert", c.LongDesc(cd))
+		cd.ExecuteCommand(w, "alert", c.LongDesc(cd, w))
 		return
 	}
 	statusWindowRoot := w.NewChildWindow(makeStatusViewRoot(), wi.DockingBottom)
@@ -126,8 +138,8 @@ func cmdOpen(c *command, cd wi.CommandDispatcherFull, w wi.Window, args ...strin
 
 func cmdNew(c *command, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
 	if len(args) != 0 {
-		cmd := wi.GetCommand(cd, nil, "alias")
-		cd.ExecuteCommand(w, "alert", cmd.LongDesc(cd))
+		cmd := wi.GetCommand(cd, w, "alias")
+		cd.ExecuteCommand(w, "alert", cmd.LongDesc(cd, w))
 	} else {
 		w.NewChildWindow(makeView("New doc", -1, -1), wi.DockingFill)
 	}
@@ -181,16 +193,16 @@ func cmdHelp(c *command, cd wi.CommandDispatcherFull, w wi.Window, args ...strin
 
 func cmdAlias(c *command, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
 	if len(args) != 3 {
-		cmd := wi.GetCommand(cd, nil, "alias")
-		cd.ExecuteCommand(w, "alert", cmd.LongDesc(cd))
+		cmd := wi.GetCommand(cd, w, "alias")
+		cd.ExecuteCommand(w, "alert", cmd.LongDesc(cd, w))
 		return
 	}
 	if args[0] == "window" {
 	} else if args[0] == "global" {
 		w = wi.RootWindow(w)
 	} else {
-		cmd := wi.GetCommand(cd, nil, "alias")
-		cd.ExecuteCommand(w, "alert", cmd.LongDesc(cd))
+		cmd := wi.GetCommand(cd, w, "alias")
+		cd.ExecuteCommand(w, "alert", cmd.LongDesc(cd, w))
 		return
 	}
 	alias := &commandAlias{args[1], args[2]}
@@ -199,8 +211,8 @@ func cmdAlias(c *command, cd wi.CommandDispatcherFull, w wi.Window, args ...stri
 
 func cmdKeyBind(c *command, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
 	if len(args) != 4 {
-		cmd := wi.GetCommand(cd, nil, "keybind")
-		cd.ExecuteCommand(w, "alert", cmd.LongDesc(cd))
+		cmd := wi.GetCommand(cd, w, "keybind")
+		cd.ExecuteCommand(w, "alert", cmd.LongDesc(cd, w))
 		return
 	}
 	location := args[0]
@@ -211,8 +223,8 @@ func cmdKeyBind(c *command, cd wi.CommandDispatcherFull, w wi.Window, args ...st
 	if location == "global" {
 		w = wi.RootWindow(w)
 	} else if location != "window" {
-		cmd := wi.GetCommand(cd, nil, "keybind")
-		cd.ExecuteCommand(w, "alert", cmd.LongDesc(cd))
+		cmd := wi.GetCommand(cd, w, "keybind")
+		cd.ExecuteCommand(w, "alert", cmd.LongDesc(cd, w))
 		return
 	}
 
@@ -224,8 +236,8 @@ func cmdKeyBind(c *command, cd wi.CommandDispatcherFull, w wi.Window, args ...st
 	} else if modeName == "all" {
 		mode = wi.AllMode
 	} else {
-		cmd := wi.GetCommand(cd, nil, "keybind")
-		cd.ExecuteCommand(w, "alert", cmd.LongDesc(cd))
+		cmd := wi.GetCommand(cd, w, "keybind")
+		cd.ExecuteCommand(w, "alert", cmd.LongDesc(cd, w))
 		return
 	}
 	w.View().KeyBindings().Set(mode, keyName, cmdName)
@@ -233,8 +245,8 @@ func cmdKeyBind(c *command, cd wi.CommandDispatcherFull, w wi.Window, args ...st
 
 func cmdShowCommandWindow(c *command, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
 	if len(args) != 0 {
-		cmd := wi.GetCommand(cd, nil, "show_command_window")
-		cd.ExecuteCommand(w, "alert", cmd.LongDesc(cd))
+		cmd := wi.GetCommand(cd, w, "show_command_window")
+		cd.ExecuteCommand(w, "alert", cmd.LongDesc(cd, w))
 		return
 	}
 
@@ -246,8 +258,8 @@ func cmdShowCommandWindow(c *command, cd wi.CommandDispatcherFull, w wi.Window, 
 
 func cmdLogWindowTree(c *command, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
 	if len(args) != 0 {
-		cmd := wi.GetCommand(cd, nil, "log_window_tree")
-		cd.ExecuteCommand(w, "alert", cmd.LongDesc(cd))
+		cmd := wi.GetCommand(cd, w, "log_window_tree")
+		cd.ExecuteCommand(w, "alert", cmd.LongDesc(cd, w))
 		return
 	}
 	root := wi.RootWindow(w)

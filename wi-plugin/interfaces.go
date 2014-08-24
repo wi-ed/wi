@@ -307,15 +307,15 @@ type Command interface {
 	Handle(cd CommandDispatcherFull, w Window, args ...string)
 	// Category returns the category the command should be bucketed in, for help
 	// documentation purpose.
-	Category(cd CommandDispatcherFull) CommandCategory
+	Category(cd CommandDispatcherFull, w Window) CommandCategory
 	// ShortDesc returns a short description of the command in the language
 	// requested. It defaults to English if the description was not translated in
 	// this language.
-	ShortDesc(cd CommandDispatcherFull) string
+	ShortDesc(cd CommandDispatcherFull, w Window) string
 	// LongDesc returns a long explanation of the command in the language
 	// requested. It defaults to English if the description was not translated in
 	// this language.
-	LongDesc(cd CommandDispatcherFull) string
+	LongDesc(cd CommandDispatcherFull, w Window) string
 }
 
 // Commands stores the known commands. This is where plugins can add new
