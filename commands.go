@@ -11,16 +11,22 @@ import (
 	"time"
 )
 
+type CommandHandler func(c *command, cd wi.CommandDispatcherFull, w wi.Window, args ...string)
+
 type command struct {
-	handler   wi.CommandHandler
+	name      string
+	handler   CommandHandler
 	category  wi.CommandCategory
 	shortDesc langMap
 	longDesc  langMap
 }
 
-// Handle runs the handler.
+func (c *command) Name() string {
+	return c.name
+}
+
 func (c *command) Handle(cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
-	c.handler(cd, w, args...)
+	c.handler(c, cd, w, args...)
 }
 
 func (c *command) Category(cd wi.CommandDispatcherFull) wi.CommandCategory {
@@ -37,7 +43,12 @@ func (c *command) LongDesc(cd wi.CommandDispatcherFull) string {
 
 // commandAlias references another command.
 type commandAlias struct {
+	name    string
 	command string
+}
+
+func (c *commandAlias) Name() string {
+	return c.name
 }
 
 func (c *commandAlias) Handle(cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
@@ -64,7 +75,8 @@ type commands struct {
 	commands map[string]wi.Command
 }
 
-func (c *commands) Register(name string, cmd wi.Command) bool {
+func (c *commands) Register(cmd wi.Command) bool {
+	name := cmd.Name()
 	_, ok := c.commands[name]
 	c.commands[name] = cmd
 	return !ok
@@ -80,11 +92,11 @@ func makeCommands() wi.Commands {
 
 // Default commands
 
-func cmdAlert(cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
+func cmdAlert(c *command, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
 	// TODO(maruel): Create an infobar that automatically dismiss itself after 5s.
 	if len(args) != 1 {
-		cmd := wi.GetCommand(cd, nil, "alert")
-		cd.ExecuteCommand(w, "alert", cmd.LongDesc(cd))
+		cd.ExecuteCommand(w, "alert", c.LongDesc(cd))
+		return
 	}
 	wi.RootWindow(w).NewChildWindow(makeAlertView(args[0]), wi.DockingFloating)
 	log.Printf("Tree:\n%s", wi.RootWindow(w).Tree())
@@ -95,20 +107,24 @@ func cmdAlert(cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
 	}()
 }
 
-func cmdAddStatusBar(cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
+func cmdAddStatusBar(c *command, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
 	// Create a tree of views that is used for alignment.
+	if len(args) != 0 {
+		cd.ExecuteCommand(w, "alert", c.LongDesc(cd))
+		return
+	}
 	statusWindowRoot := w.NewChildWindow(makeStatusViewRoot(), wi.DockingBottom)
 	statusWindowRoot.NewChildWindow(makeStatusViewName(), wi.DockingLeft)
 	statusWindowRoot.NewChildWindow(makeStatusViewPosition(), wi.DockingRight)
 }
 
-func cmdOpen(cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
+func cmdOpen(c *command, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
 	// The Window and View are created synchronously. The View is populated
 	// asynchronously.
 	log.Printf("Faking opening a file: %s", args)
 }
 
-func cmdNew(cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
+func cmdNew(c *command, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
 	if len(args) != 0 {
 		cmd := wi.GetCommand(cd, nil, "alias")
 		cd.ExecuteCommand(w, "alert", cmd.LongDesc(cd))
@@ -117,11 +133,11 @@ func cmdNew(cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
 	}
 }
 
-func cmdShell(cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
+func cmdShell(c *command, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
 	log.Printf("Faking opening a new shell: %s", args)
 }
 
-func cmdDoc(cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
+func cmdDoc(c *command, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
 	// TODO(maruel): Grab the current word under selection if no args is
 	// provided. Pass this token to shell.
 	docArgs := make([]string, len(args)+1)
@@ -144,7 +160,7 @@ func isDirtyRecurse(cd wi.CommandDispatcherFull, w wi.Window) bool {
 	return false
 }
 
-func cmdQuit(cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
+func cmdQuit(c *command, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
 	// TODO(maruel): For all the View, question if fine to quit via
 	// view.IsDirty(). If not fine, "prompt" y/n to force quit. If n, stop there.
 	// - Send a signal to each plugin.
@@ -158,12 +174,12 @@ func cmdQuit(cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
 	}
 }
 
-func cmdHelp(cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
+func cmdHelp(c *command, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
 	// TODO(maruel): Creates a new Window with a ViewHelp.
 	log.Printf("Faking help: %s", args)
 }
 
-func cmdAlias(cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
+func cmdAlias(c *command, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
 	if len(args) != 3 {
 		cmd := wi.GetCommand(cd, nil, "alias")
 		cd.ExecuteCommand(w, "alert", cmd.LongDesc(cd))
@@ -177,16 +193,11 @@ func cmdAlias(cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
 		cd.ExecuteCommand(w, "alert", cmd.LongDesc(cd))
 		return
 	}
-	cmdName := args[2]
-	cmd := wi.GetCommand(cd, w, cmdName)
-	if cmd == nil {
-		cd.ExecuteCommand(w, "alert", fmt.Sprintf(getStr(cd.CurrentLanguage(), notFound), cmdName))
-		return
-	}
-	w.View().Commands().Register(args[1], cmd)
+	alias := &commandAlias{args[1], args[2]}
+	w.View().Commands().Register(alias)
 }
 
-func cmdKeyBind(cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
+func cmdKeyBind(c *command, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
 	if len(args) != 4 {
 		cmd := wi.GetCommand(cd, nil, "keybind")
 		cd.ExecuteCommand(w, "alert", cmd.LongDesc(cd))
@@ -220,7 +231,7 @@ func cmdKeyBind(cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
 	w.View().KeyBindings().Set(mode, keyName, cmdName)
 }
 
-func cmdShowCommandWindow(cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
+func cmdShowCommandWindow(c *command, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
 	if len(args) != 0 {
 		cmd := wi.GetCommand(cd, nil, "show_command_window")
 		cd.ExecuteCommand(w, "alert", cmd.LongDesc(cd))
@@ -233,7 +244,7 @@ func cmdShowCommandWindow(cd wi.CommandDispatcherFull, w wi.Window, args ...stri
 	w.NewChildWindow(cmdWindow, wi.DockingFloating)
 }
 
-func cmdLogWindowTree(cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
+func cmdLogWindowTree(c *command, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
 	if len(args) != 0 {
 		cmd := wi.GetCommand(cd, nil, "log_window_tree")
 		cd.ExecuteCommand(w, "alert", cmd.LongDesc(cd))
@@ -244,12 +255,13 @@ func cmdLogWindowTree(cd wi.CommandDispatcherFull, w wi.Window, args ...string) 
 }
 
 // Native commands.
-var defaultCommands = map[string]wi.Command{
+var defaultCommands = []wi.Command{
 
 	// WindowCategory
 
 	// TODO(maruel): Use a 5 seconds infobar.
-	"alert": &command{
+	&command{
+		"alert",
 		cmdAlert,
 		wi.WindowCategory,
 		langMap{
@@ -259,7 +271,8 @@ var defaultCommands = map[string]wi.Command{
 			wi.LangEn: "Prints a message in a modal dialog box.",
 		},
 	},
-	"add_status_bar": &command{
+	&command{
+		"add_status_bar",
 		cmdAddStatusBar,
 		wi.WindowCategory,
 		langMap{
@@ -269,7 +282,8 @@ var defaultCommands = map[string]wi.Command{
 			wi.LangEn: "Adds the standard status bar to the active window. This command exists so it can be overriden by a plugin, so it can create its own status bar.",
 		},
 	},
-	"open": &command{
+	&command{
+		"open",
 		cmdOpen,
 		wi.WindowCategory,
 		langMap{
@@ -279,7 +293,8 @@ var defaultCommands = map[string]wi.Command{
 			wi.LangEn: "Opens a file in a new buffer.",
 		},
 	},
-	"new": &command{
+	&command{
+		"new",
 		cmdNew,
 		wi.WindowCategory,
 		langMap{
@@ -291,7 +306,8 @@ var defaultCommands = map[string]wi.Command{
 	},
 
 	// Editor process lifetime management.
-	"quit": &command{
+	&command{
+		"quit",
 		cmdQuit,
 		wi.WindowCategory,
 		langMap{
@@ -303,7 +319,8 @@ var defaultCommands = map[string]wi.Command{
 	},
 
 	// High level commands.
-	"shell": &command{
+	&command{
+		"shell",
 		cmdShell,
 		wi.WindowCategory,
 		langMap{
@@ -313,7 +330,8 @@ var defaultCommands = map[string]wi.Command{
 			wi.LangEn: "Opens a shell process in a new buffer.",
 		},
 	},
-	"doc": &command{
+	&command{
+		"doc",
 		cmdDoc,
 		wi.WindowCategory,
 		langMap{
@@ -323,7 +341,8 @@ var defaultCommands = map[string]wi.Command{
 			wi.LangEn: "Uses the 'doc' tool to get documentation about the text under the cursor.",
 		},
 	},
-	"help": &command{
+	&command{
+		"help",
 		cmdHelp,
 		wi.WindowCategory,
 		langMap{
@@ -333,11 +352,12 @@ var defaultCommands = map[string]wi.Command{
 			wi.LangEn: "Prints general help or help for a particular command.",
 		},
 	},
-	"q": &commandAlias{"quit"},
+	&commandAlias{"q", "quit"},
 
 	// CommandsCategory
 
-	"alias": &command{
+	&command{
+		"alias",
 		cmdAlias,
 		wi.CommandsCategory,
 		langMap{
@@ -348,7 +368,8 @@ var defaultCommands = map[string]wi.Command{
 			wi.LangEn: "Usage: alias [window|global] <alias> <name>\nBinds an alias to another command. The alias can either be local to the window or global",
 		},
 	},
-	"keybind": &command{
+	&command{
+		"keybind",
 		cmdKeyBind,
 		wi.CommandsCategory,
 		langMap{
@@ -358,7 +379,8 @@ var defaultCommands = map[string]wi.Command{
 			wi.LangEn: "Usage: keybind [window|global] [command|edit|all] <key> <command>\nBinds a keyboard mapping to a command. The binding can be to the active view for view-specific key binding or to the root view for global key bindings.",
 		},
 	},
-	"show_command_window": &command{
+	&command{
+		"show_command_window",
 		cmdShowCommandWindow,
 		wi.CommandsCategory,
 		langMap{
@@ -370,7 +392,8 @@ var defaultCommands = map[string]wi.Command{
 	},
 
 	// Debugging.
-	"log_window_tree": &command{
+	&command{
+		"log_window_tree",
 		cmdLogWindowTree,
 		wi.DebugCategory,
 		langMap{
@@ -399,7 +422,7 @@ var defaultCommands = map[string]wi.Command{
 // a file buffer itself, it's up to the relevant view to add the corresponding
 // commands. For example, "open" is implemented but "write" is not!
 func RegisterDefaultCommands(dispatcher wi.Commands) {
-	for name, cmd := range defaultCommands {
-		dispatcher.Register(name, cmd)
+	for _, cmd := range defaultCommands {
+		dispatcher.Register(cmd)
 	}
 }

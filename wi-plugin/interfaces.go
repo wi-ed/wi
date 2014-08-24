@@ -301,6 +301,8 @@ type CommandHandler func(cd CommandDispatcherFull, w Window, args ...string)
 // Command describes a registered command that can be triggered directly at the
 // command prompt, via a keybinding or a plugin.
 type Command interface {
+	// Name is the name of the command.
+	Name() string
 	// Handle executes the command.
 	Handle(cd CommandDispatcherFull, w Window, args ...string)
 	// Category returns the category the command should be bucketed in, for help
@@ -322,7 +324,7 @@ type Commands interface {
 	// Register registers a command so it can be executed later. In practice
 	// commands should normally be registered on startup. Returns false if a
 	// command was already registered and was lost.
-	Register(cmdName string, cmd Command) bool
+	Register(cmd Command) bool
 
 	// Get returns a command if registered, nil otherwise.
 	Get(cmdName string) Command
