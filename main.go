@@ -125,7 +125,8 @@ func (t *terminal) ActivateWindow(w wi.Window) {
 	t.lastActive[0] = w
 }
 
-func (t *terminal) ViewReady(v wi.View) {
+func (t *terminal) PostDraw() {
+	log.Printf("PostDraw()")
 	go func() {
 		t.viewReady <- true
 	}()
@@ -228,6 +229,7 @@ func makeEditor() *terminal {
 		languageMode:   wi.LangEn,
 		keyboardMode:   wi.EditMode,
 	}
+	rootWindow.cd = terminal
 
 	RegisterDefaultKeyBindings(terminal)
 

@@ -180,9 +180,9 @@ func cmdQuit(c *command, cd wi.CommandDispatcherFull, w wi.Window, args ...strin
 	root := wi.RootWindow(w)
 	if !isDirtyRecurse(cd, root) {
 		quitFlag = true
-		// ViewReady will wake up the command event loop so it detects it's time to
+		// PostDraw wakes up the command event loop so it detects it's time to
 		// quit.
-		cd.ViewReady(w.View())
+		cd.PostDraw()
 	}
 }
 

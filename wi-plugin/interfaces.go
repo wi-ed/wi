@@ -156,8 +156,9 @@ type CommandDispatcherFull interface {
 	// ActivateWindow activates a Window.
 	ActivateWindow(w Window)
 
-	// Signal the terminal that an invalidated View is now ready to render.
-	ViewReady(v View)
+	// PostDraw signals the terminal that an invalidated View or Window is now
+	// ready to render.
+	PostDraw()
 
 	CurrentLanguage() LanguageMode
 }

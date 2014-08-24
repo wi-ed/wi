@@ -34,6 +34,7 @@ const (
 // window implements wi.Window. It keeps its own buffer of its display.
 type window struct {
 	parent          *window
+	cd              wi.CommandDispatcherFull
 	childrenWindows []*window
 	windowBuffer    tulib.Buffer // includes the border
 	rect            tulib.Rect   // Window Rect as described in wi.Window.Rect().
@@ -83,10 +84,15 @@ func (w *window) ChildrenWindows() []wi.Window {
 
 func (w *window) NewChildWindow(view wi.View, docking wi.DockingType) wi.Window {
 	log.Printf("%s.NewChildWindow(%s, %s)", w, view.Title(), docking)
-	for _, child := range w.childrenWindows {
-		if child.Docking() == docking {
-			panic("TODO(maruel): Likely not a panic, maybe a fallback?")
-			return nil
+	// Only the first child Window with DockingFill is visible.
+	// TODO(maruel): It's currently the reverse (!)
+	// TODO(maruel): Also allow DockingFloating.
+	if docking != wi.DockingFill {
+		for _, child := range w.childrenWindows {
+			if child.Docking() == docking {
+				panic("TODO(maruel): Likely not a panic, maybe a fallback?")
+				return nil
+			}
 		}
 	}
 	child := makeWindow(w, view, docking)
@@ -101,8 +107,17 @@ func (w *window) NewChildWindow(view wi.View, docking wi.DockingType) wi.Window 
 	}
 	w.childrenWindows = append(w.childrenWindows, child)
 	w.resizeChildren()
-	// TODO(maruel): cd.ViewReady(view)
+	w.cd.PostDraw()
 	return child
+}
+
+// Recursively detach a window tree.
+func detachRecursively(w *window) {
+	for _, c := range w.childrenWindows {
+		detachRecursively(c)
+	}
+	w.parent = nil
+	w.childrenWindows = nil
 }
 
 func (w *window) Remove(child wi.Window) {
@@ -111,7 +126,8 @@ func (w *window) Remove(child wi.Window) {
 			copy(w.childrenWindows[i:], w.childrenWindows[i+1:])
 			w.childrenWindows[len(w.childrenWindows)-1] = nil
 			w.childrenWindows = w.childrenWindows[:len(w.childrenWindows)-1]
-			// TODO(maruel): cd.ViewReady(view)
+			detachRecursively(v)
+			w.cd.PostDraw()
 			return
 		}
 	}
@@ -365,8 +381,13 @@ func (w *window) View() wi.View {
 }
 
 func makeWindow(parent *window, view wi.View, docking wi.DockingType) *window {
+	var cd wi.CommandDispatcherFull
+	if parent != nil {
+		cd = parent.cd
+	}
 	return &window{
 		parent:  parent,
+		cd:      cd,
 		view:    view,
 		docking: docking,
 		//border:  wi.BorderNone,
