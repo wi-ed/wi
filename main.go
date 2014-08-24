@@ -68,7 +68,7 @@ func (t *terminal) ExecuteCommand(w wi.Window, cmdName string, args ...string) {
 	log.Printf("ExecuteCommand(%s)", cmdName)
 	cmd := wi.GetCommand(t, w, cmdName)
 	if cmd == nil {
-		t.ExecuteCommand(w, "alert", fmt.Sprintf(getStr(t.CurrentLanguage(), notFound), cmdName))
+		t.ExecuteCommand(w, "alert", fmt.Sprintf(wi.GetStr(t.CurrentLanguage(), notFound), cmdName))
 	} else {
 		cmd.Handle(t, w, args...)
 	}
@@ -101,7 +101,7 @@ func (t *terminal) ActiveWindow() wi.Window {
 func (t *terminal) ActivateWindow(w wi.Window) {
 	log.Printf("ActivateWindow(%s)", w.View().Title())
 	if w.View().IsDisabled() {
-		t.ExecuteCommand(w, "alert", getStr(t.CurrentLanguage(), activateDisabled))
+		t.ExecuteCommand(w, "alert", wi.GetStr(t.CurrentLanguage(), activateDisabled))
 		return
 	}
 

@@ -11,37 +11,6 @@ import (
 	"time"
 )
 
-type CommandHandler func(c *command, cd wi.CommandDispatcherFull, w wi.Window, args ...string)
-
-// command is the boilerplate wi.Command implementation.
-type command struct {
-	name      string
-	handler   CommandHandler
-	category  wi.CommandCategory
-	shortDesc langMap
-	longDesc  langMap
-}
-
-func (c *command) Name() string {
-	return c.name
-}
-
-func (c *command) Handle(cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
-	c.handler(c, cd, w, args...)
-}
-
-func (c *command) Category(cd wi.CommandDispatcherFull, w wi.Window) wi.CommandCategory {
-	return c.category
-}
-
-func (c *command) ShortDesc(cd wi.CommandDispatcherFull, w wi.Window) string {
-	return getStr(cd.CurrentLanguage(), c.shortDesc)
-}
-
-func (c *command) LongDesc(cd wi.CommandDispatcherFull, w wi.Window) string {
-	return getStr(cd.CurrentLanguage(), c.longDesc)
-}
-
 // commandAlias references another command by its name. It's important to not
 // bind directly to the wi.Command reference, so that if a command is replaced
 // by a plugin, that the replacement command is properly called by the alias.
@@ -62,7 +31,7 @@ func (c *commandAlias) Handle(cd wi.CommandDispatcherFull, w wi.Window, args ...
 		cmd.Handle(cd, w, args...)
 	} else {
 		cmd = wi.GetCommand(cd, w, "alert")
-		txt := fmt.Sprintf(getStr(cd.CurrentLanguage(), aliasNotFound), c.name, c.command)
+		txt := fmt.Sprintf(wi.GetStr(cd.CurrentLanguage(), aliasNotFound), c.name, c.command)
 		cmd.Handle(cd, w, txt)
 	}
 }
@@ -76,11 +45,11 @@ func (c *commandAlias) Category(cd wi.CommandDispatcherFull, w wi.Window) wi.Com
 }
 
 func (c *commandAlias) ShortDesc(cd wi.CommandDispatcherFull, w wi.Window) string {
-	return fmt.Sprintf(getStr(cd.CurrentLanguage(), aliasFor), c.command)
+	return fmt.Sprintf(wi.GetStr(cd.CurrentLanguage(), aliasFor), c.command)
 }
 
 func (c *commandAlias) LongDesc(cd wi.CommandDispatcherFull, w wi.Window) string {
-	return fmt.Sprintf(getStr(cd.CurrentLanguage(), aliasFor), c.command)
+	return fmt.Sprintf(wi.GetStr(cd.CurrentLanguage(), aliasFor), c.command)
 }
 
 type commands struct {
@@ -104,7 +73,7 @@ func makeCommands() wi.Commands {
 
 // Default commands
 
-func cmdAlert(c *command, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
+func cmdAlert(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
 	// TODO(maruel): Create an infobar that automatically dismiss itself after 5s.
 	if len(args) != 1 {
 		cd.ExecuteCommand(w, "alert", c.LongDesc(cd, w))
@@ -120,7 +89,7 @@ func cmdAlert(c *command, cd wi.CommandDispatcherFull, w wi.Window, args ...stri
 	}()
 }
 
-func cmdAddStatusBar(c *command, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
+func cmdAddStatusBar(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
 	// Create a tree of views that is used for alignment.
 	if len(args) != 0 {
 		cd.ExecuteCommand(w, "alert", c.LongDesc(cd, w))
@@ -131,13 +100,13 @@ func cmdAddStatusBar(c *command, cd wi.CommandDispatcherFull, w wi.Window, args 
 	statusWindowRoot.NewChildWindow(makeStatusViewPosition(), wi.DockingRight)
 }
 
-func cmdOpen(c *command, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
+func cmdOpen(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
 	// The Window and View are created synchronously. The View is populated
 	// asynchronously.
 	log.Printf("Faking opening a file: %s", args)
 }
 
-func cmdNew(c *command, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
+func cmdNew(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
 	if len(args) != 0 {
 		cmd := wi.GetCommand(cd, w, "alias")
 		cd.ExecuteCommand(w, "alert", cmd.LongDesc(cd, w))
@@ -146,11 +115,11 @@ func cmdNew(c *command, cd wi.CommandDispatcherFull, w wi.Window, args ...string
 	}
 }
 
-func cmdShell(c *command, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
+func cmdShell(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
 	log.Printf("Faking opening a new shell: %s", args)
 }
 
-func cmdDoc(c *command, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
+func cmdDoc(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
 	// TODO(maruel): Grab the current word under selection if no args is
 	// provided. Pass this token to shell.
 	docArgs := make([]string, len(args)+1)
@@ -166,14 +135,14 @@ func isDirtyRecurse(cd wi.CommandDispatcherFull, w wi.Window) bool {
 		}
 		v := child.View()
 		if v.IsDirty() {
-			cd.ExecuteCommand(w, "alert", fmt.Sprintf(getStr(cd.CurrentLanguage(), viewDirty), v.Title()))
+			cd.ExecuteCommand(w, "alert", fmt.Sprintf(wi.GetStr(cd.CurrentLanguage(), viewDirty), v.Title()))
 			return true
 		}
 	}
 	return false
 }
 
-func cmdQuit(c *command, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
+func cmdQuit(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
 	// TODO(maruel): For all the View, question if fine to quit via
 	// view.IsDirty(). If not fine, "prompt" y/n to force quit. If n, stop there.
 	// - Send a signal to each plugin.
@@ -187,12 +156,12 @@ func cmdQuit(c *command, cd wi.CommandDispatcherFull, w wi.Window, args ...strin
 	}
 }
 
-func cmdHelp(c *command, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
+func cmdHelp(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
 	// TODO(maruel): Creates a new Window with a ViewHelp.
 	log.Printf("Faking help: %s", args)
 }
 
-func cmdAlias(c *command, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
+func cmdAlias(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
 	if len(args) != 3 {
 		cmd := wi.GetCommand(cd, w, "alias")
 		cd.ExecuteCommand(w, "alert", cmd.LongDesc(cd, w))
@@ -210,7 +179,7 @@ func cmdAlias(c *command, cd wi.CommandDispatcherFull, w wi.Window, args ...stri
 	w.View().Commands().Register(alias)
 }
 
-func cmdKeyBind(c *command, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
+func cmdKeyBind(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
 	if len(args) != 4 {
 		cmd := wi.GetCommand(cd, w, "keybind")
 		cd.ExecuteCommand(w, "alert", cmd.LongDesc(cd, w))
@@ -244,7 +213,7 @@ func cmdKeyBind(c *command, cd wi.CommandDispatcherFull, w wi.Window, args ...st
 	w.View().KeyBindings().Set(mode, keyName, cmdName)
 }
 
-func cmdShowCommandWindow(c *command, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
+func cmdShowCommandWindow(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
 	if len(args) != 0 {
 		cmd := wi.GetCommand(cd, w, "show_command_window")
 		cd.ExecuteCommand(w, "alert", cmd.LongDesc(cd, w))
@@ -257,7 +226,7 @@ func cmdShowCommandWindow(c *command, cd wi.CommandDispatcherFull, w wi.Window, 
 	w.NewChildWindow(cmdWindow, wi.DockingFloating)
 }
 
-func cmdLogWindowTree(c *command, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
+func cmdLogWindowTree(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
 	if len(args) != 0 {
 		cmd := wi.GetCommand(cd, w, "log_window_tree")
 		cd.ExecuteCommand(w, "alert", cmd.LongDesc(cd, w))
@@ -269,138 +238,138 @@ func cmdLogWindowTree(c *command, cd wi.CommandDispatcherFull, w wi.Window, args
 
 // Native commands.
 var defaultCommands = []wi.Command{
-	&command{
+	&wi.CommandImpl{
 		"alert",
 		cmdAlert,
 		wi.WindowCategory,
-		langMap{
+		wi.LangMap{
 			wi.LangEn: "Shows a modal message",
 		},
-		langMap{
+		wi.LangMap{
 			wi.LangEn: "Prints a message in a modal dialog box.",
 		},
 	},
-	&command{
+	&wi.CommandImpl{
 		"add_status_bar",
 		cmdAddStatusBar,
 		wi.WindowCategory,
-		langMap{
+		wi.LangMap{
 			wi.LangEn: "Adds the standard status bar",
 		},
-		langMap{
+		wi.LangMap{
 			wi.LangEn: "Adds the standard status bar to the active window. This command exists so it can be overriden by a plugin, so it can create its own status bar.",
 		},
 	},
-	&command{
+	&wi.CommandImpl{
 		"help",
 		cmdHelp,
 		wi.WindowCategory,
-		langMap{
+		wi.LangMap{
 			wi.LangEn: "Prints help",
 		},
-		langMap{
+		wi.LangMap{
 			wi.LangEn: "Prints general help or help for a particular command.",
 		},
 	},
-	&command{
+	&wi.CommandImpl{
 		"new",
 		cmdNew,
 		wi.WindowCategory,
-		langMap{
+		wi.LangMap{
 			wi.LangEn: "Create a new buffer",
 		},
-		langMap{
+		wi.LangMap{
 			wi.LangEn: "Create a new buffer.",
 		},
 	},
-	&command{
+	&wi.CommandImpl{
 		"open",
 		cmdOpen,
 		wi.WindowCategory,
-		langMap{
+		wi.LangMap{
 			wi.LangEn: "Opens a file in a new buffer",
 		},
-		langMap{
+		wi.LangMap{
 			wi.LangEn: "Opens a file in a new buffer.",
 		},
 	},
-	&command{
+	&wi.CommandImpl{
 		"quit",
 		cmdQuit,
 		wi.WindowCategory,
-		langMap{
+		wi.LangMap{
 			wi.LangEn: "Quits",
 		},
-		langMap{
+		wi.LangMap{
 			wi.LangEn: "Quits the editor. Optionally bypasses writing the files to disk.",
 		},
 	},
-	&command{
+	&wi.CommandImpl{
 		"shell",
 		cmdShell,
 		wi.WindowCategory,
-		langMap{
+		wi.LangMap{
 			wi.LangEn: "Opens a shell process",
 		},
-		langMap{
+		wi.LangMap{
 			wi.LangEn: "Opens a shell process in a new buffer.",
 		},
 	},
-	&command{
+	&wi.CommandImpl{
 		"doc",
 		cmdDoc,
 		wi.WindowCategory,
-		langMap{
+		wi.LangMap{
 			wi.LangEn: "Search godoc documentation",
 		},
-		langMap{
+		wi.LangMap{
 			wi.LangEn: "Uses the 'doc' tool to get documentation about the text under the cursor.",
 		},
 	},
 
-	&command{
+	&wi.CommandImpl{
 		"alias",
 		cmdAlias,
 		wi.CommandsCategory,
-		langMap{
+		wi.LangMap{
 			wi.LangEn: "Binds an alias to another command",
 		},
-		langMap{
+		wi.LangMap{
 			// TODO(maruel): For complex aliasing, use macro?
 			wi.LangEn: "Usage: alias [window|global] <alias> <name>\nBinds an alias to another command. The alias can either be local to the window or global",
 		},
 	},
-	&command{
+	&wi.CommandImpl{
 		"keybind",
 		cmdKeyBind,
 		wi.CommandsCategory,
-		langMap{
+		wi.LangMap{
 			wi.LangEn: "Binds a keyboard mapping to a command",
 		},
-		langMap{
+		wi.LangMap{
 			wi.LangEn: "Usage: keybind [window|global] [command|edit|all] <key> <command>\nBinds a keyboard mapping to a command. The binding can be to the active view for view-specific key binding or to the root view for global key bindings.",
 		},
 	},
-	&command{
+	&wi.CommandImpl{
 		"show_command_window",
 		cmdShowCommandWindow,
 		wi.CommandsCategory,
-		langMap{
+		wi.LangMap{
 			wi.LangEn: "Shows the interactive command window",
 		},
-		langMap{
+		wi.LangMap{
 			wi.LangEn: "This commands exists so it can be bound to a key to pop up the interactive command window.",
 		},
 	},
 
-	&command{
+	&wi.CommandImpl{
 		"log_window_tree",
 		cmdLogWindowTree,
 		wi.DebugCategory,
-		langMap{
+		wi.LangMap{
 			wi.LangEn: "Logs the tree in the log file",
 		},
-		langMap{
+		wi.LangMap{
 			wi.LangEn: "Logs the tree in the log file, this is only relevant if -verbose is used.",
 		},
 	},

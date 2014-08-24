@@ -121,17 +121,6 @@ const (
 	AllMode
 )
 
-// LanguageMode is a language selection for UI purposes.
-type LanguageMode string
-
-const (
-	// TODO: Add new languages when translating the application.
-
-	LangEn = "en"
-	LangEs = "es"
-	LangFr = "fr"
-)
-
 // CommandDispatcher owns the command queue. Use this interface to enqueue
 // commands for execution.
 type CommandDispatcher interface {

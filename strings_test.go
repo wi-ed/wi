@@ -10,17 +10,17 @@ import (
 )
 
 func TestGetStr(t *testing.T) {
-	a := langMap{
+	a := wi.LangMap{
 		wi.LangEn: "Foo",
 		wi.LangFr: "Bar",
 	}
-	if getStr(wi.LangFr, a) != "Bar" {
+	if wi.GetStr(wi.LangFr, a) != "Bar" {
 		t.Fail()
 	}
-	if getStr(wi.LangEs, a) != "Foo" {
+	if wi.GetStr(wi.LangEs, a) != "Foo" {
 		t.Fail()
 	}
-	if getStr(wi.LangEn, a) != "Foo" {
+	if wi.GetStr(wi.LangEn, a) != "Foo" {
 		t.Fail()
 	}
 }

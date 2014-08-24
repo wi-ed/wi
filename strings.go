@@ -8,33 +8,22 @@ import (
 	"github.com/maruel/wi/wi-plugin"
 )
 
-type langMap map[wi.LanguageMode]string
-
-var activateDisabled = langMap{
+var activateDisabled = wi.LangMap{
 	wi.LangEn: "Can't activate a disabled view.",
 }
 
-var aliasFor = langMap{
+var aliasFor = wi.LangMap{
 	wi.LangEn: "Alias for \"%s\".",
 }
 
-var aliasNotFound = langMap{
+var aliasNotFound = wi.LangMap{
 	wi.LangEn: "\"%s\" is an alias to command \"%s\" but this command is not registered.",
 }
 
-var notFound = langMap{
+var notFound = wi.LangMap{
 	wi.LangEn: "Command \"%s\" is not registered.",
 }
 
-var viewDirty = langMap{
+var viewDirty = wi.LangMap{
 	wi.LangEn: "View \"%s\" is not saved, aborting quit.",
-}
-
-// getStr returns the string for the language if present, defaults to wi.LangEn.
-func getStr(lang wi.LanguageMode, m langMap) string {
-	s, ok := m[lang]
-	if !ok {
-		return m[wi.LangEn]
-	}
-	return s
 }
