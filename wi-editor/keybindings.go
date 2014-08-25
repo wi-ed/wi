@@ -177,6 +177,7 @@ func keyEventToName(event termbox.Event) string {
 // Registers the default keyboard mapping. Keyboard mapping simply execute the
 // corresponding command. So to add a keyboard map, the corresponding command
 // needs to be added first.
+//
 // TODO(maruel): This should be remappable via a configuration flag, for
 // example vim flavor vs emacs flavor. I'm not sure it's worth supporting this
 // without a restart.

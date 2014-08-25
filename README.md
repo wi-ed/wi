@@ -140,4 +140,5 @@ You'll also want to run:
     godoc -http=:6060
 
 Then browse to http://localhost:6060/pkg/github.com/maruel/wi for a structure of
-the source tree.
+the source tree. You can also visit http://godoc.org/github.com/maruel/wi for
+online browseable documentation.

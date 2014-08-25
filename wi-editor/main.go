@@ -259,8 +259,11 @@ func (t *terminal) EventLoop() int {
 }
 
 // MakeEditor creates the Editor object. The root window doesn't have
-// anything to view in it. It will contain two child windows, the main content
-// window and the status bar.
+// anything to view in it.
+//
+// It's up to the caller to add child Windows in it. Normally it will be done
+// via the command "add_status_bar" to add the status bar, then "new" or "open"
+// to create the initial text buffer.
 func MakeEditor(termBox TermBox) *terminal {
 	// The root view is important, it defines all the global commands. It is
 	// pre-filled with the default native commands and keyboard mapping, and it's
@@ -297,7 +300,11 @@ func MakeEditor(termBox TermBox) *terminal {
 	return terminal
 }
 
-// Main() is the unit-testable part of Main().
+// Main() is the unit-testable part of Main() that is called by the "main"
+// package.
+//
+// It is fine to run it concurrently in unit test, as no global variable shall
+// be used by this function.
 func Main(argsAsCommand, noPlugin bool, args []string, editor Editor) int {
 	if !noPlugin {
 		plugins := loadPlugins(editor)
