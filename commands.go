@@ -11,47 +11,6 @@ import (
 	"time"
 )
 
-// commandAlias references another command by its name. It's important to not
-// bind directly to the wi.Command reference, so that if a command is replaced
-// by a plugin, that the replacement command is properly called by the alias.
-type commandAlias struct {
-	name    string
-	command string
-}
-
-func (c *commandAlias) Name() string {
-	return c.name
-}
-
-func (c *commandAlias) Handle(cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
-	// The alias is executed inline. This is important for command queue
-	// ordering.
-	cmd := wi.GetCommand(cd, w, c.command)
-	if cmd != nil {
-		cmd.Handle(cd, w, args...)
-	} else {
-		cmd = wi.GetCommand(cd, w, "alert")
-		txt := fmt.Sprintf(wi.GetStr(cd.CurrentLanguage(), aliasNotFound), c.name, c.command)
-		cmd.Handle(cd, w, txt)
-	}
-}
-
-func (c *commandAlias) Category(cd wi.CommandDispatcherFull, w wi.Window) wi.CommandCategory {
-	cmd := wi.GetCommand(cd, w, c.command)
-	if cmd != nil {
-		return c.Category(cd, w)
-	}
-	return wi.UnknownCategory
-}
-
-func (c *commandAlias) ShortDesc(cd wi.CommandDispatcherFull, w wi.Window) string {
-	return fmt.Sprintf(wi.GetStr(cd.CurrentLanguage(), aliasFor), c.command)
-}
-
-func (c *commandAlias) LongDesc(cd wi.CommandDispatcherFull, w wi.Window) string {
-	return fmt.Sprintf(wi.GetStr(cd.CurrentLanguage(), aliasFor), c.command)
-}
-
 type commands struct {
 	commands map[string]wi.Command
 }
@@ -175,7 +134,7 @@ func cmdAlias(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Window, args 
 		cd.ExecuteCommand(w, "alert", cmd.LongDesc(cd, w))
 		return
 	}
-	alias := &commandAlias{args[1], args[2]}
+	alias := &wi.CommandAlias{args[1], args[2]}
 	w.View().Commands().Register(alias)
 }
 
@@ -374,7 +333,7 @@ var defaultCommands = []wi.Command{
 		},
 	},
 
-	&commandAlias{"q", "quit"},
+	&wi.CommandAlias{"q", "quit"},
 
 	// DIRECTION = up/down/left/right
 	// window_DIRECTION

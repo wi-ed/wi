@@ -12,14 +12,6 @@ var activateDisabled = wi.LangMap{
 	wi.LangEn: "Can't activate a disabled view.",
 }
 
-var aliasFor = wi.LangMap{
-	wi.LangEn: "Alias for \"%s\".",
-}
-
-var aliasNotFound = wi.LangMap{
-	wi.LangEn: "\"%s\" is an alias to command \"%s\" but this command is not registered.",
-}
-
 var notFound = wi.LangMap{
 	wi.LangEn: "Command \"%s\" is not registered.",
 }

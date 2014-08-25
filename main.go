@@ -290,7 +290,11 @@ func Main() int {
 	// log.Fatal(), otherwise the terminal will be left in a broken state.
 	defer termbox.Close()
 	termbox.SetInputMode(termbox.InputAlt | termbox.InputMouse)
+	return innerMain(*command, flag.Args())
+}
 
+// innerMain() is the unit-testable part of Main().
+func innerMain(argsAsCommand bool, args []string) int {
 	editor := makeEditor()
 	plugins := loadPlugins(editor)
 	defer func() {
@@ -306,12 +310,12 @@ func Main() int {
 	// add_status_bar if they want.
 	editor.PostCommand("add_status_bar")
 
-	if *command {
-		for _, i := range flag.Args() {
+	if argsAsCommand {
+		for _, i := range args {
 			editor.PostCommand(i)
 		}
-	} else if flag.NArg() > 0 {
-		for _, i := range flag.Args() {
+	} else if len(args) > 0 {
+		for _, i := range args {
 			editor.PostCommand("open", i)
 		}
 	} else {
