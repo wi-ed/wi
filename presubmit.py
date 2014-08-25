@@ -47,7 +47,6 @@ def main():
     return 1
 
   procs = [
-    call(['go', 'build'], '.'),
     call(['go', 'test'], '.'),
     call(['go', 'test'], 'wi-plugin'),
     call(['go', 'build'], 'wi-plugin-sample'),
@@ -59,11 +58,6 @@ def main():
   if out:
     failed = True
     print out
-
-  if sys.platform == 'win32':
-    procs.append(call(['wi.exe', '-c', 'quit'], '.'))
-  else:
-    procs.append(call(['./wi', '-c', 'quit'], '.'))
 
   for p in procs:
     out = drain(p)

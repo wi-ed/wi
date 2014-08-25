@@ -25,7 +25,38 @@ const (
 
 var quitFlag = false
 
-// UI
+// termBox is the interface to termbox so it can be mocked in unit test.
+type termBox interface {
+	Size() (int, int)
+	Flush()
+	PollEvent() termbox.Event
+	Buffer() tulib.Buffer
+}
+
+type termBoxImpl struct {
+}
+
+func (t termBoxImpl) Size() (int, int) {
+	return termbox.Size()
+}
+
+func (t termBoxImpl) Flush() {
+	if err := termbox.Flush(); err != nil {
+		panic(err)
+	}
+}
+
+func (t termBoxImpl) PollEvent() termbox.Event {
+	return termbox.PollEvent()
+}
+
+func (t termBoxImpl) Buffer() tulib.Buffer {
+	w, h := t.Size()
+	return tulib.Buffer{
+		Cells: termbox.CellBuffer(),
+		Rect:  tulib.Rect{0, 0, w, h},
+	}
+}
 
 // commandQueueItem is a command pending to be executed.
 type commandQueueItem struct {
@@ -37,6 +68,7 @@ type commandQueueItem struct {
 // It is normally expected to be drawn via an ssh/mosh connection so it should
 // be "bandwidth" optimized, where bandwidth doesn't mean 1200 bauds anymore.
 type terminal struct {
+	termBox        termBox
 	rootWindow     *window
 	lastActive     []wi.Window
 	terminalEvents <-chan termbox.Event
@@ -87,11 +119,7 @@ func (t *terminal) draw() {
 	log.Print("draw()")
 	b := tulib.TermboxBuffer()
 	drawRecurse(t.rootWindow, 0, 0, &b)
-	// TODO(maruel): Determine if Flush() is intelligent and skip the forced draw
-	// when nothing changed.
-	if err := termbox.Flush(); err != nil {
-		panic(err)
-	}
+	t.termBox.Flush()
 }
 
 func (t *terminal) ActiveWindow() wi.Window {
@@ -135,7 +163,7 @@ func (t *terminal) PostDraw() {
 func (t *terminal) onResize() {
 	// Resize the Windows. This also invalidates it, which will also force a
 	// redraw if the size changed.
-	w, h := termbox.Size()
+	w, h := t.termBox.Size()
 	t.rootWindow.SetRect(tulib.Rect{0, 0, w, h})
 }
 
@@ -222,7 +250,7 @@ func (t *terminal) eventLoop() int {
 // makeEditor creates the Editor object. The root window doesn't have
 // anything to view in it. It will contain two child windows, the main content
 // window and the status bar.
-func makeEditor() *terminal {
+func makeEditor(termBox termBox) *terminal {
 	// The root view is important, it defines all the global commands. It is
 	// pre-filled with the default native commands and keyboard mapping, and it's
 	// up to the plugins to add more global commands on startup.
@@ -232,11 +260,12 @@ func makeEditor() *terminal {
 	rootWindow := makeWindow(nil, rootView, wi.DockingFill)
 	terminalEvents := make(chan termbox.Event, 32)
 	terminal := &terminal{
-		terminalEvents: terminalEvents,
-		commandsQueue:  make(chan commandQueueItem, 500),
-		viewReady:      make(chan bool),
+		termBox:        termBox,
 		rootWindow:     rootWindow,
 		lastActive:     []wi.Window{rootWindow},
+		terminalEvents: terminalEvents,
+		viewReady:      make(chan bool),
+		commandsQueue:  make(chan commandQueueItem, 500),
 		languageMode:   wi.LangEn,
 		keyboardMode:   wi.EditMode,
 	}
@@ -247,7 +276,7 @@ func makeEditor() *terminal {
 	terminal.onResize()
 	go func() {
 		for {
-			terminalEvents <- termbox.PollEvent()
+			terminalEvents <- terminal.termBox.PollEvent()
 		}
 	}()
 	return terminal
@@ -263,6 +292,7 @@ func Main() int {
 	log.SetFlags(log.Lmicroseconds | log.Lshortfile)
 	command := flag.Bool("c", false, "Runs the commands specified on startup")
 	version := flag.Bool("v", false, "Prints version and exit")
+	noPlugin := flag.Bool("no-plugin", false, "Disable loading plugins")
 	verbose := flag.Bool("verbose", false, "Logs debugging information to wi.log")
 	flag.Parse()
 
@@ -290,21 +320,24 @@ func Main() int {
 	// log.Fatal(), otherwise the terminal will be left in a broken state.
 	defer termbox.Close()
 	termbox.SetInputMode(termbox.InputAlt | termbox.InputMouse)
-	return innerMain(*command, flag.Args())
+	return innerMain(*command, *noPlugin, flag.Args(), termBoxImpl{})
 }
 
 // innerMain() is the unit-testable part of Main().
-func innerMain(argsAsCommand bool, args []string) int {
-	editor := makeEditor()
-	plugins := loadPlugins(editor)
-	defer func() {
-		for _, p := range plugins {
-			// TODO(maruel): Nicely terminate them.
-			if err := p.Kill(); err != nil {
-				panic(err)
+func innerMain(argsAsCommand, noPlugin bool, args []string, termBox termBox) int {
+	editor := makeEditor(termBox)
+
+	if !noPlugin {
+		plugins := loadPlugins(editor)
+		defer func() {
+			for _, p := range plugins {
+				// TODO(maruel): Nicely terminate them.
+				if err := p.Kill(); err != nil {
+					panic(err)
+				}
 			}
-		}
-	}()
+		}()
+	}
 
 	// Add the status bar. At that point plugins are loaded so they can override
 	// add_status_bar if they want.
