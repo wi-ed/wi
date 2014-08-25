@@ -130,4 +130,5 @@ Thanks
 Contributing
 ------------
 
-Please run `./presubmit.py` first before doing a pull request.
+Please run `./presubmit.py` first before doing a pull request. Even better is to
+install the git pre-commit hook with `./git-hooks/install.py`.
