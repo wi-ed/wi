@@ -39,7 +39,8 @@ def drain(proc):
 def main():
   start = time.time()
   procs = [
-    call(['go', 'test'], '.'),
+    call(['go', 'build'], '.'),
+    call(['go', 'test'], 'wi-editor'),
     call(['go', 'test'], 'wi-plugin'),
     call(['go', 'build'], 'wi-plugin-sample'),
     #call(['go', 'test'], 'wi-plugin-sample'),

@@ -2,7 +2,7 @@
 // Use of this source code is governed under the Apache License, Version 2.0
 // that can be found in the LICENSE file.
 
-package main
+package editor
 
 import (
 	"github.com/maruel/tulib"
@@ -10,6 +10,19 @@ import (
 	"log"
 	"testing"
 )
+
+type nullWriter int
+
+func (nullWriter) Write([]byte) (int, error) {
+	return 0, nil
+}
+
+func init() {
+	// TODO(maruel): This has persistent side-effect. Figure out how to handle
+	// "log" properly. Likely by using the same mechanism as used in package
+	// "subcommands".
+	log.SetOutput(new(nullWriter))
+}
 
 type termBoxFake struct {
 	X      int
@@ -47,20 +60,13 @@ func makeTermBoxFake(width, height int, events []termbox.Event) *termBoxFake {
 	}
 }
 
-func init() {
-	// TODO(maruel): This has persistent side-effect. Figure out how to handle
-	// "log" properly. Likely by using the same mechanism as used in package
-	// "subcommands".
-	log.SetOutput(new(nullWriter))
-}
-
 // TODO(maruel): Add a test with very small display (10x2) and ensure it's
 // somewhat usable.
 
 func TestInnerMainImmediateQuit(t *testing.T) {
 	t.Parallel()
-	editor := makeEditor(makeTermBoxFake(80, 25, []termbox.Event{}))
-	result := innerMain(true, true, []string{"quit"}, editor)
+	editor := MakeEditor(makeTermBoxFake(80, 25, []termbox.Event{}))
+	result := Main(true, true, []string{"quit"}, editor)
 	if result != 0 {
 		t.Fatalf("Exit code: %v", result)
 	}
@@ -69,8 +75,8 @@ func TestInnerMainImmediateQuit(t *testing.T) {
 
 func TestInnerMainInvalidThenQuit(t *testing.T) {
 	t.Parallel()
-	editor := makeEditor(makeTermBoxFake(80, 25, []termbox.Event{}))
-	result := innerMain(true, true, []string{"invalid", "quit"}, editor)
+	editor := MakeEditor(makeTermBoxFake(80, 25, []termbox.Event{}))
+	result := Main(true, true, []string{"invalid", "quit"}, editor)
 	if result != 0 {
 		t.Fatalf("Exit code: %v", result)
 	}
