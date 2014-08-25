@@ -192,7 +192,8 @@ type Editor interface {
 type Window interface {
 	fmt.Stringer
 
-	// Tree returns a textual representation of the Window hierarchy.
+	// Tree returns a textual representation of the Window hierarchy. It is only
+	// for debugging purpose.
 	Tree() string
 
 	// Parent returns the parent Window.
@@ -222,21 +223,15 @@ type Window interface {
 	Buffer() *tulib.Buffer
 
 	Docking() DockingType
-	// This will forces an invalidation.
+	// SetDocking changes the docking of this Window relative to the parent
+	// Window. This will forces an invalidation and a redraw.
 	SetDocking(docking DockingType)
 
-	// This will forces an invalidation.
+	// SetView replaces the current View with a new one. This forces an
+	// invalidation and a redraw.
 	SetView(view View)
 	View() View
 }
-
-/*
-// TextBuffer is the content. It may only contain partial information in the
-// case of large file or file opened via high latency I/O.
-type TextBuffer interface {
-	Lines() int
-}
-*/
 
 // View is content presented in a Window. For example it can be a TextBuffer or
 // a command box. View define the key binding and commands supported so it
@@ -257,20 +252,19 @@ type View interface {
 	Title() string
 	// IsDirty is true if the content should be saved before quitting.
 	IsDirty() bool
-	// IsInvalid is true if the View needs to be redraw.
-	IsInvalid() bool
 
 	// IsDisabled returns false if the View can be activated to receive user
 	// inputs at all.
 	IsDisabled() bool
 
-	// Buffer returns the display buffer for this Window. This indirectly clears
-	// the Invalid bit.
+	// Buffer returns the display buffer for this Window.
 	Buffer() *tulib.Buffer
 
 	// NaturalSize returns the natural size of the content. It can be -1 for as
-	// long/large as possible, 0 if indeterminate.
+	// long/large as possible, 0 if indeterminate. The return value of this
+	// function is not affected by SetSize().
 	NaturalSize() (width, height int)
+	// SetSize resets the View Buffer size.
 	SetSize(x, y int)
 }
 

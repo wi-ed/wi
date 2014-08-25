@@ -19,8 +19,31 @@ import (
 
 // TODO(maruel): Implement the RPC to make plugins work.
 
+type plugin interface {
+	Terminate()
+}
+
+type pluginImpl struct {
+	proc *os.Process
+}
+
+func (p *pluginImpl) Terminate() {
+	// TODO(maruel): Nicely terminate them.
+	if err := p.proc.Kill(); err != nil {
+		panic(err)
+	}
+}
+
+type plugins []plugin
+
+func (p plugins) Terminate() {
+	for _, instance := range p {
+		instance.Terminate()
+	}
+}
+
 // loadPlugin starts a plugin and returns the process.
-func loadPlugin(server *rpc.Server, f string) *os.Process {
+func loadPlugin(server *rpc.Server, f string) plugin {
 	log.Printf("loadPlugin(%s)", f)
 	cmd := exec.Command(f)
 	cmd.Env = append(os.Environ(), "WI=plugin")
@@ -76,11 +99,11 @@ func loadPlugin(server *rpc.Server, f string) *os.Process {
 		server.ServeConn(wi.MakeReadWriteCloser(stdout, stdin))
 	}()
 
-	return cmd.Process
+	return &pluginImpl{cmd.Process}
 }
 
 // loadPlugins loads all the plugins and returns the process handles.
-func loadPlugins(e wi.Editor) []*os.Process {
+func loadPlugins(e wi.Editor) plugins {
 	// TODO(maruel): Get the path of the executable. It's a bit involved since
 	// very OS specific but it's doable. Then all plugins in the same directory
 	// are access.
@@ -95,7 +118,7 @@ func loadPlugins(e wi.Editor) []*os.Process {
 	}
 
 	var wg sync.WaitGroup
-	c := make(chan *os.Process)
+	c := make(chan plugin)
 	server := rpc.NewServer()
 	// TODO(maruel): http://golang.org/pkg/net/rpc/#Server.RegisterName
 	// It should be an interface with methods of style DoStuff(Foo, Bar) Baz
@@ -126,7 +149,7 @@ func loadPlugins(e wi.Editor) []*os.Process {
 	}
 
 	var wg2 sync.WaitGroup
-	out := []*os.Process{}
+	out := make(plugins, 0)
 	wg2.Add(1)
 	go func() {
 		for i := range c {

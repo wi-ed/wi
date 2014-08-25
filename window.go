@@ -23,6 +23,9 @@ func isEqual(lhs tulib.Rect, rhs tulib.Rect) bool {
 type drawnBorder int
 
 const (
+	// TODO(maruel): For combo box (e.g. drop down list of suggestions), it
+	// should be drawBorderLeftBottomRight.
+
 	drawnBorderNone drawnBorder = iota
 	drawnBorderLeft
 	drawnBorderRight
@@ -85,7 +88,8 @@ func (w *window) ChildrenWindows() []wi.Window {
 func (w *window) NewChildWindow(view wi.View, docking wi.DockingType) wi.Window {
 	log.Printf("%s.NewChildWindow(%s, %s)", w, view.Title(), docking)
 	// Only the first child Window with DockingFill is visible.
-	// TODO(maruel): It's currently the reverse (!)
+	// TODO(maruel): Reorder .childrenWindows with
+	// CommandDispatcherFull.ActivateWindow() but only with DockingFill.
 	// TODO(maruel): Also allow DockingFloating.
 	if docking != wi.DockingFill {
 		for _, child := range w.childrenWindows {
@@ -98,6 +102,11 @@ func (w *window) NewChildWindow(view wi.View, docking wi.DockingType) wi.Window 
 	child := makeWindow(w, view, docking)
 	if docking == wi.DockingFloating {
 		width, height := view.NaturalSize()
+		if child.border != wi.BorderNone {
+			width += 2
+			height += 2
+		}
+		// TODO(maruel): Handle when width or height > scren size.
 		// TODO(maruel): Not clean. Doesn't handle root Window resize properly.
 		rootRect := wi.RootWindow(w).Rect()
 		child.rect.X = (rootRect.Width - width - 1) / 2
@@ -387,15 +396,19 @@ func makeWindow(parent *window, view wi.View, docking wi.DockingType) *window {
 	if parent != nil {
 		cd = parent.cd
 	}
+	// It's more complex than that but it's a fine default.
+	border := wi.BorderNone
+	if docking == wi.DockingFloating {
+		border = wi.BorderDouble
+	}
 	return &window{
 		parent:  parent,
 		cd:      cd,
 		view:    view,
 		docking: docking,
-		//border:  wi.BorderNone,
-		border: wi.BorderDouble,
-		fg:     termbox.ColorWhite,
-		bg:     termbox.ColorBlack,
+		border:  border,
+		fg:      termbox.ColorWhite,
+		bg:      termbox.ColorBlack,
 	}
 }
 
@@ -412,11 +425,12 @@ func drawRecurse(w *window, offsetX, offsetY int, out *tulib.Buffer) {
 	dest.X += offsetX
 	dest.Y += offsetY
 	out.Blit(dest, 0, 0, w.Buffer())
-	// In the case of DockingFill, only the first one should be drawn. In
-	// particular, the DockingFloating child of an hidden DockingFill will not be
-	// drawn.
+
 	fillFound := false
 	for _, child := range w.childrenWindows {
+		// In the case of DockingFill, only the first one should be drawn. In
+		// particular, the DockingFloating child of an hidden DockingFill will not
+		// be drawn.
 		if child.docking == wi.DockingFill {
 			if fillFound {
 				continue

@@ -25,8 +25,8 @@ const (
 
 var quitFlag = false
 
-// termBox is the interface to termbox so it can be mocked in unit test.
-type termBox interface {
+// TermBox is the interface to termbox so it can be mocked in unit test.
+type TermBox interface {
 	Size() (int, int)
 	Flush()
 	PollEvent() termbox.Event
@@ -65,10 +65,15 @@ type commandQueueItem struct {
 	keyName string
 }
 
+type Editor interface {
+	wi.Editor
+	EventLoop() int
+}
+
 // It is normally expected to be drawn via an ssh/mosh connection so it should
 // be "bandwidth" optimized, where bandwidth doesn't mean 1200 bauds anymore.
 type terminal struct {
-	termBox        termBox
+	termBox        TermBox
 	rootWindow     *window
 	lastActive     []wi.Window
 	terminalEvents <-chan termbox.Event
@@ -167,9 +172,9 @@ func (t *terminal) onResize() {
 	t.rootWindow.SetRect(tulib.Rect{0, 0, w, h})
 }
 
-// eventLoop handles both commands and events from the terminal. This function
+// EventLoop handles both commands and events from the terminal. This function
 // runs in the UI goroutine.
-func (t *terminal) eventLoop() int {
+func (t *terminal) EventLoop() int {
 	fakeChan := make(chan time.Time)
 	var drawTimer <-chan time.Time = fakeChan
 	keyBuffer := ""
@@ -250,7 +255,7 @@ func (t *terminal) eventLoop() int {
 // makeEditor creates the Editor object. The root window doesn't have
 // anything to view in it. It will contain two child windows, the main content
 // window and the status bar.
-func makeEditor(termBox termBox) *terminal {
+func makeEditor(termBox TermBox) *terminal {
 	// The root view is important, it defines all the global commands. It is
 	// pre-filled with the default native commands and keyboard mapping, and it's
 	// up to the plugins to add more global commands on startup.
@@ -289,6 +294,8 @@ func (nullWriter) Write([]byte) (int, error) {
 }
 
 func Main() int {
+	// All of "flag", "log" and "termbox" use a lot of global variables so they
+	// can't be easily included in parallel tests.
 	log.SetFlags(log.Lmicroseconds | log.Lshortfile)
 	command := flag.Bool("c", false, "Runs the commands specified on startup")
 	version := flag.Bool("v", false, "Prints version and exit")
@@ -320,23 +327,15 @@ func Main() int {
 	// log.Fatal(), otherwise the terminal will be left in a broken state.
 	defer termbox.Close()
 	termbox.SetInputMode(termbox.InputAlt | termbox.InputMouse)
-	return innerMain(*command, *noPlugin, flag.Args(), termBoxImpl{})
+
+	return innerMain(*command, *noPlugin, flag.Args(), makeEditor(termBoxImpl{}))
 }
 
 // innerMain() is the unit-testable part of Main().
-func innerMain(argsAsCommand, noPlugin bool, args []string, termBox termBox) int {
-	editor := makeEditor(termBox)
-
+func innerMain(argsAsCommand, noPlugin bool, args []string, editor Editor) int {
 	if !noPlugin {
 		plugins := loadPlugins(editor)
-		defer func() {
-			for _, p := range plugins {
-				// TODO(maruel): Nicely terminate them.
-				if err := p.Kill(); err != nil {
-					panic(err)
-				}
-			}
-		}()
+		defer plugins.Terminate()
 	}
 
 	// Add the status bar. At that point plugins are loaded so they can override
@@ -359,7 +358,7 @@ func innerMain(argsAsCommand, noPlugin bool, args []string, termBox termBox) int
 	editor.PostCommand("log_window_tree")
 
 	// Run the message loop.
-	return editor.eventLoop()
+	return editor.EventLoop()
 }
 
 func main() {

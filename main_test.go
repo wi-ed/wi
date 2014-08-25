@@ -47,19 +47,34 @@ func makeTermBoxFake(width, height int, events []termbox.Event) *termBoxFake {
 	}
 }
 
-func TestInnerMain(t *testing.T) {
+func init() {
 	// TODO(maruel): This has persistent side-effect. Figure out how to handle
 	// "log" properly. Likely by using the same mechanism as used in package
 	// "subcommands".
 	log.SetOutput(new(nullWriter))
+}
 
-	// TODO(maruel): Add a test with very small display (10x2) and ensure it's
-	// somewhat usable.
-	termBox := makeTermBoxFake(80, 25, []termbox.Event{})
-	result := innerMain(true, true, []string{"quit"}, termBox)
+// TODO(maruel): Add a test with very small display (10x2) and ensure it's
+// somewhat usable.
+
+func TestInnerMainImmediateQuit(t *testing.T) {
+	t.Parallel()
+	editor := makeEditor(makeTermBoxFake(80, 25, []termbox.Event{}))
+	result := innerMain(true, true, []string{"quit"}, editor)
 	if result != 0 {
 		t.Fatalf("Exit code: %v", result)
 	}
-
 	// TODO(maruel): Check the content of the cells via termBox.buffer.Cells.
+}
+
+func TestInnerMainInvalidThenQuit(t *testing.T) {
+	t.Parallel()
+	editor := makeEditor(makeTermBoxFake(80, 25, []termbox.Event{}))
+	result := innerMain(true, true, []string{"invalid", "quit"}, editor)
+	if result != 0 {
+		t.Fatalf("Exit code: %v", result)
+	}
+	// TODO(maruel): Check the content of the cells via termBox.buffer.Cells.
+	//t.Logf("%v", termBox.buffer.Cells)
+	//t.Fail()
 }

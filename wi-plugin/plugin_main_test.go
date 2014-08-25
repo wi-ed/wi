@@ -12,7 +12,7 @@ func TestCalculateVersion(t *testing.T) {
 	v := CalculateVersion()
 	// TODO(maruel): We don't care about the actual version. Just test the
 	// underlying code to calculate a version is working.
-	if v != "473f21e7e0d937c7412fc7eb13470e601fa5306b" {
+	if v != "9d2d6c1e2ce1dd93ee929d1179f1ff857ea33311" {
 		t.Fatal(v)
 	}
 }

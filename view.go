@@ -20,7 +20,6 @@ type view struct {
 	keyBindings wi.KeyBindings
 	title       string
 	isDirty     bool
-	isInvalid   bool
 	isDisabled  bool
 	naturalX    int
 	naturalY    int
@@ -45,10 +44,6 @@ func (v *view) IsDirty() bool {
 	return v.isDirty
 }
 
-func (v *view) IsInvalid() bool {
-	return v.isInvalid
-}
-
 func (v *view) IsDisabled() bool {
 	return v.isDisabled
 }
@@ -61,7 +56,6 @@ func (v *view) SetSize(x, y int) {
 	log.Printf("View(%s).SetSize(%d, %d)", v.Title(), x, y)
 	v.actualX = x
 	v.actualY = y
-	v.isInvalid = true
 	v.buffer = tulib.NewBuffer(x, y)
 }
 
@@ -78,7 +72,6 @@ func (v *view) Buffer() *tulib.Buffer {
 		true,
 	}
 	v.buffer.DrawLabel(tulib.Rect{0, 0, v.actualX, 1}, &l, []byte(v.Title()))
-	v.isInvalid = false
 	return &v.buffer
 }
 
