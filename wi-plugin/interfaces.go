@@ -125,7 +125,13 @@ const (
 // commands for execution.
 type CommandDispatcher interface {
 	// PostCommand appends a Command at the end of the queue.
+	// It is a shortcut to PostCommands([]string{cmdName, args...})
 	PostCommand(cmdName string, args ...string)
+
+	// PostCommands appends several Command calls at the end of the queue. Using
+	// this function guarantees that all the commands will be executed in order
+	// without commands interfering.
+	PostCommands(cmds [][]string)
 }
 
 type CommandDispatcherFull interface {
@@ -144,6 +150,9 @@ type CommandDispatcherFull interface {
 	// PostDraw signals the terminal that an invalidated View or Window is now
 	// ready to render.
 	PostDraw()
+
+	// TODO(maruel): Create.
+	//RegisterView(name string, viewMaker ViewMaker) bool
 
 	CurrentLanguage() LanguageMode
 }
@@ -201,12 +210,17 @@ type Window interface {
 	Parent() Window
 	// ChildrenWindows returns a copy of the slice of children windows.
 	ChildrenWindows() []Window
+
 	// NewChildWindow() adds a View in a new child Window located at 'docking'
 	// position. It is invalid to add a child Window with the same docking as one
 	// already present. In this case, nil is returned.
+	// TODO(maruel): Convert to a command where RegisterView() has the view
+	// registered.
 	NewChildWindow(view View, docking DockingType) Window
+
 	// Remove detaches a child window tree from the tree. Care should be taken to
 	// not remove the active Window.
+	// TODO(maruel): Convert to a command.
 	Remove(w Window)
 
 	// Rect returns the position based on the parent Window area, except if
@@ -216,6 +230,7 @@ type Window interface {
 	// SetRect sets the rect of this Window, based on the parent's Window own
 	// Rect(). It updates Rect() and synchronously updates the child Window that
 	// are not DockingFloating.
+	// TODO(maruel): Convert to a command.
 	SetRect(rect tulib.Rect)
 
 	// Buffer returns the display buffer for this Window. The Window
@@ -224,13 +239,17 @@ type Window interface {
 	Buffer() *tulib.Buffer
 
 	Docking() DockingType
+
 	// SetDocking changes the docking of this Window relative to the parent
 	// Window. This will forces an invalidation and a redraw.
+	// TODO(maruel): Convert to a command.
 	SetDocking(docking DockingType)
 
 	// SetView replaces the current View with a new one. This forces an
 	// invalidation and a redraw.
+	// TODO(maruel): Convert to a command.
 	SetView(view View)
+
 	View() View
 }
 

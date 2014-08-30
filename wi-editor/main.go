@@ -65,12 +65,15 @@ func (t termBoxImpl) Buffer() tulib.Buffer {
 	}
 }
 
-// commandQueueItem is a command pending to be executed.
-type commandQueueItem struct {
+// commandItem is a command pending to be executed.
+type commandItem struct {
 	cmdName string
 	args    []string
 	keyName string
 }
+
+// commandQueueItem is a set of commandItem pending to be executed.
+type commandQueueItem []commandItem
 
 // Editor is the inprocess wi.Editor interface. It adds the process life-time
 // management functions to the public interface wi.Editor.
@@ -119,12 +122,22 @@ func (t *terminal) Version() string {
 
 func (t *terminal) PostCommand(cmdName string, args ...string) {
 	log.Printf("PostCommand(%s, %s)", cmdName, args)
-	t.commandsQueue <- commandQueueItem{cmdName, args, ""}
+	t.commandsQueue <- commandQueueItem{commandItem{cmdName, args, ""}}
+}
+
+func (t *terminal) PostCommands(cmds [][]string) {
+	log.Printf("PostCommands(%s, %s)", cmds)
+	tmp := make(commandQueueItem, len(cmds))
+	for i, cmd := range cmds {
+		tmp[i].cmdName = cmd[0]
+		tmp[i].args = cmd[1:]
+	}
+	t.commandsQueue <- tmp
 }
 
 func (t *terminal) postKey(keyName string) {
 	log.Printf("PostKey(%s)", keyName)
-	t.commandsQueue <- commandQueueItem{keyName: keyName}
+	t.commandsQueue <- commandQueueItem{commandItem{keyName: keyName}}
 }
 
 func (t *terminal) ExecuteCommand(w wi.Window, cmdName string, args ...string) {
@@ -206,25 +219,28 @@ func (t *terminal) EventLoop() int {
 	keyBuffer := ""
 	for {
 		select {
-		case i := <-t.commandsQueue:
-			if i.keyName != "" {
-				// Convert the key press into a command. The trick is that we don't
-				// know the active window, there could be commands already enqueued
-				// that will change the active window, so using the active window
-				// directly or indirectly here is an incorrect assumption.
-				if i.keyName == "Enter" {
-					t.ExecuteCommand(t.ActiveWindow(), keyBuffer)
-					keyBuffer = ""
-				} else {
-					cmdName := wi.GetKeyBindingCommand(t, t.KeyboardMode(), i.keyName)
-					if cmdName != "" {
-						t.ExecuteCommand(t.ActiveWindow(), cmdName)
-					} else if len(i.keyName) == 1 {
-						keyBuffer += i.keyName
+		case cmds := <-t.commandsQueue:
+			for _, cmd := range cmds {
+				// TODO(maruel): Temporary, until the command window works.
+				if cmd.keyName != "" {
+					// Convert the key press into a command. The trick is that we don't
+					// know the active window, there could be commands already enqueued
+					// that will change the active window, so using the active window
+					// directly or indirectly here is an incorrect assumption.
+					if cmd.keyName == "Enter" {
+						t.ExecuteCommand(t.ActiveWindow(), keyBuffer)
+						keyBuffer = ""
+					} else {
+						cmdName := wi.GetKeyBindingCommand(t, t.KeyboardMode(), cmd.keyName)
+						if cmdName != "" {
+							t.ExecuteCommand(t.ActiveWindow(), cmdName)
+						} else if len(cmd.keyName) == 1 {
+							keyBuffer += cmd.keyName
+						}
 					}
+				} else {
+					t.ExecuteCommand(t.ActiveWindow(), cmd.cmdName, cmd.args...)
 				}
-			} else {
-				t.ExecuteCommand(t.ActiveWindow(), i.cmdName, i.args...)
 			}
 
 		case event := <-t.terminalEvents:
