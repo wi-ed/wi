@@ -19,6 +19,7 @@ import (
 	"github.com/maruel/tulib"
 	"github.com/maruel/wi/wi-plugin"
 	"github.com/nsf/termbox-go"
+	"io"
 	"log"
 	"time"
 )
@@ -71,8 +72,21 @@ type commandQueueItem struct {
 	keyName string
 }
 
+// Editor is the inprocess wi.Editor interface. It adds the process life-time
+// management functions to the public interface wi.Editor.
+//
+// It is very important to call the Close() function upon termination.
 type Editor interface {
+	io.Closer
+
 	wi.Editor
+
+	// Loads the plugins. This function should be called early but can be skipped
+	// in case the plugins shouldn't be loaded.
+	LoadPlugins() error
+
+	// EventLoop runs the event loop until the command "quit" executes
+	// successfully.
 	EventLoop() int
 }
 
@@ -87,6 +101,16 @@ type terminal struct {
 	commandsQueue  chan commandQueueItem
 	languageMode   wi.LanguageMode
 	keyboardMode   wi.KeyboardMode
+	plugins        Plugins
+}
+
+func (t *terminal) Close() error {
+	if t.plugins == nil {
+		return nil
+	}
+	err := t.plugins.Close()
+	t.plugins = nil
+	return err
 }
 
 func (t *terminal) Version() string {
@@ -101,10 +125,6 @@ func (t *terminal) PostCommand(cmdName string, args ...string) {
 func (t *terminal) postKey(keyName string) {
 	log.Printf("PostKey(%s)", keyName)
 	t.commandsQueue <- commandQueueItem{keyName: keyName}
-}
-
-func (t *terminal) WaitQueueEmpty() {
-	panic("Implement me!")
 }
 
 func (t *terminal) ExecuteCommand(w wi.Window, cmdName string, args ...string) {
@@ -258,11 +278,21 @@ func (t *terminal) EventLoop() int {
 	return 0
 }
 
+func (t *terminal) LoadPlugins() error {
+	// TODO(maruel): Get path.
+	paths, err := EnumPlugins(".")
+	if err != nil {
+		return err
+	}
+	t.plugins = loadPlugins(paths)
+	return nil
+}
+
 // MakeEditor creates the Editor object. The root window doesn't have
 // anything to view in it.
 //
 // It's up to the caller to add child Windows in it. Normally it will be done
-// via the command "add_status_bar" to add the status bar, then "new" or "open"
+// via the command "bootstrap_ui" to add the status bar, then "new" or "open"
 // to create the initial text buffer.
 func MakeEditor(termBox TermBox) *terminal {
 	// The root view is important, it defines all the global commands. It is
@@ -305,30 +335,14 @@ func MakeEditor(termBox TermBox) *terminal {
 //
 // It is fine to run it concurrently in unit test, as no global variable shall
 // be used by this function.
-func Main(argsAsCommand, noPlugin bool, args []string, editor Editor) int {
+func Main(noPlugin bool, editor Editor) int {
 	if !noPlugin {
-		plugins := loadPlugins(editor)
-		defer plugins.Terminate()
-	}
-
-	// Add the status bar. At that point plugins are loaded so they can override
-	// add_status_bar if they want.
-	editor.PostCommand("add_status_bar")
-
-	if argsAsCommand {
-		for _, i := range args {
-			editor.PostCommand(i)
+		if err := editor.LoadPlugins(); err != nil {
+			fmt.Printf("%s", err)
+			return 1
 		}
-	} else if len(args) > 0 {
-		for _, i := range args {
-			editor.PostCommand("open", i)
-		}
-	} else {
-		// If nothing, opens a blank editor.
-		editor.PostCommand("new")
 	}
-
-	editor.PostCommand("log_window_tree")
+	defer editor.Close()
 
 	// Run the message loop.
 	return editor.EventLoop()

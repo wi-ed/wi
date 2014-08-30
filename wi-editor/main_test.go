@@ -63,20 +63,23 @@ func makeTermBoxFake(width, height int, events []termbox.Event) *termBoxFake {
 // TODO(maruel): Add a test with very small display (10x2) and ensure it's
 // somewhat usable.
 
-func TestInnerMainImmediateQuit(t *testing.T) {
+func TestMainImmediateQuit(t *testing.T) {
 	t.Parallel()
 	editor := MakeEditor(makeTermBoxFake(80, 25, []termbox.Event{}))
-	result := Main(true, true, []string{"quit"}, editor)
+	editor.PostCommand("quit")
+	result := Main(true, editor)
 	if result != 0 {
 		t.Fatalf("Exit code: %v", result)
 	}
 	// TODO(maruel): Check the content of the cells via termBox.buffer.Cells.
 }
 
-func TestInnerMainInvalidThenQuit(t *testing.T) {
+func TestMainInvalidThenQuit(t *testing.T) {
 	t.Parallel()
 	editor := MakeEditor(makeTermBoxFake(80, 25, []termbox.Event{}))
-	result := Main(true, true, []string{"invalid", "quit"}, editor)
+	editor.PostCommand("invalid")
+	editor.PostCommand("quit")
+	result := Main(true, editor)
 	if result != 0 {
 		t.Fatalf("Exit code: %v", result)
 	}

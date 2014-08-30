@@ -36,6 +36,8 @@ const (
 
 // window implements wi.Window. It keeps its own buffer of its display.
 type window struct {
+	id              int
+	nextChildId     int
 	parent          *window
 	cd              wi.CommandDispatcherFull
 	childrenWindows []*window
@@ -53,6 +55,10 @@ type window struct {
 
 func (w *window) String() string {
 	return fmt.Sprintf("Window(%s, %v)", w.View().Title(), w.Rect())
+}
+
+func (w *window) Id() string {
+	return fmt.Sprintf("%s:%d", w.parent.Id(), w.id)
 }
 
 // Returns a string representing the tree.
@@ -393,8 +399,11 @@ func (w *window) View() wi.View {
 
 func makeWindow(parent *window, view wi.View, docking wi.DockingType) *window {
 	var cd wi.CommandDispatcherFull
+	id := 0
 	if parent != nil {
 		cd = parent.cd
+		id = parent.nextChildId
+		parent.nextChildId += 1
 	}
 	// It's more complex than that but it's a fine default.
 	border := wi.BorderNone
@@ -402,6 +411,7 @@ func makeWindow(parent *window, view wi.View, docking wi.DockingType) *window {
 		border = wi.BorderDouble
 	}
 	return &window{
+		id:      id,
 		parent:  parent,
 		cd:      cd,
 		view:    view,

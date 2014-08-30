@@ -7,6 +7,7 @@ package editor
 import (
 	"fmt"
 	"github.com/maruel/wi/wi-plugin"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/rpc"
@@ -19,31 +20,49 @@ import (
 
 // TODO(maruel): Implement the RPC to make plugins work.
 
-type plugin interface {
-	Terminate()
+// Plugin represents a live plugin process.
+type Plugin interface {
+	io.Closer
 }
 
-type pluginImpl struct {
+// pluginProcess represents an out-of-process plugin.
+type pluginProcess struct {
 	proc *os.Process
 }
 
-func (p *pluginImpl) Terminate() {
-	// TODO(maruel): Nicely terminate them.
-	if err := p.proc.Kill(); err != nil {
-		panic(err)
+func (p *pluginProcess) Close() error {
+	if p.proc != nil {
+		// TODO(maruel): Nicely terminate the child process via an RPC.
+		return p.proc.Kill()
 	}
+	return nil
 }
 
-type plugins []plugin
+// pluginInline is a "plugin" that lives in the same process. It is used for
+// "stock" plugins and for unit testing.
+type pluginInline struct {
+}
 
-func (p plugins) Terminate() {
+func (p *pluginInline) Close() error {
+	return nil
+}
+
+// Plugins is the collection of Plugin instances, it represents all the live
+// plugin processes.
+type Plugins []Plugin
+
+func (p Plugins) Close() error {
+	var out error
 	for _, instance := range p {
-		instance.Terminate()
+		if err := instance.Close(); err != nil {
+			out = err
+		}
 	}
+	return out
 }
 
 // loadPlugin starts a plugin and returns the process.
-func loadPlugin(server *rpc.Server, f string) plugin {
+func loadPlugin(server *rpc.Server, f string) Plugin {
 	log.Printf("loadPlugin(%s)", f)
 	cmd := exec.Command(f)
 	cmd.Env = append(os.Environ(), "WI=plugin")
@@ -99,30 +118,24 @@ func loadPlugin(server *rpc.Server, f string) plugin {
 		server.ServeConn(wi.MakeReadWriteCloser(stdout, stdin))
 	}()
 
-	return &pluginImpl{cmd.Process}
+	return &pluginProcess{cmd.Process}
 }
 
-// loadPlugins loads all the plugins and returns the process handles.
-func loadPlugins(e wi.Editor) plugins {
-	// TODO(maruel): Get the path of the executable. It's a bit involved since
-	// very OS specific but it's doable. Then all plugins in the same directory
-	// are access.
-	searchDir := "."
+// EnumPlugins enumerate the plugins that should be loaded.
+//
+// TODO(maruel): Get the path of the executable. It's a bit involved since very
+// OS specific but it's doable. Then all plugins in the same directory are
+// access.
+func EnumPlugins(searchDir string) ([]string, error) {
 	files, err := ioutil.ReadDir(searchDir)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 	if len(files) == 0 {
-		// Save registering RPC stuff when unnecessary.
-		return nil
+		return nil, nil
 	}
 
-	var wg sync.WaitGroup
-	c := make(chan plugin)
-	server := rpc.NewServer()
-	// TODO(maruel): http://golang.org/pkg/net/rpc/#Server.RegisterName
-	// It should be an interface with methods of style DoStuff(Foo, Bar) Baz
-	//server.RegisterName("Editor", e)
+	out := []string{}
 	for _, f := range files {
 		if f.IsDir() {
 			continue
@@ -141,6 +154,19 @@ func loadPlugins(e wi.Editor) plugins {
 				continue
 			}
 		}
+		out = append(out, name)
+	}
+	return out, nil
+}
+
+func loadPlugins(pluginExecutables []string) Plugins {
+	var wg sync.WaitGroup
+	c := make(chan Plugin)
+	server := rpc.NewServer()
+	// TODO(maruel): http://golang.org/pkg/net/rpc/#Server.RegisterName
+	// It should be an interface with methods of style DoStuff(Foo, Bar) Baz
+	//server.RegisterName("Editor", e)
+	for _, name := range pluginExecutables {
 		wg.Add(1)
 		go func(s *rpc.Server, n string) {
 			c <- loadPlugin(s, n)
@@ -149,7 +175,7 @@ func loadPlugins(e wi.Editor) plugins {
 	}
 
 	var wg2 sync.WaitGroup
-	out := make(plugins, 0)
+	out := make(Plugins, 0)
 	wg2.Add(1)
 	go func() {
 		for i := range c {

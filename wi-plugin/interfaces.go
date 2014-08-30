@@ -126,10 +126,6 @@ const (
 type CommandDispatcher interface {
 	// PostCommand appends a Command at the end of the queue.
 	PostCommand(cmdName string, args ...string)
-
-	// WaitQueueEmpty waits for the enqueued commands to complete before moving
-	// on. It can be used for example when quitting the process safely.
-	WaitQueueEmpty()
 }
 
 type CommandDispatcherFull interface {
@@ -192,8 +188,13 @@ type Editor interface {
 type Window interface {
 	fmt.Stringer
 
+	// Id returns the unique id for this Window. The id is guaranteed to be
+	// unique through the process lifetime of the editor.
+	Id() string
+
 	// Tree returns a textual representation of the Window hierarchy. It is only
 	// for debugging purpose.
+	// TODO(maruel): Remove.
 	Tree() string
 
 	// Parent returns the parent Window.

@@ -59,7 +59,22 @@ func Main() int {
 	defer termbox.Close()
 	termbox.SetInputMode(termbox.InputAlt | termbox.InputMouse)
 
-	return editor.Main(*command, *noPlugin, flag.Args(), editor.MakeEditor(nil))
+	e := editor.MakeEditor(nil)
+	e.PostCommand("bootstrap_ui")
+	if *command {
+		for _, i := range flag.Args() {
+			e.PostCommand(i)
+		}
+	} else if flag.NArg() > 0 {
+		for _, i := range flag.Args() {
+			e.PostCommand("open", i)
+		}
+	} else {
+		// If nothing, opens a blank editor.
+		e.PostCommand("new")
+	}
+	e.PostCommand("log_window_tree")
+	return editor.Main(*noPlugin, e)
 }
 
 func main() {

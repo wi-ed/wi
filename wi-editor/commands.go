@@ -48,8 +48,7 @@ func cmdAlert(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Window, args 
 	}()
 }
 
-func cmdAddStatusBar(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
-	// Create a tree of views that is used for alignment.
+func cmdBootstrapUI(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
 	if len(args) != 0 {
 		cd.ExecuteCommand(w, "alert", c.LongDesc(cd, w))
 		return
@@ -59,13 +58,7 @@ func cmdAddStatusBar(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Window
 	statusWindowRoot.NewChildWindow(makeStatusViewPosition(), wi.DockingRight)
 }
 
-func cmdOpen(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
-	// The Window and View are created synchronously. The View is populated
-	// asynchronously.
-	log.Printf("Faking opening a file: %s", args)
-}
-
-func cmdNew(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
+func cmdDocumentNew(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
 	if len(args) != 0 {
 		cmd := wi.GetCommand(cd, w, "alias")
 		cd.ExecuteCommand(w, "alert", cmd.LongDesc(cd, w))
@@ -74,17 +67,10 @@ func cmdNew(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Window, args ..
 	}
 }
 
-func cmdShell(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
-	log.Printf("Faking opening a new shell: %s", args)
-}
-
-func cmdDoc(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
-	// TODO(maruel): Grab the current word under selection if no args is
-	// provided. Pass this token to shell.
-	docArgs := make([]string, len(args)+1)
-	docArgs[0] = "doc"
-	copy(docArgs[1:], args)
-	//dispatcher.Execute(w, "shell", docArgs...)
+func cmdDocumentOpen(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
+	// The Window and View are created synchronously. The View is populated
+	// asynchronously.
+	log.Printf("Faking opening a file: %s", args)
 }
 
 func isDirtyRecurse(cd wi.CommandDispatcherFull, w wi.Window) bool {
@@ -115,9 +101,12 @@ func cmdQuit(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Window, args .
 	}
 }
 
-func cmdHelp(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
-	// TODO(maruel): Creates a new Window with a ViewHelp.
-	log.Printf("Faking help: %s", args)
+func cmdWindowClose(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
+	if len(args) != 1 {
+		cd.ExecuteCommand(w, "alert", c.LongDesc(cd, w))
+		return
+	}
+	log.Printf("Faking opening a file: %s", args)
 }
 
 func cmdAlias(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
@@ -209,30 +198,19 @@ var defaultCommands = []wi.Command{
 		},
 	},
 	&wi.CommandImpl{
-		"add_status_bar",
-		cmdAddStatusBar,
+		"bootstrap_ui",
+		cmdBootstrapUI,
 		wi.WindowCategory,
 		wi.LangMap{
-			wi.LangEn: "Adds the standard status bar",
+			wi.LangEn: "Bootstraps the editor's UI",
 		},
 		wi.LangMap{
-			wi.LangEn: "Adds the standard status bar to the active window. This command exists so it can be overriden by a plugin, so it can create its own status bar.",
+			wi.LangEn: "Bootstraps the editor's UI. This command is automatically run on startup and cannot be executed afterward. It adds the standard status bar. This command exists so it can be overriden by a plugin, so it can create its own status bar.",
 		},
 	},
 	&wi.CommandImpl{
-		"help",
-		cmdHelp,
-		wi.WindowCategory,
-		wi.LangMap{
-			wi.LangEn: "Prints help",
-		},
-		wi.LangMap{
-			wi.LangEn: "Prints general help or help for a particular command.",
-		},
-	},
-	&wi.CommandImpl{
-		"new",
-		cmdNew,
+		"document_new",
+		cmdDocumentNew,
 		wi.WindowCategory,
 		wi.LangMap{
 			wi.LangEn: "Create a new buffer",
@@ -242,8 +220,8 @@ var defaultCommands = []wi.Command{
 		},
 	},
 	&wi.CommandImpl{
-		"open",
-		cmdOpen,
+		"document_open",
+		cmdDocumentOpen,
 		wi.WindowCategory,
 		wi.LangMap{
 			wi.LangEn: "Opens a file in a new buffer",
@@ -264,25 +242,14 @@ var defaultCommands = []wi.Command{
 		},
 	},
 	&wi.CommandImpl{
-		"shell",
-		cmdShell,
+		"window_close",
+		cmdWindowClose,
 		wi.WindowCategory,
 		wi.LangMap{
-			wi.LangEn: "Opens a shell process",
+			wi.LangEn: "Closes a window",
 		},
 		wi.LangMap{
-			wi.LangEn: "Opens a shell process in a new buffer.",
-		},
-	},
-	&wi.CommandImpl{
-		"doc",
-		cmdDoc,
-		wi.WindowCategory,
-		wi.LangMap{
-			wi.LangEn: "Search godoc documentation",
-		},
-		wi.LangMap{
-			wi.LangEn: "Uses the 'doc' tool to get documentation about the text under the cursor.",
+			wi.LangEn: "Closes a window. Note that any window can be closed and all the child window will be destroyed at the same time.",
 		},
 	},
 
@@ -333,6 +300,8 @@ var defaultCommands = []wi.Command{
 		},
 	},
 
+	&wi.CommandAlias{"new", "document_new"},
+	&wi.CommandAlias{"open", "document_open"},
 	&wi.CommandAlias{"q", "quit"},
 
 	// DIRECTION = up/down/left/right
