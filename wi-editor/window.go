@@ -450,3 +450,57 @@ func drawRecurse(w *window, offsetX, offsetY int, out *tulib.Buffer) {
 		drawRecurse(child, dest.X, dest.Y, out)
 	}
 }
+
+// Commands
+
+func cmdWindowClose(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
+	log.Printf("Faking closing a window: %s", args)
+}
+
+func cmdWindowLogTree(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
+	root := wi.RootWindow(w)
+	log.Printf("Window tree:\n%s", root.Tree())
+}
+
+func cmdWindowNew(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
+}
+
+var windowCommands = []wi.Command{
+	&wi.CommandImpl{
+		"window_close",
+		1,
+		cmdWindowClose,
+		wi.WindowCategory,
+		wi.LangMap{
+			wi.LangEn: "Closes a window",
+		},
+		wi.LangMap{
+			wi.LangEn: "Closes a window. Note that any window can be closed and all the child window will be destroyed at the same time.",
+		},
+	},
+	&wi.CommandImpl{
+		"window_log_tree",
+		0,
+		cmdWindowLogTree,
+		wi.DebugCategory,
+		wi.LangMap{
+			wi.LangEn: "Logs the tree in the log file",
+		},
+		wi.LangMap{
+			wi.LangEn: "Logs the tree in the log file, this is only relevant if -verbose is used.",
+		},
+	},
+	&wi.CommandImpl{
+		"window_new",
+		4,
+		cmdWindowNew,
+		wi.WindowCategory,
+		wi.LangMap{
+			wi.LangEn: "Creates a new window",
+		},
+		wi.LangMap{
+			wi.LangEn: "Creates a new window. The new window is created as a child to the specified parent. It creates the view specified that was previously registered.",
+		},
+	},
+	// 'screenshot', mainly for unit test; open a new buffer with the screenshot, so it can be saved with 'w'.
+}

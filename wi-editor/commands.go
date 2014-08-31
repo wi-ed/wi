@@ -34,10 +34,6 @@ func makeCommands() wi.Commands {
 
 func cmdAlert(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
 	// TODO(maruel): Create an infobar that automatically dismiss itself after 5s.
-	if len(args) != 1 {
-		cd.ExecuteCommand(w, "alert", c.LongDesc(cd, w))
-		return
-	}
 	// TODO(maruel): Use a 5 seconds infobar.
 	wi.RootWindow(w).NewChildWindow(makeAlertView(args[0]), wi.DockingFloating)
 	log.Printf("Tree:\n%s", wi.RootWindow(w).Tree())
@@ -49,10 +45,6 @@ func cmdAlert(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Window, args 
 }
 
 func cmdBootstrapUI(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
-	if len(args) != 0 {
-		cd.ExecuteCommand(w, "alert", c.LongDesc(cd, w))
-		return
-	}
 	statusWindowRoot := w.NewChildWindow(makeStatusViewRoot(), wi.DockingBottom)
 	statusWindowRoot.NewChildWindow(makeStatusViewName(), wi.DockingLeft)
 	statusWindowRoot.NewChildWindow(makeStatusViewPosition(), wi.DockingRight)
@@ -101,20 +93,7 @@ func cmdQuit(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Window, args .
 	}
 }
 
-func cmdWindowClose(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
-	if len(args) != 1 {
-		cd.ExecuteCommand(w, "alert", c.LongDesc(cd, w))
-		return
-	}
-	log.Printf("Faking opening a file: %s", args)
-}
-
 func cmdAlias(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
-	if len(args) != 3 {
-		cmd := wi.GetCommand(cd, w, "alias")
-		cd.ExecuteCommand(w, "alert", cmd.LongDesc(cd, w))
-		return
-	}
 	if args[0] == "window" {
 	} else if args[0] == "global" {
 		w = wi.RootWindow(w)
@@ -128,11 +107,6 @@ func cmdAlias(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Window, args 
 }
 
 func cmdKeyBind(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
-	if len(args) != 4 {
-		cmd := wi.GetCommand(cd, w, "keybind")
-		cd.ExecuteCommand(w, "alert", cmd.LongDesc(cd, w))
-		return
-	}
 	location := args[0]
 	modeName := args[1]
 	keyName := args[2]
@@ -162,32 +136,17 @@ func cmdKeyBind(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Window, arg
 }
 
 func cmdShowCommandWindow(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
-	if len(args) != 0 {
-		cmd := wi.GetCommand(cd, w, "show_command_window")
-		cd.ExecuteCommand(w, "alert", cmd.LongDesc(cd, w))
-		return
-	}
-
 	// Create the Window with the command view and attach it to the currently
 	// focused Window.
 	cmdWindow := makeCommandView()
 	w.NewChildWindow(cmdWindow, wi.DockingFloating)
 }
 
-func cmdLogWindowTree(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
-	if len(args) != 0 {
-		cmd := wi.GetCommand(cd, w, "log_window_tree")
-		cd.ExecuteCommand(w, "alert", cmd.LongDesc(cd, w))
-		return
-	}
-	root := wi.RootWindow(w)
-	log.Printf("Window tree:\n%s", root.Tree())
-}
-
 // Native commands.
 var defaultCommands = []wi.Command{
 	&wi.CommandImpl{
 		"alert",
+		1,
 		cmdAlert,
 		wi.WindowCategory,
 		wi.LangMap{
@@ -199,6 +158,7 @@ var defaultCommands = []wi.Command{
 	},
 	&wi.CommandImpl{
 		"bootstrap_ui",
+		0,
 		cmdBootstrapUI,
 		wi.WindowCategory,
 		wi.LangMap{
@@ -210,6 +170,7 @@ var defaultCommands = []wi.Command{
 	},
 	&wi.CommandImpl{
 		"document_new",
+		-1,
 		cmdDocumentNew,
 		wi.WindowCategory,
 		wi.LangMap{
@@ -221,6 +182,7 @@ var defaultCommands = []wi.Command{
 	},
 	&wi.CommandImpl{
 		"document_open",
+		-1,
 		cmdDocumentOpen,
 		wi.WindowCategory,
 		wi.LangMap{
@@ -232,6 +194,7 @@ var defaultCommands = []wi.Command{
 	},
 	&wi.CommandImpl{
 		"quit",
+		0,
 		cmdQuit,
 		wi.WindowCategory,
 		wi.LangMap{
@@ -241,20 +204,10 @@ var defaultCommands = []wi.Command{
 			wi.LangEn: "Quits the editor. Optionally bypasses writing the files to disk.",
 		},
 	},
-	&wi.CommandImpl{
-		"window_close",
-		cmdWindowClose,
-		wi.WindowCategory,
-		wi.LangMap{
-			wi.LangEn: "Closes a window",
-		},
-		wi.LangMap{
-			wi.LangEn: "Closes a window. Note that any window can be closed and all the child window will be destroyed at the same time.",
-		},
-	},
 
 	&wi.CommandImpl{
 		"alias",
+		3,
 		cmdAlias,
 		wi.CommandsCategory,
 		wi.LangMap{
@@ -267,6 +220,7 @@ var defaultCommands = []wi.Command{
 	},
 	&wi.CommandImpl{
 		"keybind",
+		4,
 		cmdKeyBind,
 		wi.CommandsCategory,
 		wi.LangMap{
@@ -278,6 +232,7 @@ var defaultCommands = []wi.Command{
 	},
 	&wi.CommandImpl{
 		"show_command_window",
+		0,
 		cmdShowCommandWindow,
 		wi.CommandsCategory,
 		wi.LangMap{
@@ -288,31 +243,17 @@ var defaultCommands = []wi.Command{
 		},
 	},
 
-	&wi.CommandImpl{
-		"log_window_tree",
-		cmdLogWindowTree,
-		wi.DebugCategory,
-		wi.LangMap{
-			wi.LangEn: "Logs the tree in the log file",
-		},
-		wi.LangMap{
-			wi.LangEn: "Logs the tree in the log file, this is only relevant if -verbose is used.",
-		},
-	},
-
 	&wi.CommandAlias{"new", "document_new"},
 	&wi.CommandAlias{"open", "document_open"},
 	&wi.CommandAlias{"q", "quit"},
 
 	// DIRECTION = up/down/left/right
 	// window_DIRECTION
-	// window_close
 	// cursor_move_DIRECTION
 	// add_text/insert/delete
 	// undo/redo
 	// verb/movement/multiplier
 	// Modes, select (both column and normal), command.
-	// 'screenshot', mainly for unit test; open a new buffer with the screenshot, so it can be saved with 'w'.
 	// ...
 }
 
@@ -323,6 +264,9 @@ var defaultCommands = []wi.Command{
 // commands. For example, "open" is implemented but "write" is not!
 func RegisterDefaultCommands(dispatcher wi.Commands) {
 	for _, cmd := range defaultCommands {
+		dispatcher.Register(cmd)
+	}
+	for _, cmd := range windowCommands {
 		dispatcher.Register(cmd)
 	}
 }

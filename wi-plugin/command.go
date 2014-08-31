@@ -14,6 +14,7 @@ type CommandImplHandler func(c *CommandImpl, cd CommandDispatcherFull, w Window,
 // CommandImpl is the boilerplate Command implementation.
 type CommandImpl struct {
 	NameValue      string
+	ExpectedArgs   int // If >= 0, the command will be aborted if the number of arguments is not exactly this value. Set to -1 to disable verification. On abort, an alert with the long description of the command is done.
 	HandlerValue   CommandImplHandler
 	CategoryValue  CommandCategory
 	ShortDescValue LangMap
@@ -25,6 +26,9 @@ func (c *CommandImpl) Name() string {
 }
 
 func (c *CommandImpl) Handle(cd CommandDispatcherFull, w Window, args ...string) {
+	if c.ExpectedArgs != -1 && len(args) != c.ExpectedArgs {
+		cd.ExecuteCommand(w, "alert", c.LongDesc(cd, w))
+	}
 	c.HandlerValue(c, cd, w, args...)
 }
 

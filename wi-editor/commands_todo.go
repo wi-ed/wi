@@ -30,6 +30,7 @@ func cmdHelp(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Window, args .
 var todoCommands = []wi.Command{
 	&wi.CommandImpl{
 		"doc",
+		-1,
 		cmdDoc,
 		wi.WindowCategory,
 		wi.LangMap{
@@ -41,6 +42,7 @@ var todoCommands = []wi.Command{
 	},
 	&wi.CommandImpl{
 		"help",
+		-1,
 		cmdHelp,
 		wi.WindowCategory,
 		wi.LangMap{
@@ -52,6 +54,7 @@ var todoCommands = []wi.Command{
 	},
 	&wi.CommandImpl{
 		"shell",
+		-1,
 		cmdShell,
 		wi.WindowCategory,
 		wi.LangMap{
