@@ -5,6 +5,7 @@
 package wi
 
 import (
+	"github.com/maruel/ut"
 	"testing"
 )
 
@@ -13,13 +14,7 @@ func TestGetStr(t *testing.T) {
 		LangEn: "Foo",
 		LangFr: "Bar",
 	}
-	if GetStr(LangFr, a) != "Bar" {
-		t.Fail()
-	}
-	if GetStr(LangEs, a) != "Foo" {
-		t.Fail()
-	}
-	if GetStr(LangEn, a) != "Foo" {
-		t.Fail()
-	}
+	ut.AssertEqual(t, "Bar", GetStr(LangFr, a))
+	ut.AssertEqual(t, "Foo", GetStr(LangEs, a))
+	ut.AssertEqual(t, "Foo", GetStr(LangEn, a))
 }

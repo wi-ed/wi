@@ -5,71 +5,13 @@
 package wi
 
 import (
-	"crypto/sha1"
-	"encoding/hex"
 	"fmt"
+	"github.com/maruel/interface_guid"
 	"io"
 	"net/rpc"
 	"os"
 	"reflect"
 )
-
-type set map[string]bool
-
-func write(h io.Writer, item string) {
-	h.Write([]byte(item))
-	h.Write([]byte{0})
-}
-
-func recurseType(h io.Writer, t reflect.Type, seen set) {
-	kind := t.Kind()
-	write(h, kind.String())
-	if kind == reflect.Interface {
-		name := t.Name()
-		write(h, name)
-		if seen[name] {
-			return
-		}
-		seen[name] = true
-		for i := 0; i < t.NumMethod(); i++ {
-			recurseMethod(h, t.Method(i), seen)
-		}
-	} else if kind == reflect.Struct {
-		name := t.Name()
-		write(h, name)
-		if seen[name] {
-			return
-		}
-		seen[name] = true
-		for i := 0; i < t.NumField(); i++ {
-			f := t.Field(i)
-			write(h, f.Name)
-			recurseType(h, f.Type, seen)
-		}
-		for i := 0; i < t.NumMethod(); i++ {
-			recurseMethod(h, t.Method(i), seen)
-		}
-	} else if kind == reflect.Array || kind == reflect.Chan || kind == reflect.Ptr || kind == reflect.Slice {
-		recurseType(h, t.Elem(), seen)
-	} else if kind == reflect.Map {
-		recurseType(h, t.Key(), seen)
-		recurseType(h, t.Elem(), seen)
-	} else if kind >= reflect.Bool && kind <= reflect.Complex128 || kind == reflect.String {
-		// Base types.
-	} else {
-		panic(kind.String())
-	}
-}
-
-func recurseMethod(h io.Writer, m reflect.Method, seen set) {
-	write(h, m.Name)
-	for i := 0; i < m.Type.NumIn(); i++ {
-		recurseType(h, m.Type.In(i), seen)
-	}
-	for i := 0; i < m.Type.NumOut(); i++ {
-		recurseType(h, m.Type.Out(i), seen)
-	}
-}
 
 // CalculateVersion returns the hex string of the hash of the primary
 // interfaces for this package.
@@ -78,9 +20,7 @@ func recurseMethod(h io.Writer, m reflect.Method, seen set) {
 // recursively. This data is used to generate an hash, that will represent the
 // version of this interface.
 func CalculateVersion() string {
-	h := sha1.New()
-	recurseType(h, reflect.TypeOf((*Editor)(nil)).Elem(), make(set))
-	return hex.EncodeToString(h.Sum(nil))
+	return interface_guid.CalculateGUID(reflect.TypeOf((*Editor)(nil)).Elem())
 }
 
 type multiCloser []io.Closer
