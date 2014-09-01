@@ -6,6 +6,7 @@ package editor
 
 import (
 	"github.com/maruel/tulib"
+	"github.com/maruel/wi/wi-plugin"
 	"github.com/nsf/termbox-go"
 	"log"
 	"testing"
@@ -66,7 +67,7 @@ func makeTermBoxFake(width, height int, events []termbox.Event) *termBoxFake {
 func TestMainImmediateQuit(t *testing.T) {
 	t.Parallel()
 	editor := MakeEditor(makeTermBoxFake(80, 25, []termbox.Event{}))
-	editor.PostCommand("quit")
+	wi.PostCommand(editor, "quit")
 	result := Main(true, editor)
 	if result != 0 {
 		t.Fatalf("Exit code: %v", result)
@@ -77,8 +78,8 @@ func TestMainImmediateQuit(t *testing.T) {
 func TestMainInvalidThenQuit(t *testing.T) {
 	t.Parallel()
 	editor := MakeEditor(makeTermBoxFake(80, 25, []termbox.Event{}))
-	editor.PostCommand("invalid")
-	editor.PostCommand("quit")
+	wi.PostCommand(editor, "invalid")
+	wi.PostCommand(editor, "quit")
 	result := Main(true, editor)
 	if result != 0 {
 		t.Fatalf("Exit code: %v", result)

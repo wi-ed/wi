@@ -13,6 +13,7 @@ package main
 import (
 	"flag"
 	"github.com/maruel/wi/wi-editor"
+	"github.com/maruel/wi/wi-plugin"
 	"github.com/nsf/termbox-go"
 	"log"
 	"os"
@@ -60,20 +61,20 @@ func Main() int {
 	termbox.SetInputMode(termbox.InputAlt | termbox.InputMouse)
 
 	e := editor.MakeEditor(nil)
-	e.PostCommand("bootstrap_ui")
+	wi.PostCommand(e, "bootstrap_ui")
 	if *command {
 		for _, i := range flag.Args() {
-			e.PostCommand(i)
+			wi.PostCommand(e, i)
 		}
 	} else if flag.NArg() > 0 {
 		for _, i := range flag.Args() {
-			e.PostCommand("open", i)
+			wi.PostCommand(e, "open", i)
 		}
 	} else {
 		// If nothing, opens a blank editor.
-		e.PostCommand("new")
+		wi.PostCommand(e, "new")
 	}
-	e.PostCommand("log_window_tree")
+	wi.PostCommand(e, "window_log_tree")
 	return editor.Main(*noPlugin, e)
 }
 

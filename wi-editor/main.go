@@ -120,13 +120,8 @@ func (t *terminal) Version() string {
 	return version
 }
 
-func (t *terminal) PostCommand(cmdName string, args ...string) {
-	log.Printf("PostCommand(%s, %s)", cmdName, args)
-	t.commandsQueue <- commandQueueItem{commandItem{cmdName, args, ""}}
-}
-
 func (t *terminal) PostCommands(cmds [][]string) {
-	log.Printf("PostCommands(%s, %s)", cmds)
+	log.Printf("PostCommands(%s)", cmds)
 	tmp := make(commandQueueItem, len(cmds))
 	for i, cmd := range cmds {
 		tmp[i].cmdName = cmd[0]
@@ -261,7 +256,7 @@ func (t *terminal) EventLoop() int {
 				t.onResize()
 			case termbox.EventError:
 				// TODO(maruel): Not sure what situations can trigger this.
-				t.PostCommand("alert", event.Err.Error())
+				wi.PostCommand(t, "alert", event.Err.Error())
 			}
 
 		case <-t.viewReady:

@@ -124,10 +124,6 @@ const (
 // CommandDispatcher owns the command queue. Use this interface to enqueue
 // commands for execution.
 type CommandDispatcher interface {
-	// PostCommand appends a Command at the end of the queue.
-	// It is a shortcut to PostCommands([]string{cmdName, args...})
-	PostCommand(cmdName string, args ...string)
-
 	// PostCommands appends several Command calls at the end of the queue. Using
 	// this function guarantees that all the commands will be executed in order
 	// without commands interfering.
@@ -349,6 +345,15 @@ type KeyBindings interface {
 }
 
 // Utility functions.
+
+// PostCommand appends a Command at the end of the queue.
+// It is a shortcut to cd.PostCommands([][]string{[]string{cmdName, args...}})
+func PostCommand(cd CommandDispatcher, cmdName string, args ...string) {
+	line := make([]string, len(args)+1)
+	line[0] = cmdName
+	copy(line[1:], args)
+	cd.PostCommands([][]string{line})
+}
 
 // GetCommand traverses the Window hierarchy tree to find a View that has
 // the command cmd in its Commands mapping. If Window is nil, it starts with
