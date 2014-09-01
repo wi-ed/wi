@@ -124,17 +124,23 @@ func isDirtyRecurse(cd wi.CommandDispatcherFull, w wi.Window) bool {
 	return false
 }
 
-func cmdQuit(c *privilegedCommandImpl, e *editor, w *window, args ...string) {
+func cmdEditorQuit(c *privilegedCommandImpl, e *editor, w *window, args ...string) {
 	// TODO(maruel): For all the View, question if fine to quit via
 	// view.IsDirty(). If not fine, "prompt" y/n to force quit. If n, stop there.
 	// - Send a signal to each plugin.
 	// - Send a signal back to the main loop.
 	if !isDirtyRecurse(e, e.rootWindow) {
 		e.quitFlag = true
-		// PostDraw wakes up the command event loop so it detects it's time to
+		// editor_redraw wakes up the command event loop so it detects it's time to
 		// quit.
-		e.PostDraw()
+		wi.PostCommand(e, "editor_redraw")
 	}
+}
+
+func cmdEditorRedraw(c *privilegedCommandImpl, e *editor, w *window, args ...string) {
+	go func() {
+		e.viewReady <- true
+	}()
 }
 
 func cmdAlias(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
@@ -243,15 +249,27 @@ func RegisterDefaultCommands(dispatcher wi.Commands) {
 			},
 		},
 		&privilegedCommandImpl{
-			"quit",
+			"editor_quit",
 			0,
-			cmdQuit,
-			wi.WindowCategory,
+			cmdEditorQuit,
+			wi.EditorCategory,
 			wi.LangMap{
 				wi.LangEn: "Quits",
 			},
 			wi.LangMap{
 				wi.LangEn: "Quits the editor. Optionally bypasses writing the files to disk.",
+			},
+		},
+		&privilegedCommandImpl{
+			"editor_redraw",
+			0,
+			cmdEditorRedraw,
+			wi.EditorCategory,
+			wi.LangMap{
+				wi.LangEn: "Forcibly redraws the terminal",
+			},
+			wi.LangMap{
+				wi.LangEn: "Forcibly redraws the terminal.",
 			},
 		},
 
@@ -295,7 +313,7 @@ func RegisterDefaultCommands(dispatcher wi.Commands) {
 
 		&wi.CommandAlias{"new", "document_new"},
 		&wi.CommandAlias{"open", "document_open"},
-		&wi.CommandAlias{"q", "quit"},
+		&wi.CommandAlias{"q", "editor_quit"},
 
 		// DIRECTION = up/down/left/right
 		// window_DIRECTION

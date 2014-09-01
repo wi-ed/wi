@@ -134,20 +134,6 @@ func detachRecursively(w *window) {
 	w.childrenWindows = nil
 }
 
-func (w *window) Remove(child wi.Window) {
-	for i, v := range w.childrenWindows {
-		if v == child {
-			copy(w.childrenWindows[i:], w.childrenWindows[i+1:])
-			w.childrenWindows[len(w.childrenWindows)-1] = nil
-			w.childrenWindows = w.childrenWindows[:len(w.childrenWindows)-1]
-			detachRecursively(v)
-			w.cd.PostDraw()
-			return
-		}
-	}
-	panic("Trying to remove a non-child Window")
-}
-
 func (w *window) Rect() tulib.Rect {
 	return w.rect
 }
@@ -295,7 +281,7 @@ func (w *window) resizeChildren() {
 		w.viewRect = remaining
 		w.view.SetSize(w.viewRect.Width, w.viewRect.Height)
 	}
-	w.cd.PostDraw()
+	wi.PostCommand(w.cd, "editor_redraw")
 }
 
 func (w *window) Buffer() *tulib.Buffer {
@@ -312,7 +298,7 @@ func (w *window) Docking() wi.DockingType {
 func (w *window) SetDocking(docking wi.DockingType) {
 	if w.docking != docking {
 		w.docking = docking
-		w.cd.PostDraw()
+		wi.PostCommand(w.cd, "editor_redraw")
 	}
 }
 
@@ -321,7 +307,7 @@ func (w *window) SetView(view wi.View) {
 	if view != w.view {
 		w.view = view
 		w.windowBuffer.Fill(w.viewRect, w.cell(' '))
-		w.cd.PostDraw()
+		wi.PostCommand(w.cd, "editor_redraw")
 	}
 }
 
@@ -453,8 +439,25 @@ func drawRecurse(w *window, offsetX, offsetY int, out *tulib.Buffer) {
 
 // Commands
 
+func cmdWindowActivate(c *privilegedCommandImpl, e *editor, w *window, args ...string) {
+	// TODO(maruel): Add.
+	//windowName := args[0]
+	//e.activateWindow(w)
+}
+
 func cmdWindowClose(c *privilegedCommandImpl, e *editor, w *window, args ...string) {
-	log.Printf("Faking closing a window: %s", args)
+	//windowName := args[0]
+	var child wi.Window
+	for i, v := range w.childrenWindows {
+		if v == child {
+			copy(w.childrenWindows[i:], w.childrenWindows[i+1:])
+			w.childrenWindows[len(w.childrenWindows)-1] = nil
+			w.childrenWindows = w.childrenWindows[:len(w.childrenWindows)-1]
+			detachRecursively(v)
+			wi.PostCommand(e, "editor_redraw")
+			return
+		}
+	}
 }
 
 func cmdWindowLogTree(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
@@ -475,6 +478,18 @@ func cmdWindowNew(c *privilegedCommandImpl, e *editor, w *window, args ...string
 
 func RegisterWindowCommands(dispatcher wi.Commands) {
 	var windowCommands = []wi.Command{
+		&privilegedCommandImpl{
+			"window_activate",
+			1,
+			cmdWindowActivate,
+			wi.WindowCategory,
+			wi.LangMap{
+				wi.LangEn: "Activate a window",
+			},
+			wi.LangMap{
+				wi.LangEn: "Active a window. This means the Window will have keyboard focus.",
+			},
+		},
 		&privilegedCommandImpl{
 			"window_close",
 			1,

@@ -67,7 +67,7 @@ func makeTermBoxFake(width, height int, events []termbox.Event) *termBoxFake {
 func TestMainImmediateQuit(t *testing.T) {
 	t.Parallel()
 	editor := MakeEditor(makeTermBoxFake(80, 25, []termbox.Event{}))
-	wi.PostCommand(editor, "quit")
+	wi.PostCommand(editor, "editor_quit")
 	result := Main(true, editor)
 	if result != 0 {
 		t.Fatalf("Exit code: %v", result)
@@ -79,7 +79,7 @@ func TestMainInvalidThenQuit(t *testing.T) {
 	t.Parallel()
 	editor := MakeEditor(makeTermBoxFake(80, 25, []termbox.Event{}))
 	wi.PostCommand(editor, "invalid")
-	wi.PostCommand(editor, "quit")
+	wi.PostCommand(editor, "editor_quit")
 	result := Main(true, editor)
 	if result != 0 {
 		t.Fatalf("Exit code: %v", result)

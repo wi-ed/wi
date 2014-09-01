@@ -46,7 +46,7 @@ func (d DockingType) String() string {
 	case DockingBottom:
 		return "DockingBottom"
 	default:
-		panic("Unknown DockingType")
+		return "Unknown DockingType"
 	}
 }
 
@@ -58,7 +58,7 @@ const (
 	BorderNone BorderType = iota
 	// Width is 1.
 	BorderSingle
-	// Despite its name, width is 1.
+	// Despite its name, width is 1, only the glyph is different.
 	BorderDouble
 )
 
@@ -71,7 +71,7 @@ func (b BorderType) String() string {
 	case BorderDouble:
 		return "BorderDouble"
 	default:
-		panic("Unknown BorderType")
+		return "Unknown BorderType"
 	}
 }
 
@@ -84,6 +84,8 @@ const (
 	WindowCategory
 	// Commands relating to manipulating commands, aliases, keybindings.
 	CommandsCategory
+	// Commands relating to the editor lifetime.
+	EditorCategory
 	// Commands relating to debugging the app itself or plugins.
 	DebugCategory
 
@@ -101,7 +103,7 @@ func (c CommandCategory) String() string {
 	case DebugCategory:
 		return "DebugCategory"
 	default:
-		panic("Unknown CommandCategory")
+		return "Unknown CommandCategory"
 	}
 }
 
@@ -143,14 +145,6 @@ type CommandDispatcherFull interface {
 
 	// ActiveWindow returns the current active Window.
 	ActiveWindow() Window
-	// ActivateWindow activates a Window.
-	// TODO(maruel): Convert to command.
-	ActivateWindow(w Window)
-
-	// PostDraw signals the terminal that an invalidated View or Window is now
-	// ready to render.
-	// TODO(maruel): Convert to command.
-	PostDraw()
 
 	// RegisterViewFactory makes a nwe view available by name.
 	RegisterViewFactory(name string, viewFactory ViewFactory) bool
@@ -222,11 +216,6 @@ type Window interface {
 	// already present. In this case, nil is returned.
 	// TODO(maruel): Convert to a command.
 	NewChildWindow(view View, docking DockingType) Window
-
-	// Remove detaches a child window tree from the tree. Care should be taken to
-	// not remove the active Window.
-	// TODO(maruel): Convert to a command.
-	Remove(w Window)
 
 	// Rect returns the position based on the parent Window area, except if
 	// Docking() is DockingFloating.

@@ -132,7 +132,7 @@ func (e *editor) ActiveWindow() wi.Window {
 	return e.lastActive[0]
 }
 
-func (e *editor) ActivateWindow(w wi.Window) {
+func (e *editor) activateWindow(w wi.Window) {
 	log.Printf("ActivateWindow(%s)", w.View().Title())
 	if w.View().IsDisabled() {
 		e.ExecuteCommand(w, "alert", wi.GetStr(e.CurrentLanguage(), activateDisabled))
@@ -158,12 +158,6 @@ func (e *editor) ActivateWindow(w wi.Window) {
 	e.lastActive = append(e.lastActive, nil)
 	copy(e.lastActive[:l], e.lastActive[1:l])
 	e.lastActive[0] = w
-}
-
-func (e *editor) PostDraw() {
-	go func() {
-		e.viewReady <- true
-	}()
 }
 
 func (e *editor) RegisterViewFactory(name string, viewFactory wi.ViewFactory) bool {
