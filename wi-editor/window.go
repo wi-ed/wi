@@ -453,7 +453,7 @@ func drawRecurse(w *window, offsetX, offsetY int, out *tulib.Buffer) {
 
 // Commands
 
-func cmdWindowClose(c *privilegedCommandImpl, t *terminal, w *window, args ...string) {
+func cmdWindowClose(c *privilegedCommandImpl, e *editor, w *window, args ...string) {
 	log.Printf("Faking closing a window: %s", args)
 }
 
@@ -462,7 +462,7 @@ func cmdWindowLogTree(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Windo
 	log.Printf("Window tree:\n%s", root.Tree())
 }
 
-func cmdWindowNew(c *privilegedCommandImpl, t *terminal, w *window, args ...string) {
+func cmdWindowNew(c *privilegedCommandImpl, e *editor, w *window, args ...string) {
 	/*
 		parentName := args[0]
 		viewFactoryName := args[1]
@@ -473,7 +473,7 @@ func cmdWindowNew(c *privilegedCommandImpl, t *terminal, w *window, args ...stri
 	*/
 }
 
-func RegisterWindowCommands(t *terminal, dispatcher wi.Commands) {
+func RegisterWindowCommands(e *editor, dispatcher wi.Commands) {
 	var windowCommands = []wi.Command{
 		&privilegedCommandImpl{
 			"window_close",

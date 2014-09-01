@@ -100,9 +100,9 @@ type Editor interface {
 	EventLoop() int
 }
 
-// It is normally expected to be drawn via an ssh/mosh connection so it should
-// be "bandwidth" optimized, where bandwidth doesn't mean 1200 bauds anymore.
-type terminal struct {
+// editor is the global structure that holds everything together. It implements
+// the Editor interface.
+type editor struct {
 	termBox        TermBox
 	rootWindow     *window
 	lastActive     []wi.Window
@@ -115,120 +115,120 @@ type terminal struct {
 	plugins        Plugins
 }
 
-func (t *terminal) Close() error {
-	if t.plugins == nil {
+func (e *editor) Close() error {
+	if e.plugins == nil {
 		return nil
 	}
-	err := t.plugins.Close()
-	t.plugins = nil
+	err := e.plugins.Close()
+	e.plugins = nil
 	return err
 }
 
-func (t *terminal) Version() string {
+func (e *editor) Version() string {
 	return version
 }
 
-func (t *terminal) PostCommands(cmds [][]string) {
+func (e *editor) PostCommands(cmds [][]string) {
 	log.Printf("PostCommands(%s)", cmds)
 	tmp := make(commandQueueItem, len(cmds))
 	for i, cmd := range cmds {
 		tmp[i].cmdName = cmd[0]
 		tmp[i].args = cmd[1:]
 	}
-	t.commandsQueue <- tmp
+	e.commandsQueue <- tmp
 }
 
-func (t *terminal) postKey(keyName string) {
+func (e *editor) postKey(keyName string) {
 	log.Printf("PostKey(%s)", keyName)
-	t.commandsQueue <- commandQueueItem{commandItem{keyName: keyName}}
+	e.commandsQueue <- commandQueueItem{commandItem{keyName: keyName}}
 }
 
-func (t *terminal) ExecuteCommand(w wi.Window, cmdName string, args ...string) {
+func (e *editor) ExecuteCommand(w wi.Window, cmdName string, args ...string) {
 	log.Printf("ExecuteCommand(%s)", cmdName)
-	cmd := wi.GetCommand(t, w, cmdName)
+	cmd := wi.GetCommand(e, w, cmdName)
 	if cmd == nil {
-		t.ExecuteCommand(w, "alert", fmt.Sprintf(wi.GetStr(t.CurrentLanguage(), notFound), cmdName))
+		e.ExecuteCommand(w, "alert", fmt.Sprintf(wi.GetStr(e.CurrentLanguage(), notFound), cmdName))
 	} else {
-		cmd.Handle(t, w, args...)
+		cmd.Handle(e, w, args...)
 	}
 }
 
-func (t *terminal) CurrentLanguage() wi.LanguageMode {
-	return t.languageMode
+func (e *editor) CurrentLanguage() wi.LanguageMode {
+	return e.languageMode
 }
 
-func (t *terminal) KeyboardMode() wi.KeyboardMode {
-	return t.keyboardMode
+func (e *editor) KeyboardMode() wi.KeyboardMode {
+	return e.keyboardMode
 }
 
 // draw descends the whole Window tree and redraw Windows.
-func (t *terminal) draw() {
+func (e *editor) draw() {
 	log.Print("draw()")
 	b := tulib.TermboxBuffer()
-	drawRecurse(t.rootWindow, 0, 0, &b)
-	t.termBox.Flush()
+	drawRecurse(e.rootWindow, 0, 0, &b)
+	e.termBox.Flush()
 }
 
-func (t *terminal) ActiveWindow() wi.Window {
-	return t.lastActive[0]
+func (e *editor) ActiveWindow() wi.Window {
+	return e.lastActive[0]
 }
 
-func (t *terminal) ActivateWindow(w wi.Window) {
+func (e *editor) ActivateWindow(w wi.Window) {
 	log.Printf("ActivateWindow(%s)", w.View().Title())
 	if w.View().IsDisabled() {
-		t.ExecuteCommand(w, "alert", wi.GetStr(t.CurrentLanguage(), activateDisabled))
+		e.ExecuteCommand(w, "alert", wi.GetStr(e.CurrentLanguage(), activateDisabled))
 		return
 	}
 
-	// First remove w from t.lastActive, second add w as t.lastActive[0].
+	// First remove w from e.lastActive, second add w as e.lastActive[0].
 	// This kind of manual list shuffling is really Go's achille heel.
 	// TODO(maruel): There's no way I got it right on the first try without a
 	// unit test.
-	for i, v := range t.lastActive {
+	for i, v := range e.lastActive {
 		if v == w {
 			if i > 0 {
-				copy(t.lastActive[:i], t.lastActive[1:i+1])
-				t.lastActive[0] = w
+				copy(e.lastActive[:i], e.lastActive[1:i+1])
+				e.lastActive[0] = w
 			}
 			return
 		}
 	}
 
 	// This Window has never been active.
-	l := len(t.lastActive)
-	t.lastActive = append(t.lastActive, nil)
-	copy(t.lastActive[:l], t.lastActive[1:l])
-	t.lastActive[0] = w
+	l := len(e.lastActive)
+	e.lastActive = append(e.lastActive, nil)
+	copy(e.lastActive[:l], e.lastActive[1:l])
+	e.lastActive[0] = w
 }
 
-func (t *terminal) PostDraw() {
+func (e *editor) PostDraw() {
 	go func() {
-		t.viewReady <- true
+		e.viewReady <- true
 	}()
 }
 
-func (t *terminal) RegisterViewFactory(name string, viewFactory wi.ViewFactory) bool {
-	_, present := t.viewFactories[name]
-	t.viewFactories[name] = viewFactory
+func (e *editor) RegisterViewFactory(name string, viewFactory wi.ViewFactory) bool {
+	_, present := e.viewFactories[name]
+	e.viewFactories[name] = viewFactory
 	return !present
 }
 
-func (t *terminal) onResize() {
+func (e *editor) onResize() {
 	// Resize the Windows. This also invalidates it, which will also force a
 	// redraw if the size changed.
-	w, h := t.termBox.Size()
-	t.rootWindow.SetRect(tulib.Rect{0, 0, w, h})
+	w, h := e.termBox.Size()
+	e.rootWindow.SetRect(tulib.Rect{0, 0, w, h})
 }
 
-// EventLoop handles both commands and events from the terminal. This function
+// EventLoop handles both commands and events from the editor. This function
 // runs in the UI goroutine.
-func (t *terminal) EventLoop() int {
+func (e *editor) EventLoop() int {
 	fakeChan := make(chan time.Time)
 	var drawTimer <-chan time.Time = fakeChan
 	keyBuffer := ""
 	for {
 		select {
-		case cmds := <-t.commandsQueue:
+		case cmds := <-e.commandsQueue:
 			for _, cmd := range cmds {
 				// TODO(maruel): Temporary, until the command window works.
 				if cmd.keyName != "" {
@@ -237,27 +237,27 @@ func (t *terminal) EventLoop() int {
 					// that will change the active window, so using the active window
 					// directly or indirectly here is an incorrect assumption.
 					if cmd.keyName == "Enter" {
-						t.ExecuteCommand(t.ActiveWindow(), keyBuffer)
+						e.ExecuteCommand(e.ActiveWindow(), keyBuffer)
 						keyBuffer = ""
 					} else {
-						cmdName := wi.GetKeyBindingCommand(t, t.KeyboardMode(), cmd.keyName)
+						cmdName := wi.GetKeyBindingCommand(e, e.KeyboardMode(), cmd.keyName)
 						if cmdName != "" {
-							t.ExecuteCommand(t.ActiveWindow(), cmdName)
+							e.ExecuteCommand(e.ActiveWindow(), cmdName)
 						} else if len(cmd.keyName) == 1 {
 							keyBuffer += cmd.keyName
 						}
 					}
 				} else {
-					t.ExecuteCommand(t.ActiveWindow(), cmd.cmdName, cmd.args...)
+					e.ExecuteCommand(e.ActiveWindow(), cmd.cmdName, cmd.args...)
 				}
 			}
 
-		case event := <-t.terminalEvents:
+		case event := <-e.terminalEvents:
 			switch event.Type {
 			case termbox.EventKey:
 				k := keyEventToName(event)
 				if k != "" {
-					t.postKey(k)
+					e.postKey(k)
 				}
 			case termbox.EventMouse:
 				// TODO(maruel): MouseDispatcher. Mouse events are expected to be
@@ -267,13 +267,13 @@ func (t *terminal) EventLoop() int {
 			case termbox.EventResize:
 				// The terminal window was resized, resize everything, independent of
 				// the enqueued commands.
-				t.onResize()
+				e.onResize()
 			case termbox.EventError:
 				// TODO(maruel): Not sure what situations can trigger this.
-				wi.PostCommand(t, "alert", event.Err.Error())
+				wi.PostCommand(e, "alert", event.Err.Error())
 			}
 
-		case <-t.viewReady:
+		case <-e.viewReady:
 			// Taking in account a 60hz frame is 18.8ms, 5ms is going to be generally
 			// processed within the same frame. This delaying results in significant
 			// bandwidth saving on loading.
@@ -286,40 +286,40 @@ func (t *terminal) EventLoop() int {
 				return 0
 			}
 
-			// Empty t.viewReady first.
+			// Empty e.viewReady first.
 		EmptyViewReady:
 			for {
 				select {
-				case <-t.viewReady:
+				case <-e.viewReady:
 				default:
 					break EmptyViewReady
 				}
 			}
 
-			t.draw()
+			e.draw()
 			drawTimer = fakeChan
 		}
 	}
 	return 0
 }
 
-func (t *terminal) LoadPlugins() error {
+func (e *editor) LoadPlugins() error {
 	// TODO(maruel): Get path.
 	paths, err := EnumPlugins(".")
 	if err != nil {
 		return err
 	}
-	t.plugins = loadPlugins(paths)
+	e.plugins = loadPlugins(paths)
 	return nil
 }
 
-// MakeEditor creates the Editor object. The root window doesn't have
-// anything to view in it.
+// MakeEditor creates an object that implements the Editor interface. The root
+// window doesn't have anything to view in it.
 //
 // It's up to the caller to add child Windows in it. Normally it will be done
 // via the command "bootstrap_ui" to add the status bar, then "new" or "open"
 // to create the initial text buffer.
-func MakeEditor(termBox TermBox) *terminal {
+func MakeEditor(termBox TermBox) Editor {
 	// The root view is important, it defines all the global commands. It is
 	// pre-filled with the default native commands and keyboard mapping, and it's
 	// up to the plugins to add more global commands on startup.
@@ -334,7 +334,7 @@ func MakeEditor(termBox TermBox) *terminal {
 
 	rootWindow := makeWindow(nil, rootView, wi.DockingFill)
 	terminalEvents := make(chan termbox.Event, 32)
-	terminal := &terminal{
+	e := &editor{
 		termBox:        termBox,
 		rootWindow:     rootWindow,
 		lastActive:     []wi.Window{rootWindow},
@@ -344,20 +344,20 @@ func MakeEditor(termBox TermBox) *terminal {
 		languageMode:   wi.LangEn,
 		keyboardMode:   wi.EditMode,
 	}
-	rootWindow.cd = terminal
+	rootWindow.cd = e
 
-	// These commands have intimate knowledge of the terminal.
-	RegisterWindowCommands(terminal, rootView.Commands())
+	// These commands have intimate knowledge of the editor.
+	RegisterWindowCommands(e, rootView.Commands())
 
-	RegisterDefaultKeyBindings(terminal)
+	RegisterDefaultKeyBindings(e)
 
-	terminal.onResize()
+	e.onResize()
 	go func() {
 		for {
-			terminalEvents <- terminal.termBox.PollEvent()
+			terminalEvents <- e.termBox.PollEvent()
 		}
 	}()
-	return terminal
+	return e
 }
 
 // Main() is the unit-testable part of Main() that is called by the "main"
@@ -365,15 +365,15 @@ func MakeEditor(termBox TermBox) *terminal {
 //
 // It is fine to run it concurrently in unit test, as no global variable shall
 // be used by this function.
-func Main(noPlugin bool, editor Editor) int {
+func Main(noPlugin bool, e Editor) int {
 	if !noPlugin {
-		if err := editor.LoadPlugins(); err != nil {
+		if err := e.LoadPlugins(); err != nil {
 			fmt.Printf("%s", err)
 			return 1
 		}
 	}
-	defer editor.Close()
+	defer e.Close()
 
 	// Run the message loop.
-	return editor.EventLoop()
+	return e.EventLoop()
 }

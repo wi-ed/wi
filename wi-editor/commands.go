@@ -33,10 +33,10 @@ func makeCommands() wi.Commands {
 
 // privilegedCommandImplHandler is the CommandHandler to use when coupled with
 // privilegedCommandImpl.
-type privilegedCommandImplHandler func(c *privilegedCommandImpl, t *terminal, w *window, args ...string)
+type privilegedCommandImplHandler func(c *privilegedCommandImpl, e *editor, w *window, args ...string)
 
 // privilegedCommandImpl is the boilerplate Command implementation for builtin
-// commands that can access the terminal directly.
+// commands that can access the editor directly.
 //
 // This command handler has access to the internals of the editor. Because of
 // this, it can only be native commands inside the editor process.
@@ -58,9 +58,9 @@ func (c *privilegedCommandImpl) Handle(cd wi.CommandDispatcherFull, w wi.Window,
 		cd.ExecuteCommand(w, "alert", c.LongDesc(cd, w))
 	}
 	// Convert types to internal types.
-	t := cd.(*terminal)
+	e := cd.(*editor)
 	wInternal := w.(*window)
-	c.HandlerValue(c, t, wInternal, args...)
+	c.HandlerValue(c, e, wInternal, args...)
 }
 
 func (c *privilegedCommandImpl) Category(cd wi.CommandDispatcherFull, w wi.Window) wi.CommandCategory {
