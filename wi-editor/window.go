@@ -476,6 +476,18 @@ func cmdWindowNew(c *privilegedCommandImpl, e *editor, w *window, args ...string
 	*/
 }
 
+func cmdWindowSetDocking(c *privilegedCommandImpl, e *editor, w *window, args ...string) {
+	/*
+		window := args[0]
+		docking := args[1]
+		if w.docking != docking {
+			w.docking = docking
+			w.parent.resizeChildren()
+			wi.PostCommand(w.cd, "editor_redraw")
+		}
+	*/
+}
+
 func RegisterWindowCommands(dispatcher wi.Commands) {
 	var windowCommands = []wi.Command{
 		&privilegedCommandImpl{
@@ -524,6 +536,18 @@ func RegisterWindowCommands(dispatcher wi.Commands) {
 			},
 			wi.LangMap{
 				wi.LangEn: "Creates a new window. The new window is created as a child to the specified parent. It creates the view specified that was previously registered.",
+			},
+		},
+		&privilegedCommandImpl{
+			"window_set_docking",
+			2,
+			cmdWindowSetDocking,
+			wi.WindowCategory,
+			wi.LangMap{
+				wi.LangEn: "Change the docking of a window",
+			},
+			wi.LangMap{
+				wi.LangEn: "Changes the docking of this Window relative to the parent window. This will forces an invalidation and a redraw.",
 			},
 		},
 		// 'screenshot', mainly for unit test; open a new buffer with the screenshot, so it can be saved with 'w'.

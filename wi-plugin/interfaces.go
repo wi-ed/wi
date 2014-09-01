@@ -234,11 +234,6 @@ type Window interface {
 
 	Docking() DockingType
 
-	// SetDocking changes the docking of this Window relative to the parent
-	// Window. This will forces an invalidation and a redraw.
-	// TODO(maruel): Convert to a command.
-	SetDocking(docking DockingType)
-
 	// SetView replaces the current View with a new one. This forces an
 	// invalidation and a redraw.
 	// TODO(maruel): Convert to a command.
