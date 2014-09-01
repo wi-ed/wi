@@ -463,44 +463,57 @@ func cmdWindowLogTree(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Windo
 }
 
 func cmdWindowNew(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
+	/*
+		parentName := args[0]
+		viewFactoryName := args[1]
+		docking := args[2]
+		parentWindow := editor.GetWindow(parentName)
+		viewFactory := editor.viewFactories[viewFactoryName]
+		parentWindow.NewChildWindow(viewFactory(), docking)
+	*/
 }
 
-var windowCommands = []wi.Command{
-	&wi.CommandImpl{
-		"window_close",
-		1,
-		cmdWindowClose,
-		wi.WindowCategory,
-		wi.LangMap{
-			wi.LangEn: "Closes a window",
+func RegisterWindowCommands(t *terminal, dispatcher wi.Commands) {
+	var windowCommands = []wi.Command{
+		&wi.CommandImpl{
+			"window_close",
+			1,
+			cmdWindowClose,
+			wi.WindowCategory,
+			wi.LangMap{
+				wi.LangEn: "Closes a window",
+			},
+			wi.LangMap{
+				wi.LangEn: "Closes a window. Note that any window can be closed and all the child window will be destroyed at the same time.",
+			},
 		},
-		wi.LangMap{
-			wi.LangEn: "Closes a window. Note that any window can be closed and all the child window will be destroyed at the same time.",
+		&wi.CommandImpl{
+			"window_log_tree",
+			0,
+			cmdWindowLogTree,
+			wi.DebugCategory,
+			wi.LangMap{
+				wi.LangEn: "Logs the tree in the log file",
+			},
+			wi.LangMap{
+				wi.LangEn: "Logs the tree in the log file, this is only relevant if -verbose is used.",
+			},
 		},
-	},
-	&wi.CommandImpl{
-		"window_log_tree",
-		0,
-		cmdWindowLogTree,
-		wi.DebugCategory,
-		wi.LangMap{
-			wi.LangEn: "Logs the tree in the log file",
+		&wi.CommandImpl{
+			"window_new",
+			4,
+			cmdWindowNew,
+			wi.WindowCategory,
+			wi.LangMap{
+				wi.LangEn: "Creates a new window",
+			},
+			wi.LangMap{
+				wi.LangEn: "Creates a new window. The new window is created as a child to the specified parent. It creates the view specified that was previously registered.",
+			},
 		},
-		wi.LangMap{
-			wi.LangEn: "Logs the tree in the log file, this is only relevant if -verbose is used.",
-		},
-	},
-	&wi.CommandImpl{
-		"window_new",
-		4,
-		cmdWindowNew,
-		wi.WindowCategory,
-		wi.LangMap{
-			wi.LangEn: "Creates a new window",
-		},
-		wi.LangMap{
-			wi.LangEn: "Creates a new window. The new window is created as a child to the specified parent. It creates the view specified that was previously registered.",
-		},
-	},
-	// 'screenshot', mainly for unit test; open a new buffer with the screenshot, so it can be saved with 'w'.
+		// 'screenshot', mainly for unit test; open a new buffer with the screenshot, so it can be saved with 'w'.
+	}
+	for _, cmd := range windowCommands {
+		dispatcher.Register(cmd)
+	}
 }

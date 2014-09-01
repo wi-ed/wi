@@ -130,6 +130,9 @@ type CommandDispatcher interface {
 	PostCommands(cmds [][]string)
 }
 
+// ViewFactory returns a new View.
+type ViewFactory func() View
+
 type CommandDispatcherFull interface {
 	CommandDispatcher
 
@@ -141,14 +144,16 @@ type CommandDispatcherFull interface {
 	// ActiveWindow returns the current active Window.
 	ActiveWindow() Window
 	// ActivateWindow activates a Window.
+	// TODO(maruel): Convert to command.
 	ActivateWindow(w Window)
 
 	// PostDraw signals the terminal that an invalidated View or Window is now
 	// ready to render.
+	// TODO(maruel): Convert to command.
 	PostDraw()
 
-	// TODO(maruel): Create.
-	//RegisterView(name string, viewMaker ViewMaker) bool
+	// RegisterViewFactory makes a nwe view available by name.
+	RegisterViewFactory(name string, viewFactory ViewFactory) bool
 
 	CurrentLanguage() LanguageMode
 }
@@ -190,6 +195,11 @@ type Editor interface {
 //
 // The end result is that this use case doesn't require any "split" support.
 // Further subdivision can be done via Window containment.
+//
+// The Window interface exists for synchronous query but modifications
+// (creation, closing, moving) are done asynchronously via commands. A set of
+// privileged commands starting with the prefix "window_" can modify Window
+// instances, designating the actual Window by its .Id() method.
 type Window interface {
 	fmt.Stringer
 
@@ -210,8 +220,7 @@ type Window interface {
 	// NewChildWindow() adds a View in a new child Window located at 'docking'
 	// position. It is invalid to add a child Window with the same docking as one
 	// already present. In this case, nil is returned.
-	// TODO(maruel): Convert to a command where RegisterView() has the view
-	// registered.
+	// TODO(maruel): Convert to a command.
 	NewChildWindow(view View, docking DockingType) Window
 
 	// Remove detaches a child window tree from the tree. Care should be taken to

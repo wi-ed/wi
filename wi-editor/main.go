@@ -65,6 +65,13 @@ func (t termBoxImpl) Buffer() tulib.Buffer {
 	}
 }
 
+// Logger is the interface to log to. It must be used instead of
+// log.Logger.Printf() or testing.T.Log(). This permits to collect logs for a
+// complete test case.
+type Logger interface {
+	Logf(format string, v ...interface{})
+}
+
 // commandItem is a command pending to be executed.
 type commandItem struct {
 	cmdName string
@@ -99,6 +106,7 @@ type terminal struct {
 	termBox        TermBox
 	rootWindow     *window
 	lastActive     []wi.Window
+	viewFactories  map[string]wi.ViewFactory
 	terminalEvents <-chan termbox.Event
 	viewReady      chan bool // A View.Buffer() is ready to be drawn.
 	commandsQueue  chan commandQueueItem
@@ -197,6 +205,12 @@ func (t *terminal) PostDraw() {
 	go func() {
 		t.viewReady <- true
 	}()
+}
+
+func (t *terminal) RegisterViewFactory(name string, viewFactory wi.ViewFactory) bool {
+	_, present := t.viewFactories[name]
+	t.viewFactories[name] = viewFactory
+	return !present
 }
 
 func (t *terminal) onResize() {
@@ -310,6 +324,8 @@ func MakeEditor(termBox TermBox) *terminal {
 	// pre-filled with the default native commands and keyboard mapping, and it's
 	// up to the plugins to add more global commands on startup.
 	rootView := makeView("Root", -1, -1)
+
+	// These commands are generic commands, they do not require specific access.
 	RegisterDefaultCommands(rootView.Commands())
 
 	if termBox == nil {
@@ -329,6 +345,9 @@ func MakeEditor(termBox TermBox) *terminal {
 		keyboardMode:   wi.EditMode,
 	}
 	rootWindow.cd = terminal
+
+	// These commands have intimate knowledge of the terminal.
+	RegisterWindowCommands(terminal, rootView.Commands())
 
 	RegisterDefaultKeyBindings(terminal)
 
