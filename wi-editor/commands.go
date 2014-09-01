@@ -124,17 +124,16 @@ func isDirtyRecurse(cd wi.CommandDispatcherFull, w wi.Window) bool {
 	return false
 }
 
-func cmdQuit(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
+func cmdQuit(c *privilegedCommandImpl, e *editor, w *window, args ...string) {
 	// TODO(maruel): For all the View, question if fine to quit via
 	// view.IsDirty(). If not fine, "prompt" y/n to force quit. If n, stop there.
 	// - Send a signal to each plugin.
 	// - Send a signal back to the main loop.
-	root := wi.RootWindow(w)
-	if !isDirtyRecurse(cd, root) {
-		quitFlag = true
+	if !isDirtyRecurse(e, e.rootWindow) {
+		e.quitFlag = true
 		// PostDraw wakes up the command event loop so it detects it's time to
 		// quit.
-		cd.PostDraw()
+		e.PostDraw()
 	}
 }
 
@@ -243,7 +242,7 @@ func RegisterDefaultCommands(dispatcher wi.Commands) {
 				wi.LangEn: "Opens a file in a new buffer.",
 			},
 		},
-		&wi.CommandImpl{
+		&privilegedCommandImpl{
 			"quit",
 			0,
 			cmdQuit,

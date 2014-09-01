@@ -473,7 +473,7 @@ func cmdWindowNew(c *privilegedCommandImpl, e *editor, w *window, args ...string
 	*/
 }
 
-func RegisterWindowCommands(e *editor, dispatcher wi.Commands) {
+func RegisterWindowCommands(dispatcher wi.Commands) {
 	var windowCommands = []wi.Command{
 		&privilegedCommandImpl{
 			"window_close",

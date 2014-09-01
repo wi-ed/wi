@@ -30,48 +30,6 @@ const (
 	version = "0.0.1"
 )
 
-var quitFlag = false
-
-// TermBox is the interface to termbox so it can be mocked in unit test.
-type TermBox interface {
-	Size() (int, int)
-	Flush()
-	PollEvent() termbox.Event
-	Buffer() tulib.Buffer
-}
-
-type termBoxImpl struct {
-}
-
-func (t termBoxImpl) Size() (int, int) {
-	return termbox.Size()
-}
-
-func (t termBoxImpl) Flush() {
-	if err := termbox.Flush(); err != nil {
-		panic(err)
-	}
-}
-
-func (t termBoxImpl) PollEvent() termbox.Event {
-	return termbox.PollEvent()
-}
-
-func (t termBoxImpl) Buffer() tulib.Buffer {
-	w, h := t.Size()
-	return tulib.Buffer{
-		Cells: termbox.CellBuffer(),
-		Rect:  tulib.Rect{0, 0, w, h},
-	}
-}
-
-// Logger is the interface to log to. It must be used instead of
-// log.Logger.Printf() or testing.T.Log(). This permits to collect logs for a
-// complete test case.
-type Logger interface {
-	Logf(format string, v ...interface{})
-}
-
 // commandItem is a command pending to be executed.
 type commandItem struct {
 	cmdName string
@@ -113,6 +71,7 @@ type editor struct {
 	languageMode   wi.LanguageMode
 	keyboardMode   wi.KeyboardMode
 	plugins        Plugins
+	quitFlag       bool
 }
 
 func (e *editor) Close() error {
@@ -282,7 +241,7 @@ func (e *editor) EventLoop() int {
 			}
 
 		case <-drawTimer:
-			if quitFlag {
+			if e.quitFlag {
 				return 0
 			}
 
@@ -327,6 +286,7 @@ func MakeEditor(termBox TermBox) Editor {
 
 	// These commands are generic commands, they do not require specific access.
 	RegisterDefaultCommands(rootView.Commands())
+	RegisterWindowCommands(rootView.Commands())
 
 	if termBox == nil {
 		termBox = termBoxImpl{}
@@ -338,6 +298,7 @@ func MakeEditor(termBox TermBox) Editor {
 		termBox:        termBox,
 		rootWindow:     rootWindow,
 		lastActive:     []wi.Window{rootWindow},
+		viewFactories:  make(map[string]wi.ViewFactory),
 		terminalEvents: terminalEvents,
 		viewReady:      make(chan bool),
 		commandsQueue:  make(chan commandQueueItem, 500),
@@ -345,9 +306,6 @@ func MakeEditor(termBox TermBox) Editor {
 		keyboardMode:   wi.EditMode,
 	}
 	rootWindow.cd = e
-
-	// These commands have intimate knowledge of the editor.
-	RegisterWindowCommands(e, rootView.Commands())
 
 	RegisterDefaultKeyBindings(e)
 
