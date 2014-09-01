@@ -9,6 +9,7 @@ import (
 	"github.com/maruel/wi/wi-plugin"
 	"github.com/nsf/termbox-go"
 	"log"
+	"time"
 	"unicode/utf8"
 )
 
@@ -25,6 +26,7 @@ type view struct {
 	naturalY    int
 	actualX     int
 	actualY     int
+	onAttach    func(v *view, w wi.Window)
 	buffer      tulib.Buffer
 }
 
@@ -75,8 +77,14 @@ func (v *view) Buffer() *tulib.Buffer {
 	return &v.buffer
 }
 
+func (v *view) OnAttach(w wi.Window) {
+	if v.onAttach != nil {
+		v.onAttach(v, w)
+	}
+}
+
 // Empty non-editable window.
-func makeView(title string, naturalX, naturalY int) wi.View {
+func makeView(title string, naturalX, naturalY int) *view {
 	return &view{
 		commands:    makeCommands(),
 		keyBindings: makeKeyBindings(),
@@ -122,4 +130,22 @@ func makeAlertView(text string) wi.View {
 	out := "Alert: " + text
 	l := utf8.RuneCountInString(out)
 	return makeView(out, l, 1)
+}
+
+func infobarAlertViewFactory(args ...string) wi.View {
+	out := "Alert: " + args[0]
+	l := utf8.RuneCountInString(out)
+	v := makeView(out, l, 1)
+	v.onAttach = func(v *view, w wi.Window) {
+		go func() {
+			// Dismiss after 5 seconds.
+			<-time.After(5 * time.Second)
+			wi.PostCommand(w, "window_close", w.Id())
+		}()
+	}
+	return v
+}
+
+func RegisterDefaultViewFactories(e Editor) {
+	e.RegisterViewFactory("infobar_alert", infobarAlertViewFactory)
 }

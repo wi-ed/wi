@@ -57,6 +57,10 @@ func (w *window) String() string {
 	return fmt.Sprintf("Window(%s, %v)", w.View().Title(), w.Rect())
 }
 
+func (w *window) PostCommands(cmds [][]string) {
+	w.cd.PostCommands(cmds)
+}
+
 func (w *window) Id() string {
 	return fmt.Sprintf("%s:%d", w.parent.Id(), w.id)
 }
@@ -281,7 +285,7 @@ func (w *window) resizeChildren() {
 		w.viewRect = remaining
 		w.view.SetSize(w.viewRect.Width, w.viewRect.Height)
 	}
-	wi.PostCommand(w.cd, "editor_redraw")
+	wi.PostCommand(w, "editor_redraw")
 }
 
 func (w *window) Buffer() *tulib.Buffer {
@@ -295,19 +299,12 @@ func (w *window) Docking() wi.DockingType {
 	return w.docking
 }
 
-func (w *window) SetDocking(docking wi.DockingType) {
-	if w.docking != docking {
-		w.docking = docking
-		wi.PostCommand(w.cd, "editor_redraw")
-	}
-}
-
 func (w *window) SetView(view wi.View) {
 	panic("To test")
 	if view != w.view {
 		w.view = view
 		w.windowBuffer.Fill(w.viewRect, w.cell(' '))
-		wi.PostCommand(w.cd, "editor_redraw")
+		wi.PostCommand(w, "editor_redraw")
 	}
 }
 
@@ -440,14 +437,18 @@ func drawRecurse(w *window, offsetX, offsetY int, out *tulib.Buffer) {
 // Commands
 
 func cmdWindowActivate(c *privilegedCommandImpl, e *editor, w *window, args ...string) {
-	// TODO(maruel): Add.
-	//windowName := args[0]
-	//e.activateWindow(w)
+	child := e.idToWindow(args[0])
+	if child == nil {
+		// TODO(maruel): Add feedback.
+		return
+	}
+	e.activateWindow(child)
 }
 
 func cmdWindowClose(c *privilegedCommandImpl, e *editor, w *window, args ...string) {
 	child := e.idToWindow(args[0])
 	if child == nil {
+		// TODO(maruel): Add feedback.
 		return
 	}
 	for i, v := range child.parent.childrenWindows {
@@ -468,30 +469,35 @@ func cmdWindowLogTree(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Windo
 }
 
 func cmdWindowNew(c *privilegedCommandImpl, e *editor, w *window, args ...string) {
-	/*
-		parentName := args[0]
-		viewFactoryName := args[1]
-		docking := args[2]
-		parentWindow := editor.GetWindow(parentName)
-		viewFactory := editor.viewFactories[viewFactoryName]
-		parentWindow.NewChildWindow(viewFactory(), docking)
-	*/
+	parent := e.idToWindow(args[0])
+	if parent == nil {
+		// TODO(maruel): Add feedback.
+		return
+	}
+	docking := wi.StringToDockingType(args[1])
+	if docking == wi.DockingUnknown {
+		// TODO(maruel): Add feedback.
+		return
+	}
+	viewFactory := e.viewFactories[args[2]]
+	e.activateWindow(parent.NewChildWindow(viewFactory(args[3:]...), docking))
 }
 
 func cmdWindowSetDocking(c *privilegedCommandImpl, e *editor, w *window, args ...string) {
 	child := e.idToWindow(args[0])
 	if child == nil {
+		// TODO(maruel): Add feedback.
 		return
 	}
 	docking := wi.StringToDockingType(args[1])
 	if docking == wi.DockingUnknown {
-		// TODO(maruel): Show help.
+		// TODO(maruel): Add feedback.
 		return
 	}
 	if w.docking != docking {
 		w.docking = docking
 		w.parent.resizeChildren()
-		wi.PostCommand(w.cd, "editor_redraw")
+		wi.PostCommand(w, "editor_redraw")
 	}
 }
 
@@ -542,7 +548,7 @@ func RegisterWindowCommands(dispatcher wi.Commands) {
 				wi.LangEn: "Creates a new window",
 			},
 			wi.LangMap{
-				wi.LangEn: "Creates a new window. The new window is created as a child to the specified parent. It creates the view specified that was previously registered.",
+				wi.LangEn: "Usage: window_new <parent> <docking> <view name> <view args...>\nCreates a new window. The new window is created as a child to the specified parent. It creates the view specified that was previously registered. The Window is activated.",
 			},
 		},
 		&privilegedCommandImpl{

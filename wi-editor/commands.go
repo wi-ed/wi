@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"github.com/maruel/wi/wi-plugin"
 	"log"
-	"time"
 )
 
 // commands is the map of registered commands.
@@ -80,13 +79,16 @@ func (c *privilegedCommandImpl) LongDesc(cd wi.CommandDispatcherFull, w wi.Windo
 func cmdAlert(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
 	// TODO(maruel): Create an infobar that automatically dismiss itself after 5s.
 	// TODO(maruel): Use a 5 seconds infobar.
-	wi.RootWindow(w).NewChildWindow(makeAlertView(args[0]), wi.DockingFloating)
-	log.Printf("Tree:\n%s", wi.RootWindow(w).Tree())
+	cd.ExecuteCommand(w, "window_new", "0", "bottom", "infobar_alert", args[0])
+	//wi.RootWindow(w).NewChildWindow(makeAlertView(args[0]), wi.DockingFloating)
+	//log.Printf("Tree:\n%s", wi.RootWindow(w).Tree())
 	//w2.Activate()
-	go func() {
-		<-time.After(5 * time.Second)
-		// TODO(maruel): Dismiss.
-	}()
+	/*
+		go func() {
+			<-time.After(5 * time.Second)
+			// TODO(maruel): Dismiss.
+		}()
+	*/
 }
 
 func cmdBootstrapUI(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {

@@ -153,7 +153,7 @@ type CommandDispatcher interface {
 }
 
 // ViewFactory returns a new View.
-type ViewFactory func() View
+type ViewFactory func(args ...string) View
 
 type CommandDispatcherFull interface {
 	CommandDispatcher
@@ -216,6 +216,7 @@ type Editor interface {
 // instances, designating the actual Window by its .Id() method.
 type Window interface {
 	fmt.Stringer
+	CommandDispatcher
 
 	// Id returns the unique id for this Window. The id is guaranteed to be
 	// unique through the process lifetime of the editor.
@@ -295,6 +296,10 @@ type View interface {
 	NaturalSize() (width, height int)
 	// SetSize resets the View Buffer size.
 	SetSize(x, y int)
+
+	// OnAttach is called by the Window after it was attached.
+	// TODO(maruel): Maybe split in ViewFull?
+	OnAttach(w Window)
 }
 
 // Config

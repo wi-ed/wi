@@ -323,6 +323,7 @@ func MakeEditor(termBox TermBox) Editor {
 	}
 	rootWindow.cd = e
 
+	RegisterDefaultViewFactories(e)
 	RegisterDefaultKeyBindings(e)
 
 	e.onResize()
