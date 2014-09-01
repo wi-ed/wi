@@ -11,6 +11,7 @@ import (
 	"time"
 )
 
+// commands is the map of registered commands.
 type commands struct {
 	commands map[string]wi.Command
 }
@@ -28,6 +29,50 @@ func (c *commands) Get(cmd string) wi.Command {
 
 func makeCommands() wi.Commands {
 	return &commands{make(map[string]wi.Command)}
+}
+
+// privilegedCommandImplHandler is the CommandHandler to use when coupled with
+// privilegedCommandImpl.
+type privilegedCommandImplHandler func(c *privilegedCommandImpl, t *terminal, w *window, args ...string)
+
+// privilegedCommandImpl is the boilerplate Command implementation for builtin
+// commands that can access the terminal directly.
+//
+// This command handler has access to the internals of the editor. Because of
+// this, it can only be native commands inside the editor process.
+type privilegedCommandImpl struct {
+	NameValue      string
+	ExpectedArgs   int // If >= 0, the command will be aborted if the number of arguments is not exactly this value. Set to -1 to disable verification. On abort, an alert with the long description of the command is done.
+	HandlerValue   privilegedCommandImplHandler
+	CategoryValue  wi.CommandCategory
+	ShortDescValue wi.LangMap
+	LongDescValue  wi.LangMap
+}
+
+func (c *privilegedCommandImpl) Name() string {
+	return c.NameValue
+}
+
+func (c *privilegedCommandImpl) Handle(cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
+	if c.ExpectedArgs != -1 && len(args) != c.ExpectedArgs {
+		cd.ExecuteCommand(w, "alert", c.LongDesc(cd, w))
+	}
+	// Convert types to internal types.
+	t := cd.(*terminal)
+	wInternal := w.(*window)
+	c.HandlerValue(c, t, wInternal, args...)
+}
+
+func (c *privilegedCommandImpl) Category(cd wi.CommandDispatcherFull, w wi.Window) wi.CommandCategory {
+	return c.CategoryValue
+}
+
+func (c *privilegedCommandImpl) ShortDesc(cd wi.CommandDispatcherFull, w wi.Window) string {
+	return wi.GetStr(cd.CurrentLanguage(), c.ShortDescValue)
+}
+
+func (c *privilegedCommandImpl) LongDesc(cd wi.CommandDispatcherFull, w wi.Window) string {
+	return wi.GetStr(cd.CurrentLanguage(), c.LongDescValue)
 }
 
 // Default commands
