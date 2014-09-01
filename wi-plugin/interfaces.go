@@ -29,6 +29,7 @@ const (
 	DockingRight
 	DockingTop
 	DockingBottom
+	DockingUnknown
 )
 
 func (d DockingType) String() string {
@@ -47,6 +48,25 @@ func (d DockingType) String() string {
 		return "DockingBottom"
 	default:
 		return "Unknown DockingType"
+	}
+}
+
+func StringToDockingType(s string) DockingType {
+	switch s {
+	case "fill":
+		return DockingFill
+	case "floating":
+		return DockingFloating
+	case "left":
+		return DockingLeft
+	case "right":
+		return DockingRight
+	case "top":
+		return DockingTop
+	case "bottom":
+		return DockingBottom
+	default:
+		return DockingUnknown
 	}
 }
 

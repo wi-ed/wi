@@ -21,6 +21,8 @@ import (
 	"github.com/nsf/termbox-go"
 	"io"
 	"log"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -171,6 +173,26 @@ func (e *editor) onResize() {
 	// redraw if the size changed.
 	w, h := e.termBox.Size()
 	e.rootWindow.SetRect(tulib.Rect{0, 0, w, h})
+}
+
+// Converts a wi.Window.ID() to a window pointer. Returns nil if invalid.
+func (e *editor) idToWindow(id string) *window {
+	var cur *window = e.rootWindow
+	for _, s := range strings.Split(id, ":") {
+		id, err := strconv.Atoi(s)
+		if err != nil {
+			return nil
+		}
+		for _, child := range cur.childrenWindows {
+			if child.id == id {
+				cur = child
+				goto nextID
+			}
+		}
+		return nil
+	nextID:
+	}
+	return cur
 }
 
 // EventLoop handles both commands and events from the editor. This function

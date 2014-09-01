@@ -446,9 +446,11 @@ func cmdWindowActivate(c *privilegedCommandImpl, e *editor, w *window, args ...s
 }
 
 func cmdWindowClose(c *privilegedCommandImpl, e *editor, w *window, args ...string) {
-	//windowName := args[0]
-	var child wi.Window
-	for i, v := range w.childrenWindows {
+	child := e.idToWindow(args[0])
+	if child == nil {
+		return
+	}
+	for i, v := range child.parent.childrenWindows {
 		if v == child {
 			copy(w.childrenWindows[i:], w.childrenWindows[i+1:])
 			w.childrenWindows[len(w.childrenWindows)-1] = nil
@@ -477,15 +479,20 @@ func cmdWindowNew(c *privilegedCommandImpl, e *editor, w *window, args ...string
 }
 
 func cmdWindowSetDocking(c *privilegedCommandImpl, e *editor, w *window, args ...string) {
-	/*
-		window := args[0]
-		docking := args[1]
-		if w.docking != docking {
-			w.docking = docking
-			w.parent.resizeChildren()
-			wi.PostCommand(w.cd, "editor_redraw")
-		}
-	*/
+	child := e.idToWindow(args[0])
+	if child == nil {
+		return
+	}
+	docking := wi.StringToDockingType(args[1])
+	if docking == wi.DockingUnknown {
+		// TODO(maruel): Show help.
+		return
+	}
+	if w.docking != docking {
+		w.docking = docking
+		w.parent.resizeChildren()
+		wi.PostCommand(w.cd, "editor_redraw")
+	}
 }
 
 func RegisterWindowCommands(dispatcher wi.Commands) {
