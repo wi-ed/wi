@@ -43,7 +43,7 @@ go get -u github.com/maruel/wi
 ### Installing or updating a plugin
 
 Plugins are simple standalone executables that are transparently started by
-`wi`.  They must be named `wi-plugins-*` (`wi-plugins-*.exe` on Windows). The
+`wi`.  They must be named `wi-plugin-*` (`wi-plugin-*.exe` on Windows). The
 fact they exist in the same directory (`$GOPATH/bin`) as the `wi` executable is
 enough to have the plugin started by `wi` automatically.
 
