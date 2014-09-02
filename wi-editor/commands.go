@@ -77,33 +77,23 @@ func (c *privilegedCommandImpl) LongDesc(cd wi.CommandDispatcherFull, w wi.Windo
 // Default commands
 
 func cmdAlert(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
-	// TODO(maruel): Create an infobar that automatically dismiss itself after 5s.
-	// TODO(maruel): Use a 5 seconds infobar.
 	cd.ExecuteCommand(w, "window_new", "0", "bottom", "infobar_alert", args[0])
-	//wi.RootWindow(w).NewChildWindow(makeAlertView(args[0]), wi.DockingFloating)
-	//log.Printf("Tree:\n%s", wi.RootWindow(w).Tree())
-	//w2.Activate()
-	/*
-		go func() {
-			<-time.After(5 * time.Second)
-			// TODO(maruel): Dismiss.
-		}()
-	*/
 }
 
 func cmdBootstrapUI(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
-	statusWindowRoot := w.NewChildWindow(makeStatusViewRoot(), wi.DockingBottom)
-	statusWindowRoot.NewChildWindow(makeStatusViewName(), wi.DockingLeft)
-	statusWindowRoot.NewChildWindow(makeStatusViewPosition(), wi.DockingRight)
+	// TODO(maruel): Use onAttach instead of hard coding names.
+	cd.ExecuteCommand(w, "window_new", "0", "bottom", "status_root")
+	cd.ExecuteCommand(w, "window_new", "0:1", "left", "status_name")
+	cd.ExecuteCommand(w, "window_new", "0:1", "right", "status_position")
 }
 
 func cmdDocumentNew(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
-	if len(args) != 0 {
-		cmd := wi.GetCommand(cd, w, "alias")
-		cd.ExecuteCommand(w, "alert", cmd.LongDesc(cd, w))
-	} else {
-		w.NewChildWindow(makeView("New doc", -1, -1), wi.DockingFill)
-	}
+	cmd := make([]string, 3+len(args))
+	cmd[1] = w.Id()
+	cmd[2] = "fill"
+	cmd[3] = "new_document"
+	copy(cmd[4:], args)
+	cd.ExecuteCommand(w, "window_new", cmd...)
 }
 
 func cmdDocumentOpen(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
@@ -190,8 +180,7 @@ func cmdKeyBind(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Window, arg
 func cmdShowCommandWindow(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
 	// Create the Window with the command view and attach it to the currently
 	// focused Window.
-	cmdWindow := makeCommandView()
-	w.NewChildWindow(cmdWindow, wi.DockingFloating)
+	cd.ExecuteCommand(w, "window_new", w.Id(), "floating", "command")
 }
 
 // RegisterDefaultCommands registers the top-level native commands. This

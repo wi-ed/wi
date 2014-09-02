@@ -95,8 +95,8 @@ func (w *window) ChildrenWindows() []wi.Window {
 	return out
 }
 
-func (w *window) NewChildWindow(view wi.View, docking wi.DockingType) wi.Window {
-	log.Printf("%s.NewChildWindow(%s, %s)", w, view.Title(), docking)
+func (w *window) newChildWindow(view wi.View, docking wi.DockingType) wi.Window {
+	log.Printf("%s.newChildWindow(%s, %s)", w, view.Title(), docking)
 	// Only the first child Window with DockingFill is visible.
 	// TODO(maruel): Reorder .childrenWindows with
 	// CommandDispatcherFull.ActivateWindow() but only with DockingFill.
@@ -480,7 +480,7 @@ func cmdWindowNew(c *privilegedCommandImpl, e *editor, w *window, args ...string
 		return
 	}
 	viewFactory := e.viewFactories[args[2]]
-	e.activateWindow(parent.NewChildWindow(viewFactory(args[3:]...), docking))
+	e.activateWindow(parent.newChildWindow(viewFactory(args[3:]...), docking))
 }
 
 func cmdWindowSetDocking(c *privilegedCommandImpl, e *editor, w *window, args ...string) {
@@ -548,7 +548,7 @@ func RegisterWindowCommands(dispatcher wi.Commands) {
 				wi.LangEn: "Creates a new window",
 			},
 			wi.LangMap{
-				wi.LangEn: "Usage: window_new <parent> <docking> <view name> <view args...>\nCreates a new window. The new window is created as a child to the specified parent. It creates the view specified that was previously registered. The Window is activated.",
+				wi.LangEn: "Usage: window_new <parent> <docking> <view name> <view args...>\nCreates a new window. The new window is created as a child to the specified parent. It creates inside the window the view specified. The Window is activated. It is invalid to add a child Window with the same docking as one already present.",
 			},
 		},
 		&privilegedCommandImpl{

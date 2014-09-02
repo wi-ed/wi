@@ -96,21 +96,21 @@ func makeView(title string, naturalX, naturalY int) *view {
 
 // The status line is a hierarchy of Window, one for each element, each showing
 // a single item.
-func makeStatusViewRoot() wi.View {
+func statusRootViewFactory(args ...string) wi.View {
 	// TODO(maruel): OnResize(), query the root Window size, if y<=5 or x<=15,
 	// set the root status Window to y=0, so that it becomes effectively
 	// invisible when the editor window is too small.
 	return makeView("Status Root", 1, 1)
 }
 
-func makeStatusViewName() wi.View {
+func statusNameViewFactory(args ...string) wi.View {
 	// View name.
 	// TODO(maruel): Register events of Window activation, make itself Invalidate().
 	// TODO(maruel): Drawing code.
 	return makeView("Status Name", 15, 1)
 }
 
-func makeStatusViewPosition() wi.View {
+func statusPositionViewFactory(args ...string) wi.View {
 	// Position, % of file.
 	// TODO(maruel): Register events of movement, make itself Invalidate().
 	// TODO(maruel): Drawing code.
@@ -119,17 +119,9 @@ func makeStatusViewPosition() wi.View {
 
 // The command dialog box.
 // TODO(maruel): Position it 5 lines below the cursor in the parent Window's
-// View.
-func makeCommandView() wi.View {
+// View. Do this via onAttach.
+func commandViewFactory(args ...string) wi.View {
 	return makeView("Command", 30, 1)
-}
-
-// A dismissable modal dialog box. TODO(maruel): An infobar that auto-dismiss
-// itself after 5s.
-func makeAlertView(text string) wi.View {
-	out := "Alert: " + text
-	l := utf8.RuneCountInString(out)
-	return makeView(out, l, 1)
 }
 
 func infobarAlertViewFactory(args ...string) wi.View {
@@ -147,5 +139,9 @@ func infobarAlertViewFactory(args ...string) wi.View {
 }
 
 func RegisterDefaultViewFactories(e Editor) {
+	e.RegisterViewFactory("command", commandViewFactory)
 	e.RegisterViewFactory("infobar_alert", infobarAlertViewFactory)
+	e.RegisterViewFactory("status_name", statusNameViewFactory)
+	e.RegisterViewFactory("status_position", statusPositionViewFactory)
+	e.RegisterViewFactory("status_root", statusRootViewFactory)
 }

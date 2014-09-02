@@ -232,12 +232,6 @@ type Window interface {
 	// ChildrenWindows returns a copy of the slice of children windows.
 	ChildrenWindows() []Window
 
-	// NewChildWindow() adds a View in a new child Window located at 'docking'
-	// position. It is invalid to add a child Window with the same docking as one
-	// already present. In this case, nil is returned.
-	// TODO(maruel): Convert to a command.
-	NewChildWindow(view View, docking DockingType) Window
-
 	// Rect returns the position based on the parent Window area, except if
 	// Docking() is DockingFloating.
 	Rect() tulib.Rect
