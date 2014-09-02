@@ -5,9 +5,7 @@
 package editor
 
 import (
-	"github.com/maruel/tulib"
 	"github.com/maruel/wi/wi-plugin"
-	"github.com/nsf/termbox-go"
 	"log"
 	"testing"
 )
@@ -25,48 +23,12 @@ func init() {
 	log.SetOutput(new(nullWriter))
 }
 
-type termBoxFake struct {
-	X      int
-	Y      int
-	events []termbox.Event
-	buffer tulib.Buffer
-}
-
-func (t *termBoxFake) Size() (int, int) {
-	return t.X, t.Y
-}
-
-func (t *termBoxFake) Flush() {
-}
-
-func (t *termBoxFake) PollEvent() termbox.Event {
-	if len(t.events) == 0 {
-		select {}
-	}
-	e := t.events[0]
-	t.events = t.events[1:]
-	return e
-}
-
-func (t *termBoxFake) Buffer() tulib.Buffer {
-	return t.buffer
-}
-
-func makeTermBoxFake(width, height int, events []termbox.Event) *termBoxFake {
-	return &termBoxFake{
-		width,
-		height,
-		events,
-		tulib.NewBuffer(width, height),
-	}
-}
-
-// TODO(maruel): Add a test with very small display (10x2) and ensure it's
-// somewhat usable.
+// TODO(maruel): Add a test with small display (10x2) and ensure it's somewhat
+// usable.
 
 func TestMainImmediateQuit(t *testing.T) {
 	t.Parallel()
-	editor := MakeEditor(makeTermBoxFake(80, 25, []termbox.Event{}))
+	editor := MakeEditor(NewTerminalFake(80, 25, []TerminalEvent{}))
 	wi.PostCommand(editor, "editor_quit")
 	result := Main(true, editor)
 	if result != 0 {
@@ -77,7 +39,7 @@ func TestMainImmediateQuit(t *testing.T) {
 
 func TestMainInvalidThenQuit(t *testing.T) {
 	t.Parallel()
-	editor := MakeEditor(makeTermBoxFake(80, 25, []termbox.Event{}))
+	editor := MakeEditor(NewTerminalFake(80, 25, []TerminalEvent{}))
 	wi.PostCommand(editor, "invalid")
 	wi.PostCommand(editor, "editor_quit")
 	result := Main(true, editor)

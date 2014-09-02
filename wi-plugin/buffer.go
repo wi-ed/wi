@@ -4,6 +4,10 @@
 
 package wi
 
+import (
+	"unicode/utf8"
+)
+
 var (
 	//Magenta   = RGB{192, 0, 192}
 	Black       = RGB{0, 0, 0}
@@ -24,6 +28,8 @@ type RGB struct {
 // Rect is highly inspired by image.Rectangle but uses more standard origin +
 // size instead of two points. It makes the usage much simpler. It implements a
 // small subset of image.Rectangle.
+//
+// Negative values are invalid.
 type Rect struct {
 	X, Y, Width, Height int
 }
@@ -50,7 +56,11 @@ func (r Rect) In(s Rect) bool {
 //
 // Some properties are ignored on different terminals.
 type Cell struct {
-	Ch        rune
+	R rune
+	F CellFormat
+}
+
+type CellFormat struct {
 	Fg        RGB
 	Bg        RGB
 	Italic    bool
@@ -58,50 +68,150 @@ type Cell struct {
 	Blinking  bool
 }
 
-func MakeCell(Ch rune, Fg, Bg RGB) Cell {
-	return Cell{Ch: Ch, Fg: Fg, Bg: Bg}
+// MakeCell is a shorthand to return a Cell.
+func MakeCell(R rune, Fg, Bg RGB) Cell {
+	return Cell{R, CellFormat{Fg: Fg, Bg: Bg}}
 }
 
+// Buffer represents a buffer of Cells.
+//
+// The Cells slice can be shared across multiple Buffer when using SubBuffer().
+// Width Height are guaranteed to be either both zero or non-zero.
 type Buffer struct {
 	Width  int
 	Height int
+	Stride int
 	Cells  []Cell
 }
 
+var emptySlice = []Cell{}
+
 // Line returns a single line in the buffer.
+//
+// If the requested line number if outside the buffer, an empty slice is
+// returned.
 func (b *Buffer) Line(Y int) []Cell {
 	if Y >= b.Height {
-		return []Cell{}
+		return emptySlice
 	}
-	base := Y * b.Width
+	base := Y * b.Stride
 	return b.Cells[base : base+b.Width]
 }
 
+// Get gets a specific character cell.
+//
+// If the position is outside the buffer, an empty cell is returned.
+func (b *Buffer) Get(X, Y int) Cell {
+	line := b.Line(Y)
+	if len(line) < X {
+		return Cell{}
+	}
+	return line[X]
+}
+
+// Set sets a specific character cell.
+//
+// If the position is outside the buffer, the call is ignored.
 func (b *Buffer) Set(X, Y int, cell Cell) {
-	b.Line(Y)[X] = cell
-}
-
-func (b *Buffer) Fill(zone Rect, cell Cell) {
-	// TODO(maruel): Bound checking.
-	for y := zone.Y; y < zone.Y+zone.Height; y++ {
-		line := b.Line(y)
-		for x := zone.X; x < zone.X+zone.Width; x++ {
-			line[x] = cell
-		}
+	line := b.Line(Y)
+	if len(line) < X {
+		line[X] = cell
 	}
 }
 
-// Blit copies src completely into b at offsets X and Y.
-func (b *Buffer) Blit(X, Y int, src *Buffer) {
+// DrawString draws a string into the buffer.
+//
+// Text will be automatically elided if necessary.
+func (b *Buffer) DrawString(s string, X, Y int, f CellFormat) {
+	line := b.Line(Y)
+	if len(line) < X {
+		return
+	}
+	bytes := []byte(ElideText(s, len(line)-X))
+	for x := X; x < len(line) && len(bytes) > 0; x++ {
+		r, size := utf8.DecodeRune(bytes)
+		line[x].R = r
+		line[x].F = f
+		bytes = bytes[size:]
+	}
+}
+
+// Fill fills a buffer with a Cell.
+//
+// To fill a section of a buffer, use SubBuffer() first.
+func (b *Buffer) Fill(cell Cell) {
+	if b.Height == 0 {
+		return
+	}
+	// First set the initial line.
+	line0 := b.Line(0)
+	for x := 0; x < b.Width; x++ {
+		line0[x] = cell
+	}
+	// Then used optimized copy() to fill the rest.
+	for y := 1; y < b.Height; y++ {
+		copy(b.Line(y), line0)
+	}
+}
+
+// ElideText elide a string as necessary.
+func ElideText(s string, width int) string {
+	if width <= 0 {
+		return ""
+	}
+	// TODO(maruel): Memory copy intensive.
+	length := utf8.RuneCount([]byte(s))
+	if length < width {
+		return s
+	}
+	return s[:length-1] + "…"
+}
+
+// Blit copies src into b.
+//
+// To copy a section of a buffer, use SubBuffer() first. Areas that falls
+// either outside of src or of b are ignored.
+func (b *Buffer) Blit(src *Buffer) {
 	for y := 0; y < src.Height; y++ {
-		copy(b.Line(Y + y)[X:], src.Line(y))
+		copy(b.Line(y), src.Line(y))
 	}
 }
 
+// SubBuffer returns a Buffer representing a section of the buffer, sharing the
+// same cells.
+func (b *Buffer) SubBuffer(r Rect) *Buffer {
+	if r.X+r.Width > b.Width {
+		r.Width = b.Width - r.X
+	}
+	if r.Y+r.Height > b.Height {
+		r.Height = b.Height - r.Y
+	}
+	base := r.Y*b.Stride + r.X
+	length := r.Height*b.Stride + r.Width
+	if r.Width <= 0 || r.Height <= 0 {
+		r.Width = 0
+		r.Height = 0
+		base = 0
+		length = 0
+	}
+	return &Buffer{
+		r.Width,
+		r.Height,
+		b.Stride,
+		b.Cells[base : base+length],
+	}
+}
+
+// NewBuffer creates a fresh new buffer.
 func NewBuffer(width, height int) *Buffer {
+	if width <= 0 || height <= 0 {
+		width = 0
+		height = 0
+	}
 	return &Buffer{
 		width,
 		height,
+		width,
 		make([]Cell, width*height),
 	}
 }

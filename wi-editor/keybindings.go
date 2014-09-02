@@ -47,12 +47,13 @@ func makeKeyBindings() wi.KeyBindings {
 
 // keyEventToName returns the user printable key name like 'a', Ctrl-Alt-F1,
 // Delete, etc.
-func keyEventToName(event termbox.Event) string {
+func keyEventToName(key Key) string {
+	// TODO(maruel): Redo.
 	out := ""
-	if event.Mod&termbox.ModAlt != 0 {
+	if key.Modifier&int(termbox.ModAlt) != 0 {
 		out = "Alt-"
 	}
-	switch event.Key {
+	switch termbox.Key(key.Key) {
 	case termbox.KeyF1:
 		out += "F1"
 	case termbox.KeyF2:
@@ -98,7 +99,7 @@ func keyEventToName(event termbox.Event) string {
 	case termbox.KeyArrowRight:
 		out += "Right"
 	case termbox.KeyCtrlSpace: // KeyCtrlTilde, KeyCtrl2
-		if event.Ch == 0 {
+		if key.Ch == 0 {
 			out += "Ctrl-Space"
 		}
 	case termbox.KeyCtrlA:
@@ -168,8 +169,8 @@ func keyEventToName(event termbox.Event) string {
 	case termbox.KeyBackspace2: // KeyCtrl8
 		out += "Backspace2"
 	}
-	if event.Ch != 0 {
-		out += string(event.Ch)
+	if key.Ch != 0 {
+		out += string(key.Ch)
 	}
 	return out
 }

@@ -62,7 +62,7 @@ func (v *view) SetSize(x, y int) {
 func (v *view) Buffer() *wi.Buffer {
 	//log.Printf("View(%s).Buffer(%d, %d)", v.Title(), v.actualX, v.actualY)
 	r, _ := utf8.DecodeRuneInString(v.Title())
-	v.buffer.Fill(wi.Rect{0, 0, v.actualX, v.actualY}, wi.MakeCell(r, wi.Red, wi.Black))
+	v.buffer.Fill(wi.MakeCell(r, wi.Red, wi.Black))
 	/*
 		l := wi.LabelParams{
 			wi.ColorBlue,

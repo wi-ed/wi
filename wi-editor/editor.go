@@ -17,7 +17,6 @@ package editor
 import (
 	"fmt"
 	"github.com/maruel/wi/wi-plugin"
-	"github.com/nsf/termbox-go"
 	"io"
 	"log"
 	"strconv"
@@ -62,13 +61,13 @@ type Editor interface {
 // editor is the global structure that holds everything together. It implements
 // the Editor interface.
 type editor struct {
-	termBox        TermBox
+	terminal       Terminal
 	rootWindow     *window
 	lastActive     []wi.Window
 	viewFactories  map[string]wi.ViewFactory
-	terminalEvents <-chan termbox.Event
-	viewReady      chan bool // A View.Buffer() is ready to be drawn.
-	commandsQueue  chan commandQueueItem
+	terminalEvents <-chan TerminalEvent  // Events coming from Terminal.SeedEvents().
+	viewReady      chan bool             // A View.Buffer() is ready to be drawn.
+	commandsQueue  chan commandQueueItem // Pending commands to be executed.
 	languageMode   wi.LanguageMode
 	keyboardMode   wi.KeyboardMode
 	plugins        Plugins
@@ -127,11 +126,11 @@ func (e *editor) KeyboardMode() wi.KeyboardMode {
 // draw descends the whole Window tree and redraw Windows.
 func (e *editor) draw() {
 	log.Print("draw()")
-	/*
-		b := tulib.TermboxBuffer()
-		drawRecurse(e.rootWindow, 0, 0, &b)
-		e.termBox.Flush()
-	*/
+	// TODO(maruel): Cache the buffer.
+	w, h := e.terminal.Size()
+	out := wi.NewBuffer(w, h)
+	drawRecurse(e.rootWindow, 0, 0, out)
+	e.terminal.Blit(out)
 }
 
 func (e *editor) ActiveWindow() wi.Window {
@@ -175,7 +174,7 @@ func (e *editor) RegisterViewFactory(name string, viewFactory wi.ViewFactory) bo
 func (e *editor) onResize() {
 	// Resize the Windows. This also invalidates it, which will also force a
 	// redraw if the size changed.
-	w, h := e.termBox.Size()
+	w, h := e.terminal.Size()
 	e.rootWindow.SetRect(wi.Rect{0, 0, w, h})
 }
 
@@ -233,23 +232,15 @@ func (e *editor) EventLoop() int {
 
 		case event := <-e.terminalEvents:
 			switch event.Type {
-			case termbox.EventKey:
-				k := keyEventToName(event)
+			case EventKey:
+				k := keyEventToName(event.Key)
 				if k != "" {
 					e.postKey(k)
 				}
-			case termbox.EventMouse:
-				// TODO(maruel): MouseDispatcher. Mouse events are expected to be
-				// resolved to the window that is currently active, unlike key presses.
-				// Life is inconsistent.
-				break
-			case termbox.EventResize:
+			case EventResize:
 				// The terminal window was resized, resize everything, independent of
 				// the enqueued commands.
 				e.onResize()
-			case termbox.EventError:
-				// TODO(maruel): Not sure what situations can trigger this.
-				wi.PostCommand(e, "alert", event.Err.Error())
 			}
 
 		case <-e.viewReady:
@@ -298,7 +289,7 @@ func (e *editor) LoadPlugins() error {
 // It's up to the caller to add child Windows in it. Normally it will be done
 // via the command "bootstrap_ui" to add the status bar, then "new" or "open"
 // to create the initial text buffer.
-func MakeEditor(termBox TermBox) Editor {
+func MakeEditor(terminal Terminal) Editor {
 	// The root view is important, it defines all the global commands. It is
 	// pre-filled with the default native commands and keyboard mapping, and it's
 	// up to the plugins to add more global commands on startup.
@@ -308,18 +299,13 @@ func MakeEditor(termBox TermBox) Editor {
 	RegisterDefaultCommands(rootView.Commands())
 	RegisterWindowCommands(rootView.Commands())
 
-	if termBox == nil {
-		termBox = termBoxImpl{}
-	}
-
 	rootWindow := makeWindow(nil, rootView, wi.DockingFill)
-	terminalEvents := make(chan termbox.Event, 32)
 	e := &editor{
-		termBox:        termBox,
+		terminal:       terminal,
 		rootWindow:     rootWindow,
 		lastActive:     []wi.Window{rootWindow},
 		viewFactories:  make(map[string]wi.ViewFactory),
-		terminalEvents: terminalEvents,
+		terminalEvents: terminal.SeedEvents(),
 		viewReady:      make(chan bool),
 		commandsQueue:  make(chan commandQueueItem, 500),
 		languageMode:   wi.LangEn,
@@ -331,11 +317,6 @@ func MakeEditor(termBox TermBox) Editor {
 	RegisterDefaultKeyBindings(e)
 
 	e.onResize()
-	go func() {
-		for {
-			terminalEvents <- e.termBox.PollEvent()
-		}
-	}()
 	return e
 }
 

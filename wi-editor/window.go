@@ -286,8 +286,11 @@ func (w *window) resizeChildren() {
 }
 
 func (w *window) Buffer() *wi.Buffer {
+	// TODO(maruel): Redo API.
+	// Opportunistically refresh the view buffer.
 	if w.viewRect.Width != 0 && w.viewRect.Height != 0 {
-		w.windowBuffer.Blit(w.viewRect.X, w.viewRect.Y, w.view.Buffer())
+		b := w.windowBuffer.SubBuffer(w.viewRect)
+		b.Blit(w.view.Buffer())
 	}
 	return w.windowBuffer
 }
@@ -300,7 +303,8 @@ func (w *window) SetView(view wi.View) {
 	panic("To test")
 	if view != w.view {
 		w.view = view
-		w.windowBuffer.Fill(w.viewRect, w.cell(' '))
+		b := w.windowBuffer.SubBuffer(w.viewRect)
+		b.Fill(w.cell(' '))
 		wi.PostCommand(w, "editor_redraw")
 	}
 }
@@ -328,19 +332,19 @@ func (w *window) updateBorder() {
 
 	case drawnBorderLeft:
 		w.clientAreaRect = wi.Rect{1, 0, w.rect.Width - 1, w.rect.Height}
-		w.windowBuffer.Fill(wi.Rect{0, 0, 1, w.rect.Height}, w.cell(s[1]))
+		w.windowBuffer.SubBuffer(wi.Rect{0, 0, 1, w.rect.Height}).Fill(w.cell(s[1]))
 
 	case drawnBorderRight:
 		w.clientAreaRect = wi.Rect{0, 0, w.rect.Width - 1, w.rect.Height}
-		w.windowBuffer.Fill(wi.Rect{w.rect.Width - 1, 0, 1, w.rect.Height}, w.cell(s[1]))
+		w.windowBuffer.SubBuffer(wi.Rect{w.rect.Width - 1, 0, 1, w.rect.Height}).Fill(w.cell(s[1]))
 
 	case drawnBorderTop:
 		w.clientAreaRect = wi.Rect{0, 1, w.rect.Width, w.rect.Height - 1}
-		w.windowBuffer.Fill(wi.Rect{0, 0, w.rect.Width, 1}, w.cell(s[0]))
+		w.windowBuffer.SubBuffer(wi.Rect{0, 0, w.rect.Width, 1}).Fill(w.cell(s[0]))
 
 	case drawnBorderBottom:
 		w.clientAreaRect = wi.Rect{0, 0, w.rect.Width, w.rect.Height - 1}
-		w.windowBuffer.Fill(wi.Rect{0, w.rect.Height - 1, w.rect.Width, 1}, w.cell(s[0]))
+		w.windowBuffer.SubBuffer(wi.Rect{0, w.rect.Height - 1, w.rect.Width, 1}).Fill(w.cell(s[0]))
 
 	case drawnBorderAll:
 		w.clientAreaRect = wi.Rect{1, 1, w.rect.Width - 2, w.rect.Height - 2}
@@ -350,10 +354,10 @@ func (w *window) updateBorder() {
 		w.windowBuffer.Set(w.rect.Width-1, 0, w.cell(s[3]))
 		w.windowBuffer.Set(w.rect.Width-1, w.rect.Height-1, w.cell(s[5]))
 		// Lines.
-		w.windowBuffer.Fill(wi.Rect{1, 0, w.rect.Width - 2, 1}, w.cell(s[0]))
-		w.windowBuffer.Fill(wi.Rect{1, w.rect.Height - 1, w.rect.Width - 2, w.rect.Height - 1}, w.cell(s[0]))
-		w.windowBuffer.Fill(wi.Rect{0, 1, 1, w.rect.Height - 2}, w.cell(s[1]))
-		w.windowBuffer.Fill(wi.Rect{w.rect.Width - 1, 1, w.rect.Width - 1, w.rect.Height - 2}, w.cell(s[1]))
+		w.windowBuffer.SubBuffer(wi.Rect{1, 0, w.rect.Width - 2, 1}).Fill(w.cell(s[0]))
+		w.windowBuffer.SubBuffer(wi.Rect{1, w.rect.Height - 1, w.rect.Width - 2, w.rect.Height - 1}).Fill(w.cell(s[0]))
+		w.windowBuffer.SubBuffer(wi.Rect{0, 1, 1, w.rect.Height - 2}).Fill(w.cell(s[1]))
+		w.windowBuffer.SubBuffer(wi.Rect{w.rect.Width - 1, 1, w.rect.Width - 1, w.rect.Height - 2}).Fill(w.cell(s[1]))
 
 	default:
 		panic("Unknown drawnBorder")
@@ -403,7 +407,7 @@ func makeWindow(parent *window, view wi.View, docking wi.DockingType) *window {
 }
 
 // drawRecurse recursively draws the Window tree into buffer out.
-func drawRecurse(w *window, offsetX, offsetY int, out wi.Buffer) {
+func drawRecurse(w *window, offsetX, offsetY int, out *wi.Buffer) {
 	log.Printf("drawRecurse(%s, %d, %d); %v", w.View().Title(), offsetX, offsetY, w.Rect())
 	if w.Docking() == wi.DockingFloating {
 		// Floating Window are relative to the screen, not the parent Window.
@@ -412,9 +416,9 @@ func drawRecurse(w *window, offsetX, offsetY int, out wi.Buffer) {
 	}
 	// TODO(maruel): Only draw non-occuled Windows!
 	dest := w.Rect()
-	offsetX += dest.X
-	offsetY += dest.Y
-	out.Blit(offsetX, offsetY, w.Buffer())
+	dest.X += offsetX
+	dest.Y += offsetY
+	out.SubBuffer(dest).Blit(w.Buffer())
 
 	fillFound := false
 	for _, child := range w.childrenWindows {
@@ -427,7 +431,7 @@ func drawRecurse(w *window, offsetX, offsetY int, out wi.Buffer) {
 			}
 			fillFound = true
 		}
-		drawRecurse(child, offsetX, offsetY, out)
+		drawRecurse(child, dest.X, dest.Y, out)
 	}
 }
 
