@@ -16,7 +16,6 @@ package editor
 
 import (
 	"fmt"
-	"github.com/maruel/tulib"
 	"github.com/maruel/wi/wi-plugin"
 	"github.com/nsf/termbox-go"
 	"io"
@@ -128,9 +127,11 @@ func (e *editor) KeyboardMode() wi.KeyboardMode {
 // draw descends the whole Window tree and redraw Windows.
 func (e *editor) draw() {
 	log.Print("draw()")
-	b := tulib.TermboxBuffer()
-	drawRecurse(e.rootWindow, 0, 0, &b)
-	e.termBox.Flush()
+	/*
+		b := tulib.TermboxBuffer()
+		drawRecurse(e.rootWindow, 0, 0, &b)
+		e.termBox.Flush()
+	*/
 }
 
 func (e *editor) ActiveWindow() wi.Window {
@@ -175,7 +176,7 @@ func (e *editor) onResize() {
 	// Resize the Windows. This also invalidates it, which will also force a
 	// redraw if the size changed.
 	w, h := e.termBox.Size()
-	e.rootWindow.SetRect(tulib.Rect{0, 0, w, h})
+	e.rootWindow.SetRect(wi.Rect{0, 0, w, h})
 }
 
 // Converts a wi.Window.ID() to a window pointer. Returns nil if invalid.

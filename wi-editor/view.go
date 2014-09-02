@@ -5,16 +5,14 @@
 package editor
 
 import (
-	"github.com/maruel/tulib"
 	"github.com/maruel/wi/wi-plugin"
-	"github.com/nsf/termbox-go"
 	"log"
 	"time"
 	"unicode/utf8"
 )
 
 // TODO(maruel): Plugable drawing function.
-type drawInto func(v wi.View, buffer tulib.Buffer)
+type drawInto func(v wi.View, buffer wi.Buffer)
 
 type view struct {
 	commands    wi.Commands
@@ -27,7 +25,7 @@ type view struct {
 	actualX     int
 	actualY     int
 	onAttach    func(v *view, w wi.Window)
-	buffer      tulib.Buffer
+	buffer      *wi.Buffer
 }
 
 func (v *view) Commands() wi.Commands {
@@ -58,23 +56,24 @@ func (v *view) SetSize(x, y int) {
 	log.Printf("View(%s).SetSize(%d, %d)", v.Title(), x, y)
 	v.actualX = x
 	v.actualY = y
-	v.buffer = tulib.NewBuffer(x, y)
+	v.buffer = wi.NewBuffer(x, y)
 }
 
-func (v *view) Buffer() *tulib.Buffer {
+func (v *view) Buffer() *wi.Buffer {
 	//log.Printf("View(%s).Buffer(%d, %d)", v.Title(), v.actualX, v.actualY)
 	r, _ := utf8.DecodeRuneInString(v.Title())
-	v.buffer.Fill(tulib.Rect{0, 0, v.actualX, v.actualY}, termbox.Cell{r, termbox.ColorRed, termbox.ColorBlack})
-	l := tulib.LabelParams{
-		termbox.ColorBlue,
-		termbox.ColorBlack,
-		//tulib.AlignRight,
-		tulib.AlignLeft,
-		'b',
-		true,
-	}
-	v.buffer.DrawLabel(tulib.Rect{0, 0, v.actualX, 1}, &l, []byte(v.Title()))
-	return &v.buffer
+	v.buffer.Fill(wi.Rect{0, 0, v.actualX, v.actualY}, wi.MakeCell(r, wi.Red, wi.Black))
+	/*
+		l := wi.LabelParams{
+			wi.ColorBlue,
+			wi.ColorBlack,
+			wi.AlignLeft,
+			'b',
+			true,
+		}
+		v.buffer.DrawLabel(wi.Rect{0, 0, v.actualX, 1}, &l, []byte(v.Title()))
+	*/
+	return v.buffer
 }
 
 func (v *view) OnAttach(w wi.Window) {

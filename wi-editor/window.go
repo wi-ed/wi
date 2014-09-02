@@ -6,19 +6,13 @@ package editor
 
 import (
 	"fmt"
-	"github.com/maruel/tulib"
 	"github.com/maruel/wi/wi-plugin"
-	"github.com/nsf/termbox-go"
 	"log"
 	"strings"
 )
 
 var singleBorder = []rune{'\u2500', '\u2502', '\u250D', '\u2510', '\u2514', '\u2518'}
 var doubleBorder = []rune{'\u2550', '\u2551', '\u2554', '\u2557', '\u255a', '\u255d'}
-
-func isEqual(lhs tulib.Rect, rhs tulib.Rect) bool {
-	return lhs.X == rhs.X && lhs.Y == rhs.Y && lhs.Width == rhs.Width && lhs.Height == rhs.Height
-}
 
 type drawnBorder int
 
@@ -41,16 +35,16 @@ type window struct {
 	parent          *window
 	cd              wi.CommandDispatcherFull
 	childrenWindows []*window
-	windowBuffer    tulib.Buffer // includes the border
-	rect            tulib.Rect   // Window Rect as described in wi.Window.Rect().
-	clientAreaRect  tulib.Rect   // Usable area within the Window, the part not obscured by borders.
-	viewRect        tulib.Rect   // Window View Rect, which is the client area not used by childrenWindows.
+	windowBuffer    *wi.Buffer // includes the border
+	rect            wi.Rect    // Window Rect as described in wi.Window.Rect().
+	clientAreaRect  wi.Rect    // Usable area within the Window, the part not obscured by borders.
+	viewRect        wi.Rect    // Window View Rect, which is the client area not used by childrenWindows.
 	view            wi.View
 	docking         wi.DockingType
 	border          wi.BorderType
-	effectiveBorder drawnBorder       // effectiveBorder automatically collapses borders when the Window Rect is too small and is based on docking.
-	fg              termbox.Attribute // Default text color, to be used in borders.
-	bg              termbox.Attribute // Default background color, to be used in borders
+	effectiveBorder drawnBorder // effectiveBorder automatically collapses borders when the Window Rect is too small and is based on docking.
+	fg              wi.RGB      // Default text color, to be used in borders.
+	bg              wi.RGB      // Default background color, to be used in borders
 }
 
 func (w *window) String() string {
@@ -141,22 +135,22 @@ func detachRecursively(w *window) {
 	w.childrenWindows = nil
 }
 
-func (w *window) Rect() tulib.Rect {
+func (w *window) Rect() wi.Rect {
 	return w.rect
 }
 
-func (w *window) SetRect(rect tulib.Rect) {
+func (w *window) SetRect(rect wi.Rect) {
 	// SetRect() recreates the buffer and immediately draws the borders.
-	if !isEqual(w.rect, rect) {
+	if !w.rect.Eq(rect) {
 		w.rect = rect
 		// Internal consistency check.
 		if w.parent != nil {
-			if !w.rect.FitsIn(w.parent.clientAreaRect) {
-				panic(fmt.Sprintf("Child %v doesn't fit parent's client area %v: %v; %v", w, w.parent, w.parent.clientAreaRect, w.rect.Intersection(w.parent.clientAreaRect)))
+			if !w.rect.In(w.parent.clientAreaRect) {
+				panic(fmt.Sprintf("Child %v doesn't fit parent's client area %v: %v", w, w.parent, w.parent.clientAreaRect))
 			}
 		}
 
-		w.windowBuffer = tulib.NewBuffer(w.rect.Width, w.rect.Height)
+		w.windowBuffer = wi.NewBuffer(w.rect.Width, w.rect.Height)
 		w.updateBorder()
 	}
 	// Still flow the call through children Window, so DockingFloating are
@@ -165,7 +159,7 @@ func (w *window) SetRect(rect tulib.Rect) {
 }
 
 // calculateEffectiveBorder calculates window.effectiveBorder.
-func calculateEffectiveBorder(r tulib.Rect, d wi.DockingType) drawnBorder {
+func calculateEffectiveBorder(r wi.Rect, d wi.DockingType) drawnBorder {
 	switch d {
 	case wi.DockingFill:
 		return drawnBorderNone
@@ -291,11 +285,11 @@ func (w *window) resizeChildren() {
 	wi.PostCommand(w, "editor_redraw")
 }
 
-func (w *window) Buffer() *tulib.Buffer {
+func (w *window) Buffer() *wi.Buffer {
 	if w.viewRect.Width != 0 && w.viewRect.Height != 0 {
-		w.windowBuffer.Blit(w.viewRect, 0, 0, w.view.Buffer())
+		w.windowBuffer.Blit(w.viewRect.X, w.viewRect.Y, w.view.Buffer())
 	}
-	return &w.windowBuffer
+	return w.windowBuffer
 }
 
 func (w *window) Docking() wi.DockingType {
@@ -330,36 +324,36 @@ func (w *window) updateBorder() {
 
 	switch w.effectiveBorder {
 	case drawnBorderNone:
-		w.clientAreaRect = tulib.Rect{0, 0, w.rect.Width, w.rect.Height}
+		w.clientAreaRect = wi.Rect{0, 0, w.rect.Width, w.rect.Height}
 
 	case drawnBorderLeft:
-		w.clientAreaRect = tulib.Rect{1, 0, w.rect.Width - 1, w.rect.Height}
-		w.windowBuffer.Fill(tulib.Rect{0, 0, 1, w.rect.Height}, w.cell(s[1]))
+		w.clientAreaRect = wi.Rect{1, 0, w.rect.Width - 1, w.rect.Height}
+		w.windowBuffer.Fill(wi.Rect{0, 0, 1, w.rect.Height}, w.cell(s[1]))
 
 	case drawnBorderRight:
-		w.clientAreaRect = tulib.Rect{0, 0, w.rect.Width - 1, w.rect.Height}
-		w.windowBuffer.Fill(tulib.Rect{w.rect.Width - 1, 0, 1, w.rect.Height}, w.cell(s[1]))
+		w.clientAreaRect = wi.Rect{0, 0, w.rect.Width - 1, w.rect.Height}
+		w.windowBuffer.Fill(wi.Rect{w.rect.Width - 1, 0, 1, w.rect.Height}, w.cell(s[1]))
 
 	case drawnBorderTop:
-		w.clientAreaRect = tulib.Rect{0, 1, w.rect.Width, w.rect.Height - 1}
-		w.windowBuffer.Fill(tulib.Rect{0, 0, w.rect.Width, 1}, w.cell(s[0]))
+		w.clientAreaRect = wi.Rect{0, 1, w.rect.Width, w.rect.Height - 1}
+		w.windowBuffer.Fill(wi.Rect{0, 0, w.rect.Width, 1}, w.cell(s[0]))
 
 	case drawnBorderBottom:
-		w.clientAreaRect = tulib.Rect{0, 0, w.rect.Width, w.rect.Height - 1}
-		w.windowBuffer.Fill(tulib.Rect{0, w.rect.Height - 1, w.rect.Width, 1}, w.cell(s[0]))
+		w.clientAreaRect = wi.Rect{0, 0, w.rect.Width, w.rect.Height - 1}
+		w.windowBuffer.Fill(wi.Rect{0, w.rect.Height - 1, w.rect.Width, 1}, w.cell(s[0]))
 
 	case drawnBorderAll:
-		w.clientAreaRect = tulib.Rect{1, 1, w.rect.Width - 2, w.rect.Height - 2}
+		w.clientAreaRect = wi.Rect{1, 1, w.rect.Width - 2, w.rect.Height - 2}
 		// Corners.
 		w.windowBuffer.Set(0, 0, w.cell(s[2]))
 		w.windowBuffer.Set(0, w.rect.Height-1, w.cell(s[4]))
 		w.windowBuffer.Set(w.rect.Width-1, 0, w.cell(s[3]))
 		w.windowBuffer.Set(w.rect.Width-1, w.rect.Height-1, w.cell(s[5]))
 		// Lines.
-		w.windowBuffer.Fill(tulib.Rect{1, 0, w.rect.Width - 2, 1}, w.cell(s[0]))
-		w.windowBuffer.Fill(tulib.Rect{1, w.rect.Height - 1, w.rect.Width - 2, w.rect.Height - 1}, w.cell(s[0]))
-		w.windowBuffer.Fill(tulib.Rect{0, 1, 1, w.rect.Height - 2}, w.cell(s[1]))
-		w.windowBuffer.Fill(tulib.Rect{w.rect.Width - 1, 1, w.rect.Width - 1, w.rect.Height - 2}, w.cell(s[1]))
+		w.windowBuffer.Fill(wi.Rect{1, 0, w.rect.Width - 2, 1}, w.cell(s[0]))
+		w.windowBuffer.Fill(wi.Rect{1, w.rect.Height - 1, w.rect.Width - 2, w.rect.Height - 1}, w.cell(s[0]))
+		w.windowBuffer.Fill(wi.Rect{0, 1, 1, w.rect.Height - 2}, w.cell(s[1]))
+		w.windowBuffer.Fill(wi.Rect{w.rect.Width - 1, 1, w.rect.Width - 1, w.rect.Height - 2}, w.cell(s[1]))
 
 	default:
 		panic("Unknown drawnBorder")
@@ -375,8 +369,8 @@ func (w *window) updateBorder() {
 	}
 }
 
-func (w *window) cell(r rune) termbox.Cell {
-	return termbox.Cell{r, w.fg, w.bg}
+func (w *window) cell(r rune) wi.Cell {
+	return wi.MakeCell(r, w.fg, w.bg)
 }
 
 func (w *window) View() wi.View {
@@ -403,13 +397,13 @@ func makeWindow(parent *window, view wi.View, docking wi.DockingType) *window {
 		view:    view,
 		docking: docking,
 		border:  border,
-		fg:      termbox.ColorWhite,
-		bg:      termbox.ColorBlack,
+		fg:      wi.White,
+		bg:      wi.Black,
 	}
 }
 
 // drawRecurse recursively draws the Window tree into buffer out.
-func drawRecurse(w *window, offsetX, offsetY int, out *tulib.Buffer) {
+func drawRecurse(w *window, offsetX, offsetY int, out wi.Buffer) {
 	log.Printf("drawRecurse(%s, %d, %d); %v", w.View().Title(), offsetX, offsetY, w.Rect())
 	if w.Docking() == wi.DockingFloating {
 		// Floating Window are relative to the screen, not the parent Window.
@@ -418,9 +412,9 @@ func drawRecurse(w *window, offsetX, offsetY int, out *tulib.Buffer) {
 	}
 	// TODO(maruel): Only draw non-occuled Windows!
 	dest := w.Rect()
-	dest.X += offsetX
-	dest.Y += offsetY
-	out.Blit(dest, 0, 0, w.Buffer())
+	offsetX += dest.X
+	offsetY += dest.Y
+	out.Blit(offsetX, offsetY, w.Buffer())
 
 	fillFound := false
 	for _, child := range w.childrenWindows {
@@ -433,7 +427,7 @@ func drawRecurse(w *window, offsetX, offsetY int, out *tulib.Buffer) {
 			}
 			fillFound = true
 		}
-		drawRecurse(child, dest.X, dest.Y, out)
+		drawRecurse(child, offsetX, offsetY, out)
 	}
 }
 

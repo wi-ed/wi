@@ -9,10 +9,6 @@ package wi
 
 import (
 	"fmt"
-	// TODO(maruel): Stop leaking this modules in the interface. We can't "type
-	// Buffer tulib.Buffer" or else we lose all the methods and will have to
-	// reimplement them here.
-	"github.com/maruel/tulib"
 )
 
 // UI
@@ -234,18 +230,18 @@ type Window interface {
 
 	// Rect returns the position based on the parent Window area, except if
 	// Docking() is DockingFloating.
-	Rect() tulib.Rect
+	Rect() Rect
 
 	// SetRect sets the rect of this Window, based on the parent's Window own
 	// Rect(). It updates Rect() and synchronously updates the child Window that
 	// are not DockingFloating.
 	// TODO(maruel): Convert to a command.
-	SetRect(rect tulib.Rect)
+	SetRect(rect Rect)
 
 	// Buffer returns the display buffer for this Window. The Window
 	// double-buffers the View buffer so it could stale data if the View is slow
 	// to draw itself.
-	Buffer() *tulib.Buffer
+	Buffer() *Buffer
 
 	Docking() DockingType
 
@@ -282,7 +278,7 @@ type View interface {
 	IsDisabled() bool
 
 	// Buffer returns the display buffer for this Window.
-	Buffer() *tulib.Buffer
+	Buffer() *Buffer
 
 	// NaturalSize returns the natural size of the content. It can be -1 for as
 	// long/large as possible, 0 if indeterminate. The return value of this
@@ -413,7 +409,7 @@ func RootWindow(w Window) Window {
 }
 
 // PositionOnScreen returns the exact position on screen of a Window.
-func PositionOnScreen(w Window) tulib.Rect {
+func PositionOnScreen(w Window) Rect {
 	out := w.Rect()
 	if w.Docking() == DockingFloating {
 		return out
