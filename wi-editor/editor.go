@@ -105,7 +105,10 @@ func (e *editor) postKey(keyName string) {
 }
 
 func (e *editor) ExecuteCommand(w wi.Window, cmdName string, args ...string) {
-	log.Printf("ExecuteCommand(%s)", cmdName)
+	log.Printf("ExecuteCommand(%s, %s)", cmdName, args)
+	if w == nil {
+		w = e.ActiveWindow()
+	}
 	cmd := wi.GetCommand(e, w, cmdName)
 	if cmd == nil {
 		e.ExecuteCommand(w, "alert", fmt.Sprintf(wi.GetStr(e.CurrentLanguage(), notFound), cmdName))

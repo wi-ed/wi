@@ -89,10 +89,10 @@ func cmdBootstrapUI(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Window,
 
 func cmdDocumentNew(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
 	cmd := make([]string, 3+len(args))
-	cmd[1] = w.Id()
-	cmd[2] = "fill"
-	cmd[3] = "new_document"
-	copy(cmd[4:], args)
+	cmd[0] = w.Id()
+	cmd[1] = "fill"
+	cmd[2] = "new_document"
+	copy(cmd[3:], args)
 	cd.ExecuteCommand(w, "window_new", cmd...)
 }
 

@@ -62,6 +62,9 @@ func (w *window) PostCommands(cmds [][]string) {
 }
 
 func (w *window) Id() string {
+	if w.parent == nil {
+		return fmt.Sprintf("%d", w.id)
+	}
 	return fmt.Sprintf("%s:%d", w.parent.Id(), w.id)
 }
 
@@ -541,7 +544,7 @@ func RegisterWindowCommands(dispatcher wi.Commands) {
 		},
 		&privilegedCommandImpl{
 			"window_new",
-			4,
+			-1,
 			cmdWindowNew,
 			wi.WindowCategory,
 			wi.LangMap{
