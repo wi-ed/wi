@@ -119,6 +119,7 @@ so he's doing vim. Because of reasons.
 Thanks
 ------
 
+  - Bram Moolenaar for vim.
   - no.smile.face@gmail.com for the inspiration
     [godit](https://github.com/nsf/godit). This project is using several
     libraries from him which helped bootstrapping this project much more
