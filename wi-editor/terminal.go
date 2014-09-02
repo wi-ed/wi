@@ -64,20 +64,20 @@ type Logger interface {
 //
 // It is mostly useful in unit tests.
 type TerminalFake struct {
-	X      int
-	Y      int
-	events []TerminalEvent
-	buffer *wi.Buffer
+	Width  int
+	Height int
+	Events []TerminalEvent
+	Buffer *wi.Buffer
 }
 
 func (t *TerminalFake) Size() (int, int) {
-	return t.X, t.Y
+	return t.Width, t.Height
 }
 
 func (t *TerminalFake) SeedEvents() <-chan TerminalEvent {
 	out := make(chan TerminalEvent)
 	go func() {
-		for _, i := range t.events {
+		for _, i := range t.Events {
 			out <- i
 		}
 	}()
@@ -85,7 +85,7 @@ func (t *TerminalFake) SeedEvents() <-chan TerminalEvent {
 }
 
 func (t *TerminalFake) Blit(b *wi.Buffer) {
-	t.buffer.Blit(b)
+	t.Buffer.Blit(b)
 }
 
 // NewTerminalFake returns an initialized TerminalFake which implements the

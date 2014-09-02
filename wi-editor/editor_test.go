@@ -5,6 +5,7 @@
 package editor
 
 import (
+	"github.com/maruel/ut"
 	"github.com/maruel/wi/wi-plugin"
 	"log"
 	"testing"
@@ -28,25 +29,37 @@ func init() {
 
 func TestMainImmediateQuit(t *testing.T) {
 	t.Parallel()
-	editor := MakeEditor(NewTerminalFake(80, 25, []TerminalEvent{}))
+	terminal := NewTerminalFake(80, 25, []TerminalEvent{})
+	editor := MakeEditor(terminal)
 	wi.PostCommand(editor, "editor_quit")
 	result := Main(true, editor)
 	if result != 0 {
 		t.Fatalf("Exit code: %v", result)
 	}
-	// TODO(maruel): Check the content of the cells via termBox.buffer.Cells.
+	// TODO(maruel): Print something.
+	for y := 0; y < terminal.Height; y++ {
+		for x := 0; x < terminal.Width; x++ {
+			c := terminal.Buffer.Get(x, y)
+			ut.AssertEqual(t, '\u0000', c.R)
+		}
+	}
 }
 
 func TestMainInvalidThenQuit(t *testing.T) {
 	t.Parallel()
-	editor := MakeEditor(NewTerminalFake(80, 25, []TerminalEvent{}))
+	terminal := NewTerminalFake(80, 25, []TerminalEvent{})
+	editor := MakeEditor(terminal)
 	wi.PostCommand(editor, "invalid")
 	wi.PostCommand(editor, "editor_quit")
 	result := Main(true, editor)
 	if result != 0 {
 		t.Fatalf("Exit code: %v", result)
 	}
-	// TODO(maruel): Check the content of the cells via termBox.buffer.Cells.
-	//t.Logf("%v", termBox.buffer.Cells)
-	//t.Fail()
+	// TODO(maruel): Print something.
+	for y := 0; y < terminal.Height; y++ {
+		for x := 0; x < terminal.Width; x++ {
+			c := terminal.Buffer.Get(x, y)
+			ut.AssertEqual(t, '\u0000', c.R)
+		}
+	}
 }
