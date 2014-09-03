@@ -54,6 +54,10 @@ var (
 		BrightYellow,
 		White,
 	}
+
+	// TODO(maruel): Add all colors for
+	// gnome-256color/putty-256color/rxvt-256color/xterm-256color.
+	// Debian package ncurses-term gets the DB for colors.
 )
 
 // RGB represents the color of a single character on screen.
@@ -61,6 +65,23 @@ var (
 // Transparency per character is not supported, this is text mode after all.
 type RGB struct {
 	R, G, B uint8
+}
+
+// NearestEGAColor returns the nearest colors for a 16 colors terminal.
+func NearestEGAColor(c RGB) RGB {
+	minDistance := 255 * 255 * 3
+	out := Black
+	for _, ega := range EGAColors {
+		r := int(ega.R) - int(c.R)
+		g := int(ega.G) - int(c.G)
+		b := int(ega.B) - int(c.B)
+		distance := r*r + b*b + g*g
+		if distance < minDistance {
+			minDistance = distance
+			out = ega
+		}
+	}
+	return out
 }
 
 // Rect is highly inspired by image.Rectangle but uses more standard origin +

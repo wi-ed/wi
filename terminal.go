@@ -47,8 +47,48 @@ func (t TermBox) SeedEvents() <-chan editor.TerminalEvent {
 	return c
 }
 
+// Converts a RGB color into the nearest termbox color.
+func rgbToTermBox(c wi.RGB) termbox.Attribute {
+	switch wi.NearestEGAColor(c) {
+	case wi.Black:
+		return termbox.ColorBlack
+	case wi.Blue:
+		return termbox.ColorBlue
+	case wi.Green:
+		return termbox.ColorGreen
+	case wi.Cyan:
+		return termbox.ColorCyan
+	case wi.Red:
+		return termbox.ColorRed
+	case wi.Magenta:
+		return termbox.ColorMagenta
+	case wi.Brown:
+		return termbox.ColorYellow
+	case wi.LightGray:
+		return termbox.ColorWhite
+	case wi.DarkGray:
+		return termbox.ColorBlack | termbox.AttrBold
+	case wi.BrightBlue:
+		return termbox.ColorBlue | termbox.AttrBold
+	case wi.BrightGreen:
+		return termbox.ColorGreen | termbox.AttrBold
+	case wi.BrightCyan:
+		return termbox.ColorCyan | termbox.AttrBold
+	case wi.BrightRed:
+		return termbox.ColorRed | termbox.AttrBold
+	case wi.BrightMagenta:
+		return termbox.ColorMagenta | termbox.AttrBold
+	case wi.BrightYellow:
+		return termbox.ColorYellow | termbox.AttrBold
+	case wi.White:
+		return termbox.ColorWhite | termbox.AttrBold
+	default:
+		return termbox.ColorDefault
+	}
+}
+
+// Convert the wi.Buffer format into termbox format.
 func (t TermBox) Blit(b *wi.Buffer) {
-	// Convert the wi.Buffer format into termbox format.
 	width, height := termbox.Size()
 	cells := termbox.CellBuffer()
 	if width > b.Width {
@@ -60,9 +100,19 @@ func (t TermBox) Blit(b *wi.Buffer) {
 
 	for y := 0; y < height; y++ {
 		for x := 0; x < width; x++ {
-			c := b.Get(x, y)
-			// TODO(maruel): Convert colors.
-			cells[y*width+x].Ch = c.R
+			i := y*width + x
+			cell := b.Get(x, y)
+			cells[i].Ch = cell.R
+			cells[i].Fg = rgbToTermBox(cell.F.Fg)
+			// TODO(maruel): Not sure.
+			if cell.F.Underline {
+				cells[i].Fg |= termbox.AttrUnderline
+			}
+			cells[i].Bg = rgbToTermBox(cell.F.Bg)
+			// TODO(maruel): Not sure. Some terminal may cause Bg&Bold to be Blinking.
+			if cell.F.Italic {
+				cells[i].Bg |= termbox.AttrUnderline
+			}
 		}
 	}
 	if err := termbox.Flush(); err != nil {
