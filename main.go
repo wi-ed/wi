@@ -60,7 +60,7 @@ func Main() int {
 	defer termbox.Close()
 	termbox.SetInputMode(termbox.InputAlt | termbox.InputMouse)
 
-	e := editor.MakeEditor(nil)
+	e := editor.MakeEditor(&TermBox{})
 	wi.PostCommand(e, "bootstrap_ui")
 	if *command {
 		for _, i := range flag.Args() {

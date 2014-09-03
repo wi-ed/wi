@@ -5,6 +5,7 @@
 package wi
 
 import (
+	"fmt"
 	"unicode/utf8"
 )
 
@@ -145,6 +146,10 @@ type Buffer struct {
 
 var emptySlice = []Cell{}
 
+func (b *Buffer) String() string {
+	return fmt.Sprintf("Buffer(%d, %d, %d)", b.Width, b.Height, b.Stride)
+}
+
 // Line returns a single line in the buffer.
 //
 // If the requested line number if outside the buffer, an empty slice is
@@ -245,14 +250,11 @@ func (b *Buffer) SubBuffer(r Rect) *Buffer {
 	if r.Y+r.Height > b.Height {
 		r.Height = b.Height - r.Y
 	}
-	base := r.Y*b.Stride + r.X
-	length := r.Height*b.Stride + r.Width
 	if r.Width <= 0 || r.Height <= 0 {
-		r.Width = 0
-		r.Height = 0
-		base = 0
-		length = 0
+		return &Buffer{Cells: []Cell{}}
 	}
+	base := r.Y*b.Stride + r.X
+	length := r.Height*b.Stride + r.Width - b.Width
 	return &Buffer{
 		r.Width,
 		r.Height,

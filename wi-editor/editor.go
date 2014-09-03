@@ -233,9 +233,8 @@ func (e *editor) EventLoop() int {
 		case event := <-e.terminalEvents:
 			switch event.Type {
 			case EventKey:
-				k := keyEventToName(event.Key)
-				if k != "" {
-					e.postKey(k)
+				if event.Key.String() != "" {
+					e.postKey(event.Key.String())
 				}
 			case EventResize:
 				// The terminal window was resized, resize everything, independent of

@@ -31,7 +31,7 @@ func (t TermBox) SeedEvents() <-chan editor.TerminalEvent {
 				// TODO(maruel): Key translation.
 				c <- editor.TerminalEvent{
 					Type: editor.EventKey,
-					Key:  editor.Key{},
+					Key:  termboxKeyToKeyPress(e),
 				}
 			case termbox.EventResize:
 				c <- editor.TerminalEvent{
@@ -45,6 +45,161 @@ func (t TermBox) SeedEvents() <-chan editor.TerminalEvent {
 		close(c)
 	}()
 	return c
+}
+
+// termboxKeyToKeyPress returns the wi.KeyPress compatible event.
+func termboxKeyToKeyPress(key termbox.Event) editor.KeyPress {
+	out := editor.KeyPress{}
+	if key.Mod&termbox.ModAlt != 0 {
+		out.Alt = true
+	}
+	switch termbox.Key(key.Key) {
+	case termbox.KeyF1:
+		out.Key = editor.KeyF1
+	case termbox.KeyF2:
+		out.Key = editor.KeyF2
+	case termbox.KeyF3:
+		out.Key = editor.KeyF3
+	case termbox.KeyF4:
+		out.Key = editor.KeyF4
+	case termbox.KeyF5:
+		out.Key = editor.KeyF5
+	case termbox.KeyF6:
+		out.Key = editor.KeyF6
+	case termbox.KeyF7:
+		out.Key = editor.KeyF7
+	case termbox.KeyF8:
+		out.Key = editor.KeyF8
+	case termbox.KeyF9:
+		out.Key = editor.KeyF9
+	case termbox.KeyF10:
+		out.Key = editor.KeyF10
+	case termbox.KeyF11:
+		out.Key = editor.KeyF11
+	case termbox.KeyF12:
+		out.Key = editor.KeyF12
+	case termbox.KeyInsert:
+		out.Key = editor.KeyInsert
+	case termbox.KeyDelete:
+		out.Key = editor.KeyDelete
+	case termbox.KeyHome:
+		out.Key = editor.KeyHome
+	case termbox.KeyEnd:
+		out.Key = editor.KeyEnd
+	case termbox.KeyPgup:
+		out.Key = editor.KeyPageUp
+	case termbox.KeyPgdn:
+		out.Key = editor.KeyPageDown
+	case termbox.KeyArrowUp:
+		out.Key = editor.KeyArrowUp
+	case termbox.KeyArrowDown:
+		out.Key = editor.KeyArrowDown
+	case termbox.KeyArrowLeft:
+		out.Key = editor.KeyArrowLeft
+	case termbox.KeyArrowRight:
+		out.Key = editor.KeyArrowRight
+	case termbox.KeyCtrlSpace: // KeyCtrlTilde, KeyCtrl2
+		if key.Ch == 0 {
+			out.Ctrl = true
+			out.Ch = ' '
+		}
+	case termbox.KeyCtrlA:
+		out.Ctrl = true
+		out.Ch = 'a'
+	case termbox.KeyCtrlB:
+		out.Ctrl = true
+		out.Ch = 'b'
+	case termbox.KeyCtrlC:
+		out.Ctrl = true
+		out.Ch = 'c'
+	case termbox.KeyCtrlD:
+		out.Ctrl = true
+		out.Ch = 'd'
+	case termbox.KeyCtrlE:
+		out.Ctrl = true
+		out.Ch = 'e'
+	case termbox.KeyCtrlF:
+		out.Ctrl = true
+		out.Ch = 'f'
+	case termbox.KeyCtrlG:
+		out.Ctrl = true
+		out.Ch = 'g'
+	case termbox.KeyBackspace: // KeyCtrlH
+		out.Key = editor.KeyBackspace
+	case termbox.KeyTab: // KeyCtrlI
+		out.Key = editor.KeyTab
+	case termbox.KeyCtrlJ:
+		out.Ctrl = true
+		out.Ch = 'j'
+	case termbox.KeyCtrlK:
+		out.Ctrl = true
+		out.Ch = 'k'
+	case termbox.KeyCtrlL:
+		out.Ctrl = true
+		out.Ch = 'l'
+	case termbox.KeyEnter: // KeyCtrlM
+		out.Key = editor.KeyEnter
+	case termbox.KeyCtrlN:
+		out.Ctrl = true
+		out.Ch = 'n'
+	case termbox.KeyCtrlO:
+		out.Ctrl = true
+		out.Ch = 'o'
+	case termbox.KeyCtrlP:
+		out.Ctrl = true
+		out.Ch = 'p'
+	case termbox.KeyCtrlQ:
+		out.Ctrl = true
+		out.Ch = 'q'
+	case termbox.KeyCtrlR:
+		out.Ctrl = true
+		out.Ch = 'r'
+	case termbox.KeyCtrlS:
+		out.Ctrl = true
+		out.Ch = 's'
+	case termbox.KeyCtrlT:
+		out.Ctrl = true
+		out.Ch = 't'
+	case termbox.KeyCtrlU:
+		out.Ctrl = true
+		out.Ch = 'u'
+	case termbox.KeyCtrlV:
+		out.Ctrl = true
+		out.Ch = 'v'
+	case termbox.KeyCtrlW:
+		out.Ctrl = true
+		out.Ch = 'w'
+	case termbox.KeyCtrlX:
+		out.Ctrl = true
+		out.Ch = 'x'
+	case termbox.KeyCtrlY:
+		out.Ctrl = true
+		out.Ch = 'y'
+	case termbox.KeyCtrlZ:
+		out.Ctrl = true
+		out.Ch = 'z'
+	case termbox.KeyEsc: // KeyCtrlLsqBracket, KeyCtrl3
+		out.Key = editor.KeyEscape
+	case termbox.KeyCtrl4: // KeyCtrlBackslash
+		out.Ctrl = true
+		out.Ch = '4'
+	case termbox.KeyCtrl5: // KeyCtrlRsqBracket
+		out.Ctrl = true
+		out.Ch = '5'
+	case termbox.KeyCtrl6:
+		out.Ctrl = true
+		out.Ch = '6'
+	case termbox.KeyCtrl7: // KeyCtrlSlash, KeyCtrlUnderscore
+		out.Ctrl = true
+		out.Ch = '7'
+	case termbox.KeySpace:
+		out.Ch = ' '
+	default:
+		if key.Ch != 0 {
+			out.Ch = key.Ch
+		}
+	}
+	return out
 }
 
 // Converts a RGB color into the nearest termbox color.
@@ -87,7 +242,7 @@ func rgbToTermBox(c wi.RGB) termbox.Attribute {
 	}
 }
 
-// Convert the wi.Buffer format into termbox format.
+// Convert the editor.Buffer format into termbox format.
 func (t TermBox) Blit(b *wi.Buffer) {
 	width, height := termbox.Size()
 	cells := termbox.CellBuffer()
