@@ -9,13 +9,51 @@ import (
 )
 
 var (
-	//Magenta   = RGB{192, 0, 192}
-	Black       = RGB{0, 0, 0}
-	BrightRed   = RGB{255, 0, 0}
-	BrightWhite = RGB{255, 255, 255}
-	DarkGray    = RGB{128, 128, 128}
-	Red         = RGB{192, 0, 0}
-	White       = RGB{192, 192, 192}
+	Black         = RGB{0, 0, 0}
+	Blue          = RGB{0, 0, 170}
+	Green         = RGB{0, 170, 0}
+	Cyan          = RGB{0, 170, 170}
+	Red           = RGB{170, 0, 0}
+	Magenta       = RGB{170, 0, 170}
+	Brown         = RGB{170, 85, 0}
+	LightGray     = RGB{170, 170, 170}
+	DarkGray      = RGB{85, 85, 85}
+	BrightBlue    = RGB{85, 85, 255}
+	BrightGreen   = RGB{85, 255, 85}
+	BrightCyan    = RGB{85, 255, 255}
+	BrightRed     = RGB{255, 85, 85}
+	BrightMagenta = RGB{255, 85, 255}
+	BrightYellow  = RGB{255, 255, 85}
+	White         = RGB{255, 255, 255}
+
+	// Use colors in EGAColors for maximum compatibility with terminals that do
+	// not support terminal-256.
+	//
+	// EGA colors <3 forever.
+	// Random intertubes websites says things like:
+	//   sudo apt-get install ncurses-term
+	//   export TERM=xterm-256color
+	//
+	// "tput colors" can be used to determine the number of colors supported by
+	// the terminal.
+	EGAColors = []RGB{
+		Black,
+		Blue,
+		Green,
+		Cyan,
+		Red,
+		Magenta,
+		Brown,
+		LightGray,
+		DarkGray,
+		BrightBlue,
+		BrightGreen,
+		BrightCyan,
+		BrightRed,
+		BrightMagenta,
+		BrightYellow,
+		White,
+	}
 )
 
 // RGB represents the color of a single character on screen.
