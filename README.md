@@ -72,32 +72,6 @@ Vision
   - Handles everything internally as unicode characters.
 
 
-History
--------
-
-Marc-Antoine badly wanted a new editor that _wouldn't freeze_ when moving the
-cursor around even if the HD has high I/O or the disk went to sleep, so he got
-bored and wrote `svi` in 2010, which was a python prototype.
-
-Obviously, using a text editor with a 3 letters name is unacceptable so the
-project was renamed to `wi` in 2014. The old python was lost due to an HD crash
-in 2012 and sanity prevailed, the whole project is being written in
-[Go](https://golang.org). Then he realized that someone had done an emacs clone,
-so he's doing vim. Because of reasons.
-
-
-Thanks
-------
-
-  - Bram Moolenaar for vim.
-  - no.smile.face@gmail.com for the inspiration
-    [godit](https://github.com/nsf/godit). This project is using several
-    libraries from him which helped bootstrapping this project much more
-    quickly.
-  - Kamil Kisiel's [vigo](https://github.com/kisielk/vigo) was also an
-    inspiration.
-
-
 Contributing
 ------------
 
