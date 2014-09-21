@@ -45,6 +45,9 @@ def main():
     call(['go', 'build'], 'wi-plugin-sample'),
     #call(['go', 'test'], 'wi-plugin-sample'),
     errcheck('.'),
+    errcheck('wi-editor'),
+    errcheck('wi-plugin'),
+    errcheck('wi-plugin-sample'),
   ]
   failed = False
   out = drain(procs.pop(0))

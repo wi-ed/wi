@@ -333,7 +333,9 @@ func Main(noPlugin bool, e Editor) int {
 			return 1
 		}
 	}
-	defer e.Close()
+	defer func() {
+		_ = e.Close()
+	}()
 
 	// Run the message loop.
 	return e.EventLoop()
