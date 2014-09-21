@@ -37,6 +37,8 @@ type privilegedCommandImplHandler func(c *privilegedCommandImpl, e *editor, w *w
 // privilegedCommandImpl is the boilerplate Command implementation for builtin
 // commands that can access the editor directly.
 //
+// Native (builtin) commands can mutate the editor.
+//
 // This command handler has access to the internals of the editor. Because of
 // this, it can only be native commands inside the editor process.
 type privilegedCommandImpl struct {
@@ -80,7 +82,7 @@ func cmdAlert(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Window, args 
 	cd.ExecuteCommand(w, "window_new", "0", "bottom", "infobar_alert", args[0])
 }
 
-func cmdBootstrapUI(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
+func cmdEditorBootstrapUI(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
 	// TODO(maruel): Use onAttach instead of hard coding names.
 	cd.ExecuteCommand(w, "window_new", "0", "bottom", "status_root")
 	cd.ExecuteCommand(w, "window_new", "0:1", "left", "status_name")
@@ -204,9 +206,9 @@ func RegisterDefaultCommands(dispatcher wi.Commands) {
 			},
 		},
 		&wi.CommandImpl{
-			"bootstrap_ui",
+			"editor_bootstrap_ui",
 			0,
-			cmdBootstrapUI,
+			cmdEditorBootstrapUI,
 			wi.WindowCategory,
 			wi.LangMap{
 				wi.LangEn: "Bootstraps the editor's UI",
@@ -305,6 +307,7 @@ func RegisterDefaultCommands(dispatcher wi.Commands) {
 		&wi.CommandAlias{"new", "document_new"},
 		&wi.CommandAlias{"open", "document_open"},
 		&wi.CommandAlias{"q", "editor_quit"},
+		&wi.CommandAlias{"quit", "editor_quit"},
 
 		// DIRECTION = up/down/left/right
 		// window_DIRECTION

@@ -232,12 +232,6 @@ type Window interface {
 	// Docking() is DockingFloating.
 	Rect() Rect
 
-	// SetRect sets the rect of this Window, based on the parent's Window own
-	// Rect(). It updates Rect() and synchronously updates the child Window that
-	// are not DockingFloating.
-	// TODO(maruel): Convert to a command.
-	SetRect(rect Rect)
-
 	// Buffer returns the display buffer for this Window. The Window
 	// double-buffers the View buffer so it could stale data if the View is slow
 	// to draw itself.

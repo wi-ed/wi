@@ -68,7 +68,7 @@ func Main() int {
 	termbox.SetInputMode(termbox.InputAlt | termbox.InputMouse)
 
 	e := editor.MakeEditor(&TermBox{})
-	wi.PostCommand(e, "bootstrap_ui")
+	wi.PostCommand(e, "editor_bootstrap_ui")
 	if *command {
 		for _, i := range flag.Args() {
 			wi.PostCommand(e, i)

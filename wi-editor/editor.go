@@ -286,8 +286,8 @@ func (e *editor) LoadPlugins() error {
 // window doesn't have anything to view in it.
 //
 // It's up to the caller to add child Windows in it. Normally it will be done
-// via the command "bootstrap_ui" to add the status bar, then "new" or "open"
-// to create the initial text buffer.
+// via the command "editor_bootstrap_ui" to add the status bar, then "new" or
+// "open" to create the initial text buffer.
 func MakeEditor(terminal Terminal) Editor {
 	// The root view is important, it defines all the global commands. It is
 	// pre-filled with the default native commands and keyboard mapping, and it's

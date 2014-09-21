@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"github.com/maruel/wi/wi-plugin"
 	"log"
+	"strconv"
 	"strings"
 )
 
@@ -139,6 +140,9 @@ func (w *window) Rect() wi.Rect {
 	return w.rect
 }
 
+// SetRect sets the rect of this Window, based on the parent's Window own
+// Rect(). It updates Rect() and synchronously updates the child Window that
+// are not DockingFloating.
 func (w *window) SetRect(rect wi.Rect) {
 	// SetRect() recreates the buffer and immediately draws the borders.
 	if !w.rect.Eq(rect) {
@@ -204,7 +208,7 @@ func (w *window) resizeChildren() {
 	log.Printf("%s.resizeChildren()", w)
 	// When borders are used, w.clientAreaRect.X and .Y are likely 1.
 	remaining := w.clientAreaRect
-	var fill wi.Window
+	var fill *window
 	for _, child := range w.childrenWindows {
 		switch child.Docking() {
 		case wi.DockingFill:
@@ -502,6 +506,25 @@ func cmdWindowSetDocking(c *privilegedCommandImpl, e *editor, w *window, args ..
 	}
 }
 
+func cmdWindowSetRect(c *privilegedCommandImpl, e *editor, w *window, args ...string) {
+	child := e.idToWindow(args[0])
+	if child == nil {
+		// TODO(maruel): Add feedback.
+		return
+	}
+	r := wi.Rect{}
+	var err1, err2, err3, err4 error
+	r.X, err1 = strconv.Atoi(args[1])
+	r.Y, err2 = strconv.Atoi(args[2])
+	r.Width, err3 = strconv.Atoi(args[3])
+	r.Height, err4 = strconv.Atoi(args[4])
+	if err1 != nil || err2 != nil || err3 != nil || err4 != nil {
+		// TODO(maruel): Add feedback.
+		return
+	}
+	child.SetRect(r)
+}
+
 func RegisterWindowCommands(dispatcher wi.Commands) {
 	var windowCommands = []wi.Command{
 		&privilegedCommandImpl{
@@ -562,6 +585,18 @@ func RegisterWindowCommands(dispatcher wi.Commands) {
 			},
 			wi.LangMap{
 				wi.LangEn: "Changes the docking of this Window relative to the parent window. This will forces an invalidation and a redraw.",
+			},
+		},
+		&privilegedCommandImpl{
+			"window_set_rect",
+			5,
+			cmdWindowSetRect,
+			wi.WindowCategory,
+			wi.LangMap{
+				wi.LangEn: "Move a window",
+			},
+			wi.LangMap{
+				wi.LangEn: "Usage: window_set_rect <window> <x> <y> <w> <h>\nMoves a Window relative to the parent window, unless it is floating, where it is relative to the view port.",
 			},
 		},
 		// 'screenshot', mainly for unit test; open a new buffer with the screenshot, so it can be saved with 'w'.
