@@ -232,17 +232,7 @@ type Window interface {
 	// Docking() is DockingFloating.
 	Rect() Rect
 
-	// Buffer returns the display buffer for this Window. The Window
-	// double-buffers the View buffer so it could stale data if the View is slow
-	// to draw itself.
-	Buffer() *Buffer
-
 	Docking() DockingType
-
-	// SetView replaces the current View with a new one. This forces an
-	// invalidation and a redraw.
-	// TODO(maruel): Convert to a command.
-	SetView(view View)
 
 	View() View
 }
