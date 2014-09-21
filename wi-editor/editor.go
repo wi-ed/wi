@@ -324,6 +324,8 @@ func MakeEditor(terminal Terminal) Editor {
 //
 // It is fine to run it concurrently in unit test, as no global variable shall
 // be used by this function.
+//
+// Editor is closed by this function.
 func Main(noPlugin bool, e Editor) int {
 	if !noPlugin {
 		if err := e.LoadPlugins(); err != nil {

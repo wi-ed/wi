@@ -12,6 +12,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"github.com/maruel/wi/wi-editor"
 	"github.com/maruel/wi/wi-plugin"
 	"github.com/nsf/termbox-go"
@@ -19,7 +20,7 @@ import (
 	"os"
 )
 
-type nullWriter int
+type nullWriter struct{}
 
 func (nullWriter) Write([]byte) (int, error) {
 	return 0, nil
@@ -38,7 +39,7 @@ func Main() int {
 	// Process this one early. No one wants version output to take 1s.
 	if *version {
 		println(version)
-		os.Exit(0)
+		return 0
 	}
 
 	if *verbose {
@@ -49,11 +50,17 @@ func Main() int {
 			log.SetOutput(f)
 		}
 	} else {
-		log.SetOutput(new(nullWriter))
+		log.SetOutput(nullWriter{})
+	}
+
+	if *command && flag.NArg() == 0 {
+		fmt.Fprintf(os.Stderr, "error: -c implies specifying commands to execute")
+		return 1
 	}
 
 	if err := termbox.Init(); err != nil {
-		panic(err)
+		fmt.Fprintf(os.Stderr, "failed to initialize terminal: %s", err)
+		return 1
 	}
 	// It is really important that no other goroutine panic() or call
 	// log.Fatal(), otherwise the terminal will be left in a broken state.
