@@ -2,6 +2,8 @@
 // Use of this source code is governed under the Apache License, Version 2.0
 // that can be found in the LICENSE file.
 
+// This file implements the conversion of editor.Terminal to termbox's.
+
 package main
 
 import (

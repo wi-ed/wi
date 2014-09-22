@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"github.com/maruel/wi/wi-plugin"
 	"log"
+	"sort"
 )
 
 // commands is the map of registered commands.
@@ -80,6 +81,28 @@ func (c *privilegedCommandImpl) LongDesc(cd wi.CommandDispatcherFull, w wi.Windo
 
 func cmdAlert(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
 	cd.ExecuteCommand(w, "window_new", "0", "bottom", "infobar_alert", args[0])
+}
+
+func commandLogRecurse(w *window, cd wi.CommandDispatcherFull) {
+	// TODO(maruel): Create a proper enumerator.
+	cmds := w.view.Commands().(*commands)
+	names := make([]string, 0, len(cmds.commands))
+	for k, _ := range cmds.commands {
+		names = append(names, k)
+	}
+	sort.Strings(names)
+	for _, n := range names {
+		c := cmds.commands[n]
+		log.Printf("  %s  %s: %s", w.Id(), c.Name(), c.ShortDesc(cd, w))
+	}
+	for _, child := range w.childrenWindows {
+		commandLogRecurse(child, cd)
+	}
+}
+
+func cmdCommandLog(c *privilegedCommandImpl, e *editor, w *window, args ...string) {
+	// Start at the root and recurse.
+	commandLogRecurse(e.rootWindow, e)
 }
 
 func cmdEditorBootstrapUI(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
@@ -205,16 +228,16 @@ func RegisterDefaultCommands(dispatcher wi.Commands) {
 				wi.LangEn: "Prints a message in a modal dialog box.",
 			},
 		},
-		&wi.CommandImpl{
-			"editor_bootstrap_ui",
+		&privilegedCommandImpl{
+			"command_log",
 			0,
-			cmdEditorBootstrapUI,
-			wi.WindowCategory,
+			cmdCommandLog,
+			wi.CommandsCategory,
 			wi.LangMap{
-				wi.LangEn: "Bootstraps the editor's UI",
+				wi.LangEn: "Logs the command",
 			},
 			wi.LangMap{
-				wi.LangEn: "Bootstraps the editor's UI. This command is automatically run on startup and cannot be executed afterward. It adds the standard status bar. This command exists so it can be overriden by a plugin, so it can create its own status bar.",
+				wi.LangEn: "Logs the commands (temporary).",
 			},
 		},
 		&wi.CommandImpl{
@@ -239,6 +262,18 @@ func RegisterDefaultCommands(dispatcher wi.Commands) {
 			},
 			wi.LangMap{
 				wi.LangEn: "Opens a file in a new buffer.",
+			},
+		},
+		&wi.CommandImpl{
+			"editor_bootstrap_ui",
+			0,
+			cmdEditorBootstrapUI,
+			wi.WindowCategory,
+			wi.LangMap{
+				wi.LangEn: "Bootstraps the editor's UI",
+			},
+			wi.LangMap{
+				wi.LangEn: "Bootstraps the editor's UI. This command is automatically run on startup and cannot be executed afterward. It adds the standard status bar. This command exists so it can be overriden by a plugin, so it can create its own status bar.",
 			},
 		},
 		&privilegedCommandImpl{
