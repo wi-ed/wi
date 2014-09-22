@@ -160,12 +160,12 @@ func cmdEditorRedraw(c *privilegedCommandImpl, e *editor, w *window, args ...str
 	}()
 }
 
-func cmdAlias(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
+func cmdCommandAlias(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
 	if args[0] == "window" {
 	} else if args[0] == "global" {
 		w = wi.RootWindow(w)
 	} else {
-		cmd := wi.GetCommand(cd, w, "alias")
+		cmd := wi.GetCommand(cd, w, "command_alias")
 		cd.ExecuteCommand(w, "alert", cmd.LongDesc(cd, w))
 		return
 	}
@@ -173,7 +173,7 @@ func cmdAlias(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Window, args 
 	w.View().Commands().Register(alias)
 }
 
-func cmdKeyBind(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
+func cmdCommandKeyBind(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
 	location := args[0]
 	modeName := args[1]
 	keyName := args[2]
@@ -215,7 +215,7 @@ func cmdShowCommandWindow(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.W
 // commands. For example, "open" is implemented but "write" is not!
 func RegisterDefaultCommands(dispatcher wi.Commands) {
 	// Native commands.
-	var defaultCommands = []wi.Command{
+	defaultCommands := []wi.Command{
 		&wi.CommandImpl{
 			"alert",
 			1,
@@ -226,18 +226,6 @@ func RegisterDefaultCommands(dispatcher wi.Commands) {
 			},
 			wi.LangMap{
 				wi.LangEn: "Prints a message in a modal dialog box.",
-			},
-		},
-		&privilegedCommandImpl{
-			"command_log",
-			0,
-			cmdCommandLog,
-			wi.CommandsCategory,
-			wi.LangMap{
-				wi.LangEn: "Logs the command",
-			},
-			wi.LangMap{
-				wi.LangEn: "Logs the commands (temporary).",
 			},
 		},
 		&wi.CommandImpl{
@@ -302,28 +290,40 @@ func RegisterDefaultCommands(dispatcher wi.Commands) {
 		},
 
 		&wi.CommandImpl{
-			"alias",
+			"command_alias",
 			3,
-			cmdAlias,
+			cmdCommandAlias,
 			wi.CommandsCategory,
 			wi.LangMap{
 				wi.LangEn: "Binds an alias to another command",
 			},
 			wi.LangMap{
 				// TODO(maruel): For complex aliasing, use macro?
-				wi.LangEn: "Usage: alias [window|global] <alias> <name>\nBinds an alias to another command. The alias can either be local to the window or global",
+				wi.LangEn: "Usage: command_alias [window|global] <alias> <name>\nBinds an alias to another command. The alias can either be local to the window or global",
 			},
 		},
 		&wi.CommandImpl{
-			"keybind",
+			"command_keybind",
 			4,
-			cmdKeyBind,
+			cmdCommandKeyBind,
 			wi.CommandsCategory,
 			wi.LangMap{
 				wi.LangEn: "Binds a keyboard mapping to a command",
 			},
 			wi.LangMap{
-				wi.LangEn: "Usage: keybind [window|global] [command|edit|all] <key> <command>\nBinds a keyboard mapping to a command. The binding can be to the active view for view-specific key binding or to the root view for global key bindings.",
+				wi.LangEn: "Usage: command_keybind [window|global] [command|edit|all] <key> <command>\nBinds a keyboard mapping to a command. The binding can be to the active view for view-specific key binding or to the root view for global key bindings.",
+			},
+		},
+		&privilegedCommandImpl{
+			"command_log",
+			0,
+			cmdCommandLog,
+			wi.CommandsCategory,
+			wi.LangMap{
+				wi.LangEn: "Logs the command",
+			},
+			wi.LangMap{
+				wi.LangEn: "Logs the commands (temporary).",
 			},
 		},
 		&wi.CommandImpl{
@@ -339,6 +339,8 @@ func RegisterDefaultCommands(dispatcher wi.Commands) {
 			},
 		},
 
+		&wi.CommandAlias{"alias", "command_alias"},
+		&wi.CommandAlias{"keybind", "command_keybind"},
 		&wi.CommandAlias{"new", "document_new"},
 		&wi.CommandAlias{"open", "document_open"},
 		&wi.CommandAlias{"q", "editor_quit"},
