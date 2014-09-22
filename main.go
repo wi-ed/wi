@@ -5,7 +5,14 @@
 // Package wi brings text based editor technology past 1200 bauds.
 //
 // This package contains only the non-unit-testable part of the editor.
-// Everything else is in wi-editor/.
+//
+//   - wi-editor (editor) contains the editor logic itself. It is
+//     terminal-agnostic.
+//   - wi-plugin (wi) contains the plugin glue. This module is shared by both
+//     the editor itself and any wi-plugin for RPC.
+//   - wi-plugin-sample is a sample plugin executable to `go install`. It is
+//     both meant as a reusable skeleton to write a new plugin and as a way to
+//     ensure the plugin system works.
 //
 // See README.md for more details.
 package main
