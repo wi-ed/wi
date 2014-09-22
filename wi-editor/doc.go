@@ -6,13 +6,10 @@
 // editor. It brings text based editor technology past 1200 bauds.
 //
 // It is in a standalone package for a few reasons:
-//
-// - godoc will generate documentation for this code.
-//
-// - it can be unit tested without having a dependency on termbox.
-//
-// - hide away ncurse idiocracies (like Ctrl-H == Backspace) which could be
-// supported on Windows or native UI.
+//   - godoc will generate documentation for this code.
+//   - it can be unit tested without having a dependency on termbox.
+//   - hide away ncurse idiocracies (like Ctrl-H == Backspace) which could be
+//     supported on Windows or native UI.
 //
 // This package is not meant to be a general purpose reusable package, the
 // primary maintainer of this project likes having a web browseable
