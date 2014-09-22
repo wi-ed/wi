@@ -79,11 +79,5 @@ Please run the presubmit check `./presubmit.py` first before doing a pull
 request. Even better is to install the git pre-commit hook with
 `./git-hooks/install.py`.
 
-You'll also want to run:
-
-    go get -u code.google.com/p/go.tools/cmd/godoc
-    godoc -http=:6060
-
-Then browse to http://localhost:6060/pkg/github.com/maruel/wi for a structure of
-the source tree. You can also visit http://godoc.org/github.com/maruel/wi for
-online browseable documentation.
+See online documentation on
+[![GoDoc](https://godoc.org/github.com/maruel/wi?status.svg)](https://godoc.org/github.com/maruel/wi)
