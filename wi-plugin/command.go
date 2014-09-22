@@ -21,10 +21,12 @@ type CommandImpl struct {
 	LongDescValue  LangMap
 }
 
+// Name implements Command.
 func (c *CommandImpl) Name() string {
 	return c.NameValue
 }
 
+// Handle implements Command.
 func (c *CommandImpl) Handle(cd CommandDispatcherFull, w Window, args ...string) {
 	if c.ExpectedArgs != -1 && len(args) != c.ExpectedArgs {
 		cd.ExecuteCommand(w, "alert", c.LongDesc(cd, w))
@@ -32,14 +34,17 @@ func (c *CommandImpl) Handle(cd CommandDispatcherFull, w Window, args ...string)
 	c.HandlerValue(c, cd, w, args...)
 }
 
+// Category implements Command.
 func (c *CommandImpl) Category(cd CommandDispatcherFull, w Window) CommandCategory {
 	return c.CategoryValue
 }
 
+// ShortDesc implements Command.
 func (c *CommandImpl) ShortDesc(cd CommandDispatcherFull, w Window) string {
 	return GetStr(cd.CurrentLanguage(), c.ShortDescValue)
 }
 
+// LongDesc implements Command.
 func (c *CommandImpl) LongDesc(cd CommandDispatcherFull, w Window) string {
 	return GetStr(cd.CurrentLanguage(), c.LongDescValue)
 }
@@ -52,10 +57,12 @@ type CommandAlias struct {
 	CommandValue string
 }
 
+// Name implements Command.
 func (c *CommandAlias) Name() string {
 	return c.NameValue
 }
 
+// Handle implements Command.
 func (c *CommandAlias) Handle(cd CommandDispatcherFull, w Window, args ...string) {
 	// The alias is executed inline. This is important for command queue
 	// ordering.
@@ -70,6 +77,7 @@ func (c *CommandAlias) Handle(cd CommandDispatcherFull, w Window, args ...string
 	}
 }
 
+// Category implements Command.
 func (c *CommandAlias) Category(cd CommandDispatcherFull, w Window) CommandCategory {
 	cmd := GetCommand(cd, w, c.CommandValue)
 	if cmd != nil {
@@ -78,10 +86,12 @@ func (c *CommandAlias) Category(cd CommandDispatcherFull, w Window) CommandCateg
 	return UnknownCategory
 }
 
+// ShortDesc implements Command.
 func (c *CommandAlias) ShortDesc(cd CommandDispatcherFull, w Window) string {
 	return fmt.Sprintf(GetStr(cd.CurrentLanguage(), AliasFor), c.CommandValue)
 }
 
+// LongDesc implements Command.
 func (c *CommandAlias) LongDesc(cd CommandDispatcherFull, w Window) string {
 	return fmt.Sprintf(GetStr(cd.CurrentLanguage(), AliasFor), c.CommandValue)
 }

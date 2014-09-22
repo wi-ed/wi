@@ -51,6 +51,7 @@ func (p *pluginInline) Close() error {
 // plugin processes.
 type Plugins []Plugin
 
+// Close implements io.Closer.
 func (p Plugins) Close() error {
 	var out error
 	for _, instance := range p {

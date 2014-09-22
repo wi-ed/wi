@@ -87,13 +87,13 @@ func commandLogRecurse(w *window, cd wi.CommandDispatcherFull) {
 	// TODO(maruel): Create a proper enumerator.
 	cmds := w.view.Commands().(*commands)
 	names := make([]string, 0, len(cmds.commands))
-	for k, _ := range cmds.commands {
+	for k := range cmds.commands {
 		names = append(names, k)
 	}
 	sort.Strings(names)
 	for _, n := range names {
 		c := cmds.commands[n]
-		log.Printf("  %s  %s: %s", w.Id(), c.Name(), c.ShortDesc(cd, w))
+		log.Printf("  %s  %s: %s", w.ID(), c.Name(), c.ShortDesc(cd, w))
 	}
 	for _, child := range w.childrenWindows {
 		commandLogRecurse(child, cd)
@@ -114,7 +114,7 @@ func cmdEditorBootstrapUI(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.W
 
 func cmdDocumentNew(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
 	cmd := make([]string, 3+len(args))
-	cmd[0] = w.Id()
+	cmd[0] = w.ID()
 	cmd[1] = "fill"
 	cmd[2] = "new_document"
 	copy(cmd[3:], args)
@@ -205,7 +205,7 @@ func cmdCommandKeyBind(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Wind
 func cmdShowCommandWindow(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
 	// Create the Window with the command view and attach it to the currently
 	// focused Window.
-	cd.ExecuteCommand(w, "window_new", w.Id(), "floating", "command")
+	cd.ExecuteCommand(w, "window_new", w.ID(), "floating", "command")
 }
 
 // RegisterDefaultCommands registers the top-level native commands. This

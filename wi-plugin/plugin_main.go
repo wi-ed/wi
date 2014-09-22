@@ -35,6 +35,8 @@ func (m multiCloser) Close() (err error) {
 	return
 }
 
+// MakeReadWriteCloser creates a io.ReadWriteCloser out of one io.ReadCloser
+// and one io.WriteCloser.
 func MakeReadWriteCloser(reader io.ReadCloser, writer io.WriteCloser) io.ReadWriteCloser {
 	return struct {
 		io.Reader

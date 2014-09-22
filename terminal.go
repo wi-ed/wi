@@ -16,10 +16,12 @@ import (
 type TermBox struct {
 }
 
+// Size implements editor.Terminal.
 func (t TermBox) Size() (int, int) {
 	return termbox.Size()
 }
 
+// SeedEvents implements editor.Terminal.
 func (t TermBox) SeedEvents() <-chan editor.TerminalEvent {
 	// Converts termbox.Event into editor.TerminalEvent. This removes the need to
 	// have an hard dependency of wi-editor on termbox-go; this makes both unit
@@ -244,7 +246,7 @@ func rgbToTermBox(c wi.RGB) termbox.Attribute {
 	}
 }
 
-// Convert the editor.Buffer format into termbox format.
+// Blit converts the editor.Buffer format into termbox format.
 func (t TermBox) Blit(b *wi.Buffer) {
 	width, height := termbox.Size()
 	cells := termbox.CellBuffer()

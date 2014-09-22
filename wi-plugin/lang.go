@@ -8,9 +8,10 @@ package wi
 // TODO(maruel): The name is poor.
 type LanguageMode string
 
+// Known languages.
+//
+// TODO(maruel): Add new languages when translating the application.
 const (
-	// TODO: Add new languages when translating the application.
-
 	LangEn LanguageMode = "en"
 	LangEs LanguageMode = "es"
 	LangFr LanguageMode = "fr"

@@ -16,16 +16,22 @@ import (
 // DockingType defines the relative position of a Window relative to its parent.
 type DockingType int
 
+// Available docking options.
 const (
-	// The Window uses all the available space.
-	DockingFill DockingType = iota
-	// The Window is not constrained by the parent window size and location.
+	// DockingUnknown is an invalid value.
+	DockingUnknown DockingType = iota
+
+	// DockingFill means the Window uses all the available space.
+
+	DockingFill
+	// DockingFloating means the Window is not constrained by the parent window
+	// size and location.
 	DockingFloating
+
 	DockingLeft
 	DockingRight
 	DockingTop
 	DockingBottom
-	DockingUnknown
 )
 
 func (d DockingType) String() string {
@@ -47,6 +53,7 @@ func (d DockingType) String() string {
 	}
 }
 
+// StringToDockingType converts a string back to a DockingType.
 func StringToDockingType(s string) DockingType {
 	switch s {
 	case "fill":
@@ -70,11 +77,12 @@ func StringToDockingType(s string) DockingType {
 type BorderType int
 
 const (
-	// Width is 0.
+	// BorderNone means width is 0.
 	BorderNone BorderType = iota
-	// Width is 1.
+	// BorderSingle means width is 1.
 	BorderSingle
-	// Despite its name, width is 1, only the glyph is different.
+	// BorderDouble means width is 1 despite its name, only the glyph is
+	// different.
 	BorderDouble
 )
 
@@ -95,14 +103,17 @@ func (b BorderType) String() string {
 type CommandCategory int
 
 const (
+	// UnknownCategory means the command couldn't be categorized.
 	UnknownCategory CommandCategory = iota
-	// Commands relating to manipuling windows and UI in general.
+	// WindowCategory are commands relating to manipuling windows and UI in
+	// general.
 	WindowCategory
-	// Commands relating to manipulating commands, aliases, keybindings.
+	// CommandsCategory are commands relating to manipulating commands, aliases,
+	// keybindings.
 	CommandsCategory
-	// Commands relating to the editor lifetime.
+	// EditorCategory are commands relating to the editor lifetime.
 	EditorCategory
-	// Commands relating to debugging the app itself or plugins.
+	// DebugCategory are commands relating to debugging the app itself or plugins.
 	DebugCategory
 
 	// TODO(maruel): Add other categories.
@@ -123,8 +134,7 @@ func (c CommandCategory) String() string {
 	}
 }
 
-// Switches keyboard mapping based on the input mode. These modes are hardcode;
-// adding a new mode would require rebuilding the editor (2 seconds, really).
+// KeyboardMode defines the keyboard mapping (input mode) to use.
 type KeyboardMode int
 
 const (
@@ -151,6 +161,7 @@ type CommandDispatcher interface {
 // ViewFactory returns a new View.
 type ViewFactory func(args ...string) View
 
+// CommandDispatcherFull is a superset of CommandDispatcher for internal use.
 type CommandDispatcherFull interface {
 	CommandDispatcher
 
@@ -209,14 +220,14 @@ type Editor interface {
 // The Window interface exists for synchronous query but modifications
 // (creation, closing, moving) are done asynchronously via commands. A set of
 // privileged commands starting with the prefix "window_" can modify Window
-// instances, designating the actual Window by its .Id() method.
+// instances, designating the actual Window by its .ID() method.
 type Window interface {
 	fmt.Stringer
 	CommandDispatcher
 
-	// Id returns the unique id for this Window. The id is guaranteed to be
+	// ID returns the unique id for this Window. The id is guaranteed to be
 	// unique through the process lifetime of the editor.
-	Id() string
+	ID() string
 
 	// Tree returns a textual representation of the Window hierarchy. It is only
 	// for debugging purpose.
@@ -278,7 +289,7 @@ type View interface {
 
 // Config
 
-// Configuration manager.
+// Config is the configuration manager.
 type Config interface {
 	GetInt(name string) int
 	GetString(name string) string

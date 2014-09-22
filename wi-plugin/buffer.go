@@ -9,6 +9,7 @@ import (
 	"unicode/utf8"
 )
 
+// Known colors.
 var (
 	Black         = RGB{0, 0, 0}
 	Blue          = RGB{0, 0, 170}
@@ -27,8 +28,8 @@ var (
 	BrightYellow  = RGB{255, 255, 85}
 	White         = RGB{255, 255, 255}
 
-	// Use colors in EGAColors for maximum compatibility with terminals that do
-	// not support terminal-256.
+	// EGAColors lists the colors to use for maximum compatibility with terminals
+	// that do not support terminal-256.
 	//
 	// EGA colors <3 forever.
 	// Random intertubes websites says things like:
@@ -120,6 +121,7 @@ type Cell struct {
 	F CellFormat
 }
 
+// CellFormat describes all the properties of a single cell on screen.
 type CellFormat struct {
 	Fg        RGB
 	Bg        RGB

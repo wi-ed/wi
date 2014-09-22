@@ -4,10 +4,12 @@
 
 package wi
 
+// AliasFor describes that a command is an alias.
 var AliasFor = LangMap{
 	LangEn: "Alias for \"%s\".",
 }
 
+// AliasNotFound describes an alias to another command did not resolve.
 var AliasNotFound = LangMap{
 	LangEn: "\"%s\" is an alias to command \"%s\" but this command is not registered.",
 }

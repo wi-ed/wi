@@ -2,7 +2,7 @@
 // Use of this source code is governed under the Apache License, Version 2.0
 // that can be found in the LICENSE file.
 
-// wi - Bringing text based editor technology past 1200 bauds.
+// Package wi brings text based editor technology past 1200 bauds.
 //
 // This package contains only the non-unit-testable part of the editor.
 // Everything else is in wi-editor/.
@@ -26,7 +26,7 @@ func (nullWriter) Write([]byte) (int, error) {
 	return 0, nil
 }
 
-func Main() int {
+func mainImpl() int {
 	// All of "flag", "log" and "termbox" use a lot of global variables so they
 	// can't be easily included in parallel tests.
 	log.SetFlags(log.Lmicroseconds | log.Lshortfile)
@@ -86,5 +86,5 @@ func Main() int {
 }
 
 func main() {
-	os.Exit(Main())
+	os.Exit(mainImpl())
 }

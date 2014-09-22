@@ -24,8 +24,10 @@ type Terminal interface {
 	Blit(b *wi.Buffer)
 }
 
+// EventType is the type of supported event.
 type EventType int
 
+// Supported event types.
 const (
 	EventKey = iota
 	EventResize
@@ -41,6 +43,7 @@ type TerminalEvent struct {
 // Key represents a non-character key.
 type Key int
 
+// Known non-character keys.
 const (
 	KeyNone = iota
 	KeyF1
@@ -74,7 +77,7 @@ const (
 	KeyPageDown
 )
 
-// Key represents a key press.
+// KeyPress represents a key press.
 //
 // Only one of Key or Ch is set.
 type KeyPress struct {
@@ -166,6 +169,7 @@ func (k KeyPress) String() string {
 	return out
 }
 
+// Size represents the size of an UI element.
 type Size struct {
 	Width  int
 	Height int
@@ -190,10 +194,12 @@ type TerminalFake struct {
 	Buffer *wi.Buffer
 }
 
+// Size implements Terminal.
 func (t *TerminalFake) Size() (int, int) {
 	return t.Width, t.Height
 }
 
+// SeedEvents implements Terminal.
 func (t *TerminalFake) SeedEvents() <-chan TerminalEvent {
 	out := make(chan TerminalEvent)
 	go func() {
@@ -204,6 +210,7 @@ func (t *TerminalFake) SeedEvents() <-chan TerminalEvent {
 	return out
 }
 
+// Blit implements Terminal.
 func (t *TerminalFake) Blit(b *wi.Buffer) {
 	t.Buffer.Blit(b)
 }

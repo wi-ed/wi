@@ -32,7 +32,7 @@ const (
 // window implements wi.Window. It keeps its own buffer of its display.
 type window struct {
 	id              int
-	nextChildId     int
+	nextChildID     int
 	parent          *window
 	cd              wi.CommandDispatcherFull
 	childrenWindows []*window
@@ -56,11 +56,11 @@ func (w *window) PostCommands(cmds [][]string) {
 	w.cd.PostCommands(cmds)
 }
 
-func (w *window) Id() string {
+func (w *window) ID() string {
 	if w.parent == nil {
 		return fmt.Sprintf("%d", w.id)
 	}
-	return fmt.Sprintf("%s:%d", w.parent.Id(), w.id)
+	return fmt.Sprintf("%s:%d", w.parent.ID(), w.id)
 }
 
 // Returns a string representing the tree.
@@ -224,7 +224,7 @@ func (w *window) resizeChildren() {
 			if width >= remaining.Width {
 				width = remaining.Width
 			} else if child.border != wi.BorderNone {
-				width += 1
+				width++
 			}
 			tmp := remaining
 			tmp.Width = width
@@ -237,7 +237,7 @@ func (w *window) resizeChildren() {
 			if width >= remaining.Width {
 				width = remaining.Width
 			} else if child.border != wi.BorderNone {
-				width += 1
+				width++
 			}
 			tmp := remaining
 			tmp.X += (remaining.Width - width)
@@ -250,7 +250,7 @@ func (w *window) resizeChildren() {
 			if height >= remaining.Height {
 				height = remaining.Height
 			} else if child.border != wi.BorderNone {
-				height += 1
+				height++
 			}
 			tmp := remaining
 			tmp.Height = height
@@ -263,7 +263,7 @@ func (w *window) resizeChildren() {
 			if height >= remaining.Height {
 				height = remaining.Height
 			} else if child.border != wi.BorderNone {
-				height += 1
+				height++
 			}
 			tmp := remaining
 			tmp.Y += (remaining.Height - height)
@@ -390,8 +390,8 @@ func makeWindow(parent *window, view wi.View, docking wi.DockingType) *window {
 	id := 0
 	if parent != nil {
 		cd = parent.cd
-		id = parent.nextChildId
-		parent.nextChildId += 1
+		id = parent.nextChildID
+		parent.nextChildID++
 	}
 	// It's more complex than that but it's a fine default.
 	border := wi.BorderNone
@@ -525,6 +525,8 @@ func cmdWindowSetRect(c *privilegedCommandImpl, e *editor, w *window, args ...st
 	child.SetRect(r)
 }
 
+// RegisterWindowCommands registers all the commands relative to window
+// management.
 func RegisterWindowCommands(dispatcher wi.Commands) {
 	var windowCommands = []wi.Command{
 		&privilegedCommandImpl{

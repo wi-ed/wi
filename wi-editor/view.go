@@ -131,12 +131,13 @@ func infobarAlertViewFactory(args ...string) wi.View {
 		go func() {
 			// Dismiss after 5 seconds.
 			<-time.After(5 * time.Second)
-			wi.PostCommand(w, "window_close", w.Id())
+			wi.PostCommand(w, "window_close", w.ID())
 		}()
 	}
 	return v
 }
 
+// RegisterDefaultViewFactories registers the builtins views factories.
 func RegisterDefaultViewFactories(e Editor) {
 	e.RegisterViewFactory("command", commandViewFactory)
 	e.RegisterViewFactory("infobar_alert", infobarAlertViewFactory)

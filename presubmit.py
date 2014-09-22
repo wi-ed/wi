@@ -3,6 +3,8 @@
 # Use of this source code is governed under the Apache License, Version 2.0
 # that can be found in the LICENSE file.
 
+"""Runs complete presubmit checks on this package."""
+
 import os
 import subprocess
 import sys
@@ -18,36 +20,45 @@ def call(cmd, reldir):
       stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
 
-def errcheck(reldir):
-  cmd = ['errcheck']
-  try:
-    return call(cmd, reldir)
-  except OSError:
-    print('Warning: installing github.com/kisielk/errcheck')
-    out = drain(call(['go', 'get', '-u', 'github.com/kisielk/errcheck'], '.'))
-    if out:
-      print out
-    return call(cmd, reldir)
-
-
 def drain(proc):
   out = proc.communicate()[0]
   if proc.returncode:
     return out
 
 
+def check_or_install(tool, url):
+  try:
+    # There's no .go files in git-hooks.
+    return call([tool], 'git-hooks')
+  except OSError:
+    print('Warning: installing %s' % url)
+    subprocess.check_call(['go', 'get', '-u', url])
+
+
 def main():
   start = time.time()
+
+  procs = [
+    check_or_install('errcheck', 'github.com/kisielk/errcheck'),
+    check_or_install('golint', 'github.com/golang/lint/golint'),
+  ]
+  while procs:
+    drain(procs.pop(0))
+
   procs = [
     call(['go', 'build'], '.'),
     call(['go', 'test'], 'wi-editor'),
     call(['go', 'test'], 'wi-plugin'),
     call(['go', 'build'], 'wi-plugin-sample'),
     #call(['go', 'test'], 'wi-plugin-sample'),
-    errcheck('.'),
-    errcheck('wi-editor'),
-    errcheck('wi-plugin'),
-    errcheck('wi-plugin-sample'),
+    call(['errcheck'], '.'),
+    call(['errcheck'], 'wi-editor'),
+    call(['errcheck'], 'wi-plugin'),
+    call(['errcheck'], 'wi-plugin-sample'),
+    call(['golint'], '.'),
+    call(['golint'], 'wi-editor'),
+    call(['golint'], 'wi-plugin'),
+    call(['golint'], 'wi-plugin-sample'),
   ]
   failed = False
   out = drain(procs.pop(0))
