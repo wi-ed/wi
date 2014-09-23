@@ -7,6 +7,7 @@ package editor
 import (
 	"github.com/maruel/wi/wi-plugin"
 	"log"
+	"sort"
 	"time"
 	"unicode/utf8"
 )
@@ -144,4 +145,37 @@ func RegisterDefaultViewFactories(e Editor) {
 	e.RegisterViewFactory("status_name", statusNameViewFactory)
 	e.RegisterViewFactory("status_position", statusPositionViewFactory)
 	e.RegisterViewFactory("status_root", statusRootViewFactory)
+}
+
+func cmdViewLog(c *privilegedCommandImpl, e *editor, w *window, args ...string) {
+	names := make([]string, 0, len(e.viewFactories))
+	for k := range e.viewFactories {
+		names = append(names, k)
+	}
+	sort.Strings(names)
+	log.Printf("View factories:")
+	for _, name := range names {
+		log.Printf("  %s", name)
+	}
+}
+
+// RegisterViewCommands registers view-related commands
+func RegisterViewCommands(dispatcher wi.Commands) {
+	defaultCommands := []wi.Command{
+		&privilegedCommandImpl{
+			"view_log",
+			0,
+			cmdViewLog,
+			wi.DebugCategory,
+			wi.LangMap{
+				wi.LangEn: "Logs the view factories",
+			},
+			wi.LangMap{
+				wi.LangEn: "Logs the view factories, this is only relevant if -verbose is used.",
+			},
+		},
+	}
+	for _, cmd := range defaultCommands {
+		dispatcher.Register(cmd)
+	}
 }

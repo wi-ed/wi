@@ -287,6 +287,7 @@ func MakeEditor(terminal Terminal) Editor {
 	// These commands are generic commands, they do not require specific access.
 	RegisterDefaultCommands(rootView.Commands())
 	RegisterWindowCommands(rootView.Commands())
+	RegisterViewCommands(rootView.Commands())
 
 	rootWindow := makeWindow(nil, rootView, wi.DockingFill)
 	e := &editor{

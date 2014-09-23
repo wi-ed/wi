@@ -318,12 +318,12 @@ func RegisterDefaultCommands(dispatcher wi.Commands) {
 			"command_log",
 			0,
 			cmdCommandLog,
-			wi.CommandsCategory,
+			wi.DebugCategory,
 			wi.LangMap{
-				wi.LangEn: "Logs the command",
+				wi.LangEn: "Logs the registered commands",
 			},
 			wi.LangMap{
-				wi.LangEn: "Logs the commands (temporary).",
+				wi.LangEn: "Logs the registered commands, this is only relevant if -verbose is used.",
 			},
 		},
 		&wi.CommandImpl{

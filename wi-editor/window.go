@@ -468,7 +468,7 @@ func cmdWindowClose(c *privilegedCommandImpl, e *editor, w *window, args ...stri
 	}
 }
 
-func cmdWindowLogTree(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
+func cmdWindowLog(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
 	root := wi.RootWindow(w)
 	log.Printf("Window tree:\n%s", root.Tree())
 }
@@ -554,15 +554,15 @@ func RegisterWindowCommands(dispatcher wi.Commands) {
 			},
 		},
 		&wi.CommandImpl{
-			"window_log_tree",
+			"window_log",
 			0,
-			cmdWindowLogTree,
+			cmdWindowLog,
 			wi.DebugCategory,
 			wi.LangMap{
-				wi.LangEn: "Logs the tree in the log file",
+				wi.LangEn: "Logs the window tree",
 			},
 			wi.LangMap{
-				wi.LangEn: "Logs the tree in the log file, this is only relevant if -verbose is used.",
+				wi.LangEn: "Logs the window tree, this is only relevant if -verbose is used.",
 			},
 		},
 		&privilegedCommandImpl{
