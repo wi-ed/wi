@@ -88,7 +88,6 @@ func mainImpl() int {
 		// If nothing, opens a blank editor.
 		wi.PostCommand(e, "new")
 	}
-	wi.PostCommand(e, "window_log_tree")
 	return editor.Main(*noPlugin, e)
 }
 

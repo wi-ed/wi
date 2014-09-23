@@ -105,6 +105,12 @@ func cmdCommandLog(c *privilegedCommandImpl, e *editor, w *window, args ...strin
 	commandLogRecurse(e.rootWindow, e)
 }
 
+func cmdLogAll(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
+	cd.ExecuteCommand(w, "command_log")
+	cd.ExecuteCommand(w, "window_log")
+	cd.ExecuteCommand(w, "view_log")
+}
+
 func cmdEditorBootstrapUI(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
 	// TODO(maruel): Use onAttach instead of hard coding names.
 	cd.ExecuteCommand(w, "window_new", "0", "bottom", "status_root")
@@ -324,6 +330,18 @@ func RegisterDefaultCommands(dispatcher wi.Commands) {
 			},
 			wi.LangMap{
 				wi.LangEn: "Logs the registered commands, this is only relevant if -verbose is used.",
+			},
+		},
+		&wi.CommandImpl{
+			"log_all",
+			0,
+			cmdLogAll,
+			wi.DebugCategory,
+			wi.LangMap{
+				wi.LangEn: "Logs the internal state (commands, view factories, windows)",
+			},
+			wi.LangMap{
+				wi.LangEn: "Logs the internal state (commands, view factories, windows), this is only relevant if -verbose is used.",
 			},
 		},
 		&wi.CommandImpl{
