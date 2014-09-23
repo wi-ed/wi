@@ -286,8 +286,9 @@ func MakeEditor(terminal Terminal) Editor {
 
 	// These commands are generic commands, they do not require specific access.
 	RegisterDefaultCommands(rootView.Commands())
-	RegisterWindowCommands(rootView.Commands())
+	RegisterKeyBindingCommands(rootView.Commands())
 	RegisterViewCommands(rootView.Commands())
+	RegisterWindowCommands(rootView.Commands())
 
 	rootWindow := makeWindow(nil, rootView, wi.DockingFill)
 	e := &editor{
@@ -304,7 +305,6 @@ func MakeEditor(terminal Terminal) Editor {
 	rootWindow.cd = e
 
 	RegisterDefaultViewFactories(e)
-	RegisterDefaultKeyBindings(e)
 
 	e.onResize()
 	return e
@@ -324,6 +324,11 @@ func Main(noPlugin bool, e Editor) int {
 			return 1
 		}
 	}
+
+	// Key bindings are loaded after the plugins, so a plugin has the chance to
+	// hook key_bind if desired.
+	RegisterDefaultKeyBindings(e)
+
 	defer func() {
 		_ = e.Close()
 	}()

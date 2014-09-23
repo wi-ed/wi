@@ -109,6 +109,7 @@ func cmdLogAll(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Window, args
 	cd.ExecuteCommand(w, "command_log")
 	cd.ExecuteCommand(w, "window_log")
 	cd.ExecuteCommand(w, "view_log")
+	cd.ExecuteCommand(w, "key_log")
 }
 
 func cmdEditorBootstrapUI(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
@@ -177,35 +178,6 @@ func cmdCommandAlias(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Window
 	}
 	alias := &wi.CommandAlias{args[1], args[2]}
 	w.View().Commands().Register(alias)
-}
-
-func cmdCommandKeyBind(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
-	location := args[0]
-	modeName := args[1]
-	keyName := args[2]
-	cmdName := args[3]
-
-	if location == "global" {
-		w = wi.RootWindow(w)
-	} else if location != "window" {
-		cmd := wi.GetCommand(cd, w, "keybind")
-		cd.ExecuteCommand(w, "alert", cmd.LongDesc(cd, w))
-		return
-	}
-
-	var mode wi.KeyboardMode
-	if modeName == "command" {
-		mode = wi.CommandMode
-	} else if modeName == "edit" {
-		mode = wi.CommandMode
-	} else if modeName == "all" {
-		mode = wi.AllMode
-	} else {
-		cmd := wi.GetCommand(cd, w, "keybind")
-		cd.ExecuteCommand(w, "alert", cmd.LongDesc(cd, w))
-		return
-	}
-	w.View().KeyBindings().Set(mode, keyName, cmdName)
 }
 
 func cmdShowCommandWindow(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
@@ -308,18 +280,6 @@ func RegisterDefaultCommands(dispatcher wi.Commands) {
 				wi.LangEn: "Usage: command_alias [window|global] <alias> <name>\nBinds an alias to another command. The alias can either be local to the window or global",
 			},
 		},
-		&wi.CommandImpl{
-			"command_keybind",
-			4,
-			cmdCommandKeyBind,
-			wi.CommandsCategory,
-			wi.LangMap{
-				wi.LangEn: "Binds a keyboard mapping to a command",
-			},
-			wi.LangMap{
-				wi.LangEn: "Usage: command_keybind [window|global] [command|edit|all] <key> <command>\nBinds a keyboard mapping to a command. The binding can be to the active view for view-specific key binding or to the root view for global key bindings.",
-			},
-		},
 		&privilegedCommandImpl{
 			"command_log",
 			0,
@@ -358,7 +318,6 @@ func RegisterDefaultCommands(dispatcher wi.Commands) {
 		},
 
 		&wi.CommandAlias{"alias", "command_alias"},
-		&wi.CommandAlias{"keybind", "command_keybind"},
 		&wi.CommandAlias{"new", "document_new"},
 		&wi.CommandAlias{"open", "document_open"},
 		&wi.CommandAlias{"q", "editor_quit"},
