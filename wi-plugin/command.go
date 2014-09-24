@@ -6,6 +6,7 @@ package wi
 
 import (
 	"fmt"
+	"strings"
 )
 
 // CommandImplHandler is the CommandHandler to use when coupled with CommandImpl.
@@ -55,6 +56,7 @@ func (c *CommandImpl) LongDesc(cd CommandDispatcherFull, w Window) string {
 type CommandAlias struct {
 	NameValue    string
 	CommandValue string
+	ArgsValue    []string
 }
 
 // Name implements Command.
@@ -88,10 +90,18 @@ func (c *CommandAlias) Category(cd CommandDispatcherFull, w Window) CommandCateg
 
 // ShortDesc implements Command.
 func (c *CommandAlias) ShortDesc(cd CommandDispatcherFull, w Window) string {
-	return fmt.Sprintf(GetStr(cd.CurrentLanguage(), AliasFor), c.CommandValue)
+	return fmt.Sprintf(GetStr(cd.CurrentLanguage(), AliasFor), c.merged())
 }
 
 // LongDesc implements Command.
 func (c *CommandAlias) LongDesc(cd CommandDispatcherFull, w Window) string {
-	return fmt.Sprintf(GetStr(cd.CurrentLanguage(), AliasFor), c.CommandValue)
+	return fmt.Sprintf(GetStr(cd.CurrentLanguage(), AliasFor), c.merged())
+}
+
+func (c *CommandAlias) merged() string {
+	out := c.CommandValue
+	if len(c.ArgsValue) != 0 {
+		out += " " + strings.Join(c.ArgsValue, " ")
+	}
+	return out
 }

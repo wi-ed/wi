@@ -132,7 +132,7 @@ func RegisterKeyBindingCommands(dispatcher wi.Commands) {
 			},
 		},
 
-		&wi.CommandAlias{"keybind", "key_bind"},
+		&wi.CommandAlias{"keybind", "key_bind", nil},
 	}
 	for _, cmd := range defaultCommands {
 		dispatcher.Register(cmd)

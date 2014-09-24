@@ -149,16 +149,29 @@ func isDirtyRecurse(cd wi.CommandDispatcherFull, w wi.Window) bool {
 }
 
 func cmdEditorQuit(c *privilegedCommandImpl, e *editor, w *window, args ...string) {
-	// TODO(maruel): For all the View, question if fine to quit via
-	// view.IsDirty(). If not fine, "prompt" y/n to force quit. If n, stop there.
-	// - Send a signal to each plugin.
-	// - Send a signal back to the main loop.
-	if !isDirtyRecurse(e, e.rootWindow) {
-		e.quitFlag = true
-		// editor_redraw wakes up the command event loop so it detects it's time to
-		// quit.
-		wi.PostCommand(e, "editor_redraw")
+	if len(args) >= 1 {
+		e.ExecuteCommand(w, "alert", c.LongDesc(e, w))
+		return
+	} else if len(args) == 1 {
+		if args[0] != "force" {
+			e.ExecuteCommand(w, "alert", c.LongDesc(e, w))
+			return
+		}
+	} else {
+		// TODO(maruel): For all the View, question if fine to quit via
+		// view.IsDirty(). If not fine, "prompt" y/n to force quit. If n, stop
+		// there.
+		// - Send a signal to each plugin.
+		// - Send a signal back to the main loop.
+		if isDirtyRecurse(e, e.rootWindow) {
+			return
+		}
 	}
+
+	e.quitFlag = true
+	// editor_redraw wakes up the command event loop so it detects it's time to
+	// quit.
+	wi.PostCommand(e, "editor_redraw")
 }
 
 func cmdEditorRedraw(c *privilegedCommandImpl, e *editor, w *window, args ...string) {
@@ -176,7 +189,7 @@ func cmdCommandAlias(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Window
 		cd.ExecuteCommand(w, "alert", cmd.LongDesc(cd, w))
 		return
 	}
-	alias := &wi.CommandAlias{args[1], args[2]}
+	alias := &wi.CommandAlias{args[1], args[2], nil}
 	w.View().Commands().Register(alias)
 }
 
@@ -244,14 +257,14 @@ func RegisterDefaultCommands(dispatcher wi.Commands) {
 		},
 		&privilegedCommandImpl{
 			"editor_quit",
-			0,
+			-1,
 			cmdEditorQuit,
 			wi.EditorCategory,
 			wi.LangMap{
 				wi.LangEn: "Quits",
 			},
 			wi.LangMap{
-				wi.LangEn: "Quits the editor. Optionally bypasses writing the files to disk.",
+				wi.LangEn: "Quits the editor. Use 'force' to bypasses writing the files to disk.",
 			},
 		},
 		&privilegedCommandImpl{
@@ -317,11 +330,12 @@ func RegisterDefaultCommands(dispatcher wi.Commands) {
 			},
 		},
 
-		&wi.CommandAlias{"alias", "command_alias"},
-		&wi.CommandAlias{"new", "document_new"},
-		&wi.CommandAlias{"open", "document_open"},
-		&wi.CommandAlias{"q", "editor_quit"},
-		&wi.CommandAlias{"quit", "editor_quit"},
+		&wi.CommandAlias{"alias", "command_alias", nil},
+		&wi.CommandAlias{"new", "document_new", nil},
+		&wi.CommandAlias{"open", "document_open", nil},
+		&wi.CommandAlias{"q", "editor_quit", nil},
+		&wi.CommandAlias{"q!", "editor_quit", []string{"force"}},
+		&wi.CommandAlias{"quit", "editor_quit", nil},
 
 		// DIRECTION = up/down/left/right
 		// window_DIRECTION
