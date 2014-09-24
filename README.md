@@ -29,8 +29,8 @@ Setup
 
 ### Prerequisites
 
-  - git
-  - go
+  - [git](http://git-scm.com)
+  - [Go](https://golang.org)
 
 
 ### Installation or updating
