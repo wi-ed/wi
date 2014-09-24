@@ -44,7 +44,7 @@ go get -u github.com/maruel/wi
 
 Plugins are standalone executables that are loaded by `wi`. `wi` discovers
 plugins on startup by looking for `wi-plugin-*` / `wi-plugin-*.exe` in the same
-directory `$GOPATH/bin` as the `wi` executable.
+directory (`$GOPATH/bin`) as the `wi` executable.
 
 ```
 go get -u github.com/someone/wi-plugin-awesome
@@ -60,7 +60,7 @@ Vision
     - _Historical reasons are not good reasons_.
   - Out of process plugins. If a
     [web browser](http://dev.chromium.org/developers/design-documents/multi-process-architecture)
-    can render web pages out of process, an editor certainly can have the same.
+    can render web pages out of process, an editor can do the same.
   - Plugins written in the same language as the editor itself. No need to learn
     yet another language (vimscript? lisp? python? Ah! ha!).
       - *The only text editor with statically compiled macros!*
