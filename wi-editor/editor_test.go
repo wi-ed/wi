@@ -30,12 +30,11 @@ func init() {
 func TestMainImmediateQuit(t *testing.T) {
 	t.Parallel()
 	terminal := NewTerminalFake(80, 25, []TerminalEvent{})
-	editor := MakeEditor(terminal)
+	editor, err := MakeEditor(terminal, true)
+	ut.AssertEqual(t, nil, err)
+	defer editor.Close()
 	wi.PostCommand(editor, "editor_quit")
-	result := Main(true, editor)
-	if result != 0 {
-		t.Fatalf("Exit code: %v", result)
-	}
+	ut.AssertEqual(t, 0, editor.EventLoop())
 	// TODO(maruel): Print something.
 	for y := 0; y < terminal.Height; y++ {
 		for x := 0; x < terminal.Width; x++ {
@@ -48,13 +47,12 @@ func TestMainImmediateQuit(t *testing.T) {
 func TestMainInvalidThenQuit(t *testing.T) {
 	t.Parallel()
 	terminal := NewTerminalFake(80, 25, []TerminalEvent{})
-	editor := MakeEditor(terminal)
+	editor, err := MakeEditor(terminal, true)
+	ut.AssertEqual(t, nil, err)
+	defer editor.Close()
 	wi.PostCommand(editor, "invalid")
 	wi.PostCommand(editor, "editor_quit")
-	result := Main(true, editor)
-	if result != 0 {
-		t.Fatalf("Exit code: %v", result)
-	}
+	ut.AssertEqual(t, 0, editor.EventLoop())
 	// TODO(maruel): Print something.
 	for y := 0; y < terminal.Height; y++ {
 		for x := 0; x < terminal.Width; x++ {

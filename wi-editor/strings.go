@@ -16,6 +16,11 @@ var notFound = wi.LangMap{
 	wi.LangEn: "Command \"%s\" is not registered.",
 }
 
+// notMapped describes that a key is not mapped to any command.
+var notMapped = wi.LangMap{
+	wi.LangEn: "\"%s\" is not mapped to any command.",
+}
+
 var viewDirty = wi.LangMap{
 	wi.LangEn: "View \"%s\" is not saved, aborting quit.",
 }

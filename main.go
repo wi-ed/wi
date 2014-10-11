@@ -74,7 +74,15 @@ func mainImpl() int {
 	defer termbox.Close()
 	termbox.SetInputMode(termbox.InputAlt | termbox.InputMouse)
 
-	e := editor.MakeEditor(&TermBox{})
+	e, err := editor.MakeEditor(&TermBox{}, *noPlugin)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error: %s", err)
+		return 1
+	}
+	defer func() {
+		_ = e.Close()
+	}()
+
 	wi.PostCommand(e, "editor_bootstrap_ui")
 	if *command {
 		for _, i := range flag.Args() {
@@ -88,7 +96,7 @@ func mainImpl() int {
 		// If nothing, opens a blank editor.
 		wi.PostCommand(e, "new")
 	}
-	return editor.Main(*noPlugin, e)
+	return e.EventLoop()
 }
 
 func main() {

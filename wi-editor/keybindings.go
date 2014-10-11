@@ -72,6 +72,7 @@ func cmdKeyBind(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Window, arg
 		cd.ExecuteCommand(w, "alert", cmd.LongDesc(cd, w))
 		return
 	}
+	// TODO(maruel): Refuse invalid keyName.
 	w.View().KeyBindings().Set(mode, keyName, cmdName)
 }
 
@@ -100,7 +101,9 @@ func keyLogRecurse(w *window, cd wi.CommandDispatcherFull, mode wi.KeyboardMode)
 }
 
 func cmdKeyLog(c *privilegedCommandImpl, e *editor, w *window, args ...string) {
+	log.Printf("CommandMode commands")
 	keyLogRecurse(e.rootWindow, e, wi.CommandMode)
+	log.Printf("EditMode commands")
 	keyLogRecurse(e.rootWindow, e, wi.EditMode)
 }
 
@@ -148,6 +151,7 @@ func RegisterKeyBindingCommands(dispatcher wi.Commands) {
 // without a restart.
 func RegisterDefaultKeyBindings(cd wi.CommandDispatcher) {
 	wi.PostCommand(cd, "key_bind", "global", "all", "F1", "help")
-	wi.PostCommand(cd, "key_bind", "global", "all", "Ctrl-C", "quit")
 	wi.PostCommand(cd, "key_bind", "global", "command", ":", "show_command_window")
+	// TODO(maruel): Temporary.
+	wi.PostCommand(cd, "key_bind", "global", "all", "Ctrl-c", "quit")
 }

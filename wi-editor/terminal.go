@@ -169,6 +169,16 @@ func (k KeyPress) String() string {
 	return out
 }
 
+// IsMeta returns true if a key press is a meta key.
+func (k KeyPress) IsMeta() bool {
+	return k.Alt || k.Ctrl || k.Key != KeyNone
+}
+
+// IsValid returns true if the object represents a key press.
+func (k KeyPress) IsValid() bool {
+	return k.Alt || k.Ctrl || k.Key != KeyNone || k.Ch != rune(0)
+}
+
 // Size represents the size of an UI element.
 type Size struct {
 	Width  int

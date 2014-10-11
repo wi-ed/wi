@@ -22,9 +22,9 @@ const (
 
 // commandItem is a command pending to be executed.
 type commandItem struct {
-	cmdName string
-	args    []string
-	keyName string
+	cmdName string   // Set on command execution
+	args    []string // Set on command execution
+	key     KeyPress // Set on key press
 }
 
 // commandQueueItem is a set of commandItem pending to be executed.
@@ -87,9 +87,9 @@ func (e *editor) PostCommands(cmds [][]string) {
 	e.commandsQueue <- tmp
 }
 
-func (e *editor) postKey(keyName string) {
-	log.Printf("PostKey(%s)", keyName)
-	e.commandsQueue <- commandQueueItem{commandItem{keyName: keyName}}
+func (e *editor) postKey(key KeyPress) {
+	log.Printf("PostKey(%s)", key)
+	e.commandsQueue <- commandQueueItem{commandItem{key: key}}
 }
 
 func (e *editor) ExecuteCommand(w wi.Window, cmdName string, args ...string) {
@@ -198,24 +198,33 @@ func (e *editor) EventLoop() int {
 		select {
 		case cmds := <-e.commandsQueue:
 			for _, cmd := range cmds {
-				// TODO(maruel): Temporary, until the command window works.
-				if cmd.keyName != "" {
-					// Convert the key press into a command. The trick is that we don't
-					// know the active window, there could be commands already enqueued
-					// that will change the active window, so using the active window
-					// directly or indirectly here is an incorrect assumption.
-					if cmd.keyName == "Enter" {
-						e.ExecuteCommand(e.ActiveWindow(), keyBuffer)
-						keyBuffer = ""
+				if cmd.key.IsValid() {
+					keyName := cmd.key.String()
+					if cmd.key.IsMeta() {
+						if keyName == "Enter" {
+							// TODO(maruel): Temporary, until the command window works.
+							e.ExecuteCommand(e.ActiveWindow(), keyBuffer)
+							keyBuffer = ""
+						} else {
+							// Convert the key press into a command. The trick is that we
+							// don't know the active window, there could be commands already
+							// enqueued that will change the active window, so using the
+							// active window directly or indirectly here is an incorrect
+							// assumption.
+							cmdName := wi.GetKeyBindingCommand(e, e.KeyboardMode(), keyName)
+							if cmdName != "" {
+								e.ExecuteCommand(e.ActiveWindow(), cmdName)
+							} else {
+								e.ExecuteCommand(e.ActiveWindow(), "alert", fmt.Sprintf(wi.GetStr(e.CurrentLanguage(), notMapped), keyName))
+							}
+						}
 					} else {
-						cmdName := wi.GetKeyBindingCommand(e, e.KeyboardMode(), cmd.keyName)
-						if cmdName != "" {
-							e.ExecuteCommand(e.ActiveWindow(), cmdName)
-						} else if len(cmd.keyName) == 1 {
-							keyBuffer += cmd.keyName
+						if keyName != "" {
+							keyBuffer += keyName
 						}
 					}
 				} else {
+					// A normal command.
 					e.ExecuteCommand(e.ActiveWindow(), cmd.cmdName, cmd.args...)
 				}
 			}
@@ -223,8 +232,8 @@ func (e *editor) EventLoop() int {
 		case event := <-e.terminalEvents:
 			switch event.Type {
 			case EventKey:
-				if event.Key.String() != "" {
-					e.postKey(event.Key.String())
+				if event.Key.IsValid() {
+					e.postKey(event.Key)
 				}
 			case EventResize:
 				// The terminal window was resized, resize everything, independent of
@@ -278,7 +287,12 @@ func (e *editor) LoadPlugins() error {
 // It's up to the caller to add child Windows in it. Normally it will be done
 // via the command "editor_bootstrap_ui" to add the status bar, then "new" or
 // "open" to create the initial text buffer.
-func MakeEditor(terminal Terminal) Editor {
+//
+// It is fine to run it concurrently in unit test, as no global variable shall
+// be used by the object created by this function.
+//
+// Editor is closed by this function.
+func MakeEditor(terminal Terminal, noPlugin bool) (Editor, error) {
 	// The root view is important, it defines all the global commands. It is
 	// pre-filled with the default native commands and keyboard mapping, and it's
 	// up to the plugins to add more global commands on startup.
@@ -306,33 +320,18 @@ func MakeEditor(terminal Terminal) Editor {
 
 	RegisterDefaultViewFactories(e)
 
+	// This forces creating the default buffer.
 	e.onResize()
-	return e
-}
 
-// Main is the unit-testable part of Main() that is called by the "main"
-// package.
-//
-// It is fine to run it concurrently in unit test, as no global variable shall
-// be used by this function.
-//
-// Editor is closed by this function.
-func Main(noPlugin bool, e Editor) int {
 	if !noPlugin {
 		if err := e.LoadPlugins(); err != nil {
-			fmt.Printf("%s", err)
-			return 1
+			_ = e.Close()
+			return nil, err
 		}
 	}
 
 	// Key bindings are loaded after the plugins, so a plugin has the chance to
 	// hook key_bind if desired.
 	RegisterDefaultKeyBindings(e)
-
-	defer func() {
-		_ = e.Close()
-	}()
-
-	// Run the message loop.
-	return e.EventLoop()
+	return e, nil
 }
