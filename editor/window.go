@@ -40,7 +40,7 @@ type window struct {
 	rect            wi.Rect    // Window Rect as described in wi.Window.Rect().
 	clientAreaRect  wi.Rect    // Usable area within the Window, the part not obscured by borders.
 	viewRect        wi.Rect    // Window View Rect, which is the client area not used by childrenWindows.
-	view            wi.View
+	view            wi.View    // View that renders the content. It may be nil if this Window has no content.
 	docking         wi.DockingType
 	border          wi.BorderType
 	effectiveBorder drawnBorder // effectiveBorder automatically collapses borders when the Window Rect is too small and is based on docking.
@@ -489,6 +489,7 @@ func cmdWindowNew(c *privilegedCommandImpl, e *editor, w *window, args ...string
 		}
 		return
 	}
+
 	docking := wi.StringToDockingType(dockingName)
 	if docking == wi.DockingUnknown {
 		if viewFactoryName != "infobar_alert" {

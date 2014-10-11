@@ -51,17 +51,17 @@ type Editor interface {
 // editor is the global structure that holds everything together. It implements
 // the Editor interface.
 type editor struct {
-	terminal       Terminal
-	rootWindow     *window
-	lastActive     []wi.Window
-	viewFactories  map[string]wi.ViewFactory
-	terminalEvents <-chan TerminalEvent  // Events coming from Terminal.SeedEvents().
-	viewReady      chan bool             // A View.Buffer() is ready to be drawn.
-	commandsQueue  chan commandQueueItem // Pending commands to be executed.
-	languageMode   wi.LanguageMode
-	keyboardMode   wi.KeyboardMode
-	plugins        Plugins
-	quitFlag       bool
+	terminal       Terminal                  // Abstract terminal interface to the real terminal.
+	rootWindow     *window                   // The rootWindow is always DockingFill and set to the size of the terminal.
+	lastActive     []wi.Window               // Most recently used order of Window activatd.
+	viewFactories  map[string]wi.ViewFactory // All the ViewFactory's that can be used to create new View.
+	terminalEvents <-chan TerminalEvent      // Events coming from Terminal.SeedEvents().
+	viewReady      chan bool                 // A View.Buffer() is ready to be drawn.
+	commandsQueue  chan commandQueueItem     // Pending commands to be executed.
+	languageMode   wi.LanguageMode           // Actual language used.
+	keyboardMode   wi.KeyboardMode           // Global keyboard mode is either CommandMode or EditMode.
+	plugins        Plugins                   // All loaded plugin processes.
+	quitFlag       bool                      // If true, a shutdown is in progress.
 }
 
 func (e *editor) Close() error {

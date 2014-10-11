@@ -12,6 +12,10 @@ var activateDisabled = wi.LangMap{
 	wi.LangEn: "Can't activate a disabled view.",
 }
 
+var cantAddTwoWindowWithSameDocking = wi.LangMap{
+	wi.LangEn: "Can't create two windows with the same docking \"%s\".",
+}
+
 var invalidDocking = wi.LangMap{
 	wi.LangEn: "String \"%s\" does not refer to a valid Docking type.",
 }
