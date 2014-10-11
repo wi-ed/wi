@@ -220,6 +220,7 @@ func (e *editor) EventLoop() int {
 						}
 					} else {
 						if keyName != "" {
+							// Accumulate normal key presses.
 							keyBuffer += keyName
 						}
 					}

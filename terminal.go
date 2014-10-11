@@ -102,11 +102,17 @@ func termboxKeyToKeyPress(key termbox.Event) editor.KeyPress {
 		out.Key = editor.KeyArrowLeft
 	case termbox.KeyArrowRight:
 		out.Key = editor.KeyArrowRight
+
 	case termbox.KeyCtrlSpace: // KeyCtrlTilde, KeyCtrl2
+		// This value is 0, which cannot be distinguished from non-keypress.
 		if key.Ch == 0 {
 			out.Ctrl = true
 			out.Ch = ' '
+		} else {
+			// Normal keypress code path.
+			out.Ch = key.Ch
 		}
+
 	case termbox.KeyCtrlA:
 		out.Ctrl = true
 		out.Ch = 'a'
@@ -199,9 +205,7 @@ func termboxKeyToKeyPress(key termbox.Event) editor.KeyPress {
 	case termbox.KeySpace:
 		out.Ch = ' '
 	default:
-		if key.Ch != 0 {
-			out.Ch = key.Ch
-		}
+		panic("Remove me")
 	}
 	return out
 }
