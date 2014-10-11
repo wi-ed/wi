@@ -21,6 +21,8 @@ def call(cmd, reldir):
 
 
 def drain(proc):
+  if not proc:
+    return 'Process failed'
   out = proc.communicate()[0]
   if proc.returncode:
     return out
@@ -33,6 +35,7 @@ def check_or_install(tool, url):
   except OSError:
     print('Warning: installing %s' % url)
     subprocess.check_call(['go', 'get', '-u', url])
+    return call([tool], 'git-hooks')
 
 
 def main():
