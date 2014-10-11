@@ -442,18 +442,22 @@ func drawRecurse(w *window, offsetX, offsetY int, out *wi.Buffer) {
 // Commands
 
 func cmdWindowActivate(c *privilegedCommandImpl, e *editor, w *window, args ...string) {
-	child := e.idToWindow(args[0])
+	windowName := args[0]
+
+	child := e.idToWindow(windowName)
 	if child == nil {
-		// TODO(maruel): Add feedback.
+		e.ExecuteCommand(w, "alert", fmt.Sprintf(wi.GetStr(e.CurrentLanguage(), isNotValidWindow), windowName))
 		return
 	}
 	e.activateWindow(child)
 }
 
 func cmdWindowClose(c *privilegedCommandImpl, e *editor, w *window, args ...string) {
-	child := e.idToWindow(args[0])
+	windowName := args[0]
+
+	child := e.idToWindow(windowName)
 	if child == nil {
-		// TODO(maruel): Add feedback.
+		e.ExecuteCommand(w, "alert", fmt.Sprintf(wi.GetStr(e.CurrentLanguage(), isNotValidWindow), windowName))
 		return
 	}
 	for i, v := range child.parent.childrenWindows {
@@ -474,29 +478,47 @@ func cmdWindowLog(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Window, a
 }
 
 func cmdWindowNew(c *privilegedCommandImpl, e *editor, w *window, args ...string) {
-	parent := e.idToWindow(args[0])
+	windowName := args[0]
+	dockingName := args[1]
+	viewFactoryName := args[2]
+
+	parent := e.idToWindow(windowName)
 	if parent == nil {
-		// TODO(maruel): Add feedback.
+		if viewFactoryName != "infobar_alert" {
+			e.ExecuteCommand(w, "alert", fmt.Sprintf(wi.GetStr(e.CurrentLanguage(), isNotValidWindow), windowName))
+		}
 		return
 	}
-	docking := wi.StringToDockingType(args[1])
+	docking := wi.StringToDockingType(dockingName)
 	if docking == wi.DockingUnknown {
-		// TODO(maruel): Add feedback.
+		if viewFactoryName != "infobar_alert" {
+			e.ExecuteCommand(w, "alert", fmt.Sprintf(wi.GetStr(e.CurrentLanguage(), invalidDocking), dockingName))
+		}
 		return
 	}
-	viewFactory := e.viewFactories[args[2]]
+	viewFactory, ok := e.viewFactories[viewFactoryName]
+	if !ok {
+		if viewFactoryName != "infobar_alert" {
+			e.ExecuteCommand(w, "alert", fmt.Sprintf(wi.GetStr(e.CurrentLanguage(), invalidViewFactory), viewFactoryName))
+		}
+		return
+	}
+
 	e.activateWindow(parent.newChildWindow(viewFactory(args[3:]...), docking))
 }
 
 func cmdWindowSetDocking(c *privilegedCommandImpl, e *editor, w *window, args ...string) {
-	child := e.idToWindow(args[0])
+	windowName := args[0]
+	dockingName := args[1]
+
+	child := e.idToWindow(windowName)
 	if child == nil {
-		// TODO(maruel): Add feedback.
+		e.ExecuteCommand(w, "alert", fmt.Sprintf(wi.GetStr(e.CurrentLanguage(), isNotValidWindow), windowName))
 		return
 	}
-	docking := wi.StringToDockingType(args[1])
+	docking := wi.StringToDockingType(dockingName)
 	if docking == wi.DockingUnknown {
-		// TODO(maruel): Add feedback.
+		e.ExecuteCommand(w, "alert", fmt.Sprintf(wi.GetStr(e.CurrentLanguage(), invalidDocking), dockingName))
 		return
 	}
 	if w.docking != docking {
@@ -507,9 +529,11 @@ func cmdWindowSetDocking(c *privilegedCommandImpl, e *editor, w *window, args ..
 }
 
 func cmdWindowSetRect(c *privilegedCommandImpl, e *editor, w *window, args ...string) {
-	child := e.idToWindow(args[0])
+	windowName := args[0]
+
+	child := e.idToWindow(windowName)
 	if child == nil {
-		// TODO(maruel): Add feedback.
+		e.ExecuteCommand(w, "alert", fmt.Sprintf(wi.GetStr(e.CurrentLanguage(), isNotValidWindow), windowName))
 		return
 	}
 	r := wi.Rect{}
@@ -519,7 +543,7 @@ func cmdWindowSetRect(c *privilegedCommandImpl, e *editor, w *window, args ...st
 	r.Width, err3 = strconv.Atoi(args[3])
 	r.Height, err4 = strconv.Atoi(args[4])
 	if err1 != nil || err2 != nil || err3 != nil || err4 != nil {
-		// TODO(maruel): Add feedback.
+		e.ExecuteCommand(w, "alert", fmt.Sprintf(wi.GetStr(e.CurrentLanguage(), invalidRect), args[1], args[2], args[3], args[4]))
 		return
 	}
 	child.SetRect(r)
