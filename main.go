@@ -6,8 +6,7 @@
 //
 // This package contains only the non-unit-testable part of the editor.
 //
-//   - wi-editor/ (editor) contains the editor logic itself. It is
-//     terminal-agnostic.
+//   - editor contains the editor logic itself. It is terminal-agnostic.
 //   - wi-plugin/ (wi) contains the plugin glue. This module is shared by both
 //     the editor itself and any wi-plugin for RPC.
 //   - wi-plugin-sample/ is a sample plugin executable to `go install`. It is
@@ -20,7 +19,7 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/maruel/wi/wi-editor"
+	"github.com/maruel/wi/editor"
 	"github.com/maruel/wi/wi-plugin"
 	"github.com/nsf/termbox-go"
 	"log"

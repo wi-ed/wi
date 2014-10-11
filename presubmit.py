@@ -50,16 +50,16 @@ def main():
 
   procs = [
     call(['go', 'build'], '.'),
-    call(['go', 'test'], 'wi-editor'),
+    call(['go', 'test'], 'editor'),
     call(['go', 'test'], 'wi-plugin'),
     call(['go', 'build'], 'wi-plugin-sample'),
     #call(['go', 'test'], 'wi-plugin-sample'),
     call(['errcheck'], '.'),
-    call(['errcheck'], 'wi-editor'),
+    call(['errcheck'], 'editor'),
     call(['errcheck'], 'wi-plugin'),
     call(['errcheck'], 'wi-plugin-sample'),
     call(['golint'], '.'),
-    call(['golint'], 'wi-editor'),
+    call(['golint'], 'editor'),
     call(['golint'], 'wi-plugin'),
     call(['golint'], 'wi-plugin-sample'),
   ]

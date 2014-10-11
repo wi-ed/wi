@@ -7,7 +7,7 @@
 package main
 
 import (
-	"github.com/maruel/wi/wi-editor"
+	"github.com/maruel/wi/editor"
 	"github.com/maruel/wi/wi-plugin"
 	"github.com/nsf/termbox-go"
 )
@@ -24,7 +24,7 @@ func (t TermBox) Size() (int, int) {
 // SeedEvents implements editor.Terminal.
 func (t TermBox) SeedEvents() <-chan editor.TerminalEvent {
 	// Converts termbox.Event into editor.TerminalEvent. This removes the need to
-	// have an hard dependency of wi-editor on termbox-go; this makes both unit
+	// have an hard dependency of editor on termbox-go; this makes both unit
 	// testing easier and future-proof the editor.
 	c := make(chan editor.TerminalEvent)
 	go func() {
