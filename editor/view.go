@@ -64,16 +64,6 @@ func (v *view) Buffer() *wi.Buffer {
 	//log.Printf("View(%s).Buffer(%d, %d)", v.Title(), v.actualX, v.actualY)
 	r, _ := utf8.DecodeRuneInString(v.Title())
 	v.buffer.Fill(wi.MakeCell(r, wi.Red, wi.Black))
-	/*
-		l := wi.LabelParams{
-			wi.ColorBlue,
-			wi.ColorBlack,
-			wi.AlignLeft,
-			'b',
-			true,
-		}
-		v.buffer.DrawLabel(wi.Rect{0, 0, v.actualX, 1}, &l, []byte(v.Title()))
-	*/
 	return v.buffer
 }
 
@@ -117,11 +107,28 @@ func statusPositionViewFactory(args ...string) wi.View {
 	return makeView("Status Position", 15, 1)
 }
 
+type commandView struct {
+	*view
+}
+
+func (v *commandView) Buffer() *wi.Buffer {
+	r, _ := utf8.DecodeRuneInString(v.Title())
+	v.buffer.Fill(wi.MakeCell(r, wi.Green, wi.Black))
+	v.buffer.DrawString(v.Title(), 0, 0, wi.CellFormat{wi.Brown, wi.Black, false, false, false})
+	return v.buffer
+}
+
 // The command dialog box.
 // TODO(maruel): Position it 5 lines below the cursor in the parent Window's
 // View. Do this via onAttach.
 func commandViewFactory(args ...string) wi.View {
-	return makeView("Command", 30, 1)
+	return &commandView{makeView("Command", 30, 1)}
+}
+
+func documentViewFactory(args ...string) wi.View {
+	// TODO(maruel): Sort out "use max space".
+	//onAttach
+	return makeView("", 100, 100)
 }
 
 func infobarAlertViewFactory(args ...string) wi.View {
@@ -141,6 +148,7 @@ func infobarAlertViewFactory(args ...string) wi.View {
 // RegisterDefaultViewFactories registers the builtins views factories.
 func RegisterDefaultViewFactories(e Editor) {
 	e.RegisterViewFactory("command", commandViewFactory)
+	e.RegisterViewFactory("new_document", documentViewFactory)
 	e.RegisterViewFactory("infobar_alert", infobarAlertViewFactory)
 	e.RegisterViewFactory("status_name", statusNameViewFactory)
 	e.RegisterViewFactory("status_position", statusPositionViewFactory)
