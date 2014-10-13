@@ -94,42 +94,6 @@ func (w *window) ChildrenWindows() []wi.Window {
 	return out
 }
 
-func (w *window) newChildWindow(view wi.View, docking wi.DockingType) wi.Window {
-	log.Printf("%s.newChildWindow(%s, %s)", w, view.Title(), docking)
-	// Only the first child Window with DockingFill is visible.
-	// TODO(maruel): Reorder .childrenWindows with
-	// CommandDispatcherFull.ActivateWindow() but only with DockingFill.
-	// TODO(maruel): Also allow DockingFloating.
-	/*
-		if docking != wi.DockingFill {
-			for _, child := range w.childrenWindows {
-				if child.Docking() == docking {
-					panic("TODO(maruel): Likely not a panic, maybe a fallback?")
-					return nil
-				}
-			}
-		}
-	*/
-	child := makeWindow(w, view, docking)
-	if docking == wi.DockingFloating {
-		width, height := view.NaturalSize()
-		if child.border != wi.BorderNone {
-			width += 2
-			height += 2
-		}
-		// TODO(maruel): Handle when width or height > scren size.
-		// TODO(maruel): Not clean. Doesn't handle root Window resize properly.
-		rootRect := wi.RootWindow(w).Rect()
-		child.rect.X = (rootRect.Width - width - 1) / 2
-		child.rect.Y = (rootRect.Height - height - 1) / 2
-		child.rect.Width = width
-		child.rect.Height = height
-	}
-	w.childrenWindows = append(w.childrenWindows, child)
-	w.resizeChildren()
-	return child
-}
-
 // Recursively detach a window tree.
 func detachRecursively(w *window) {
 	for _, c := range w.childrenWindows {
@@ -420,6 +384,7 @@ func (w *window) View() wi.View {
 }
 
 func makeWindow(parent *window, view wi.View, docking wi.DockingType) *window {
+	log.Printf("makeWindow(%s, %s, %s)", parent, view.Title(), docking)
 	var cd wi.CommandDispatcherFull
 	id := 0
 	if parent != nil {
@@ -531,6 +496,22 @@ func cmdWindowNew(c *privilegedCommandImpl, e *editor, w *window, args ...string
 		}
 		return
 	}
+	// TODO(maruel): Only the first child Window with DockingFill is visible.
+	// TODO(maruel): Reorder .childrenWindows with
+	// CommandDispatcherFull.ActivateWindow() but only with DockingFill.
+	// TODO(maruel): Also allow DockingFloating.
+	//if docking != wi.DockingFill {
+	for _, child := range parent.childrenWindows {
+		if child.Docking() == docking {
+			if viewFactoryName != "infobar_alert" {
+				panic("A")
+				e.ExecuteCommand(w, "alert", fmt.Sprintf(wi.GetStr(e.CurrentLanguage(), cantAddTwoWindowWithSameDocking), docking))
+			}
+			return
+		}
+	}
+	//}
+
 	viewFactory, ok := e.viewFactories[viewFactoryName]
 	if !ok {
 		if viewFactoryName != "infobar_alert" {
@@ -538,8 +519,26 @@ func cmdWindowNew(c *privilegedCommandImpl, e *editor, w *window, args ...string
 		}
 		return
 	}
+	view := viewFactory(args[3:]...)
 
-	e.activateWindow(parent.newChildWindow(viewFactory(args[3:]...), docking))
+	child := makeWindow(parent, view, docking)
+	if docking == wi.DockingFloating {
+		width, height := view.NaturalSize()
+		if child.border != wi.BorderNone {
+			width += 2
+			height += 2
+		}
+		// TODO(maruel): Handle when width or height > scren size.
+		// TODO(maruel): Not clean. Doesn't handle root Window resize properly.
+		rootRect := e.rootWindow.Rect()
+		child.rect.X = (rootRect.Width - width - 1) / 2
+		child.rect.Y = (rootRect.Height - height - 1) / 2
+		child.rect.Width = width
+		child.rect.Height = height
+	}
+	parent.childrenWindows = append(parent.childrenWindows, child)
+	parent.resizeChildren()
+	e.activateWindow(child)
 }
 
 func cmdWindowSetDocking(c *privilegedCommandImpl, e *editor, w *window, args ...string) {
@@ -557,6 +556,7 @@ func cmdWindowSetDocking(c *privilegedCommandImpl, e *editor, w *window, args ..
 		return
 	}
 	if w.docking != docking {
+		// TODO(maruel): Check no other parent's child window have the same dock.
 		w.docking = docking
 		w.parent.resizeChildren()
 		wi.PostCommand(w, "editor_redraw")
