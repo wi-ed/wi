@@ -59,6 +59,7 @@ func (w *window) PostCommands(cmds [][]string) {
 
 func (w *window) ID() string {
 	if w.parent == nil {
+		// editor.rootWindow.id is always 0.
 		return fmt.Sprintf("%d", w.id)
 	}
 	return fmt.Sprintf("%s:%d", w.parent.ID(), w.id)
@@ -125,12 +126,14 @@ func recurseIDToWindow(w *window, fullID string) *window {
 //
 // "0" is the special reference to the root window.
 func (e *editor) idToWindow(id string) *window {
-	log.Printf("idToWindow(%s)", id)
 	cur := e.rootWindow
 	if id != "0" {
-		cur = recurseIDToWindow(cur, id)
+		if !strings.HasPrefix(id, "0:") {
+			log.Printf("Invalid id: %s", id)
+			return nil
+		}
+		cur = recurseIDToWindow(cur, id[2:])
 	}
-	log.Printf("idToWindow(%s) = %s", id, cur)
 	return cur
 }
 
