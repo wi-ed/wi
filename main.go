@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"github.com/maruel/wi/editor"
 	"github.com/maruel/wi/wi-plugin"
@@ -29,8 +30,8 @@ import (
 
 type nullWriter struct{}
 
-func (nullWriter) Write([]byte) (int, error) {
-	return 0, nil
+func (nullWriter) Write(b []byte) (int, error) {
+	return len(b), nil
 }
 
 func mainImpl() int {
@@ -41,6 +42,9 @@ func mainImpl() int {
 	version := flag.Bool("v", false, "Prints version and exit")
 	noPlugin := flag.Bool("no-plugin", false, "Disable loading plugins")
 	verbose := flag.Bool("verbose", false, "Logs debugging information to wi.log")
+	// TODO(maruel): Remove soon! Could be kept in debug builds via
+	// "go build -tags debug" and "// +build debug".
+	crash := flag.Duration("crash", 0, "Crash after specified duration")
 	flag.Parse()
 
 	// Process this one early. No one wants version output to take 1s.
@@ -68,6 +72,15 @@ func mainImpl() int {
 	if err := termbox.Init(); err != nil {
 		fmt.Fprintf(os.Stderr, "failed to initialize terminal: %s", err)
 		return 1
+	}
+
+	if *crash > 0 {
+		// Crashes but ensure that the terminal is closed first. It's useful to
+		// figure out what's happening with an infinite loop for example.
+		time.AfterFunc(*crash, func() {
+			termbox.Close()
+			panic("Timeout")
+		})
 	}
 	// It is really important that no other goroutine panic() or call
 	// log.Fatal(), otherwise the terminal will be left in a broken state.
