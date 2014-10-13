@@ -8,8 +8,6 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"strconv"
-	"strings"
 	"time"
 
 	"github.com/maruel/wi/wi-plugin"
@@ -167,37 +165,6 @@ func (e *editor) onResize() {
 	// redraw if the size changed.
 	w, h := e.terminal.Size()
 	e.rootWindow.SetRect(wi.Rect{0, 0, w, h})
-}
-
-func recurseIDToWindow(w *window, fullID string) *window {
-	parts := strings.SplitN(fullID, ":", 2)
-	intID, err := strconv.Atoi(parts[0])
-	if err != nil {
-		// Element is not a valid number, it's an invalid reference.
-		return nil
-	}
-	for _, child := range w.childrenWindows {
-		if child.id == intID {
-			if len(parts) == 2 {
-				return recurseIDToWindow(child, parts[1])
-			}
-			return child
-		}
-	}
-	return nil
-}
-
-// Converts a wi.Window.ID() to a window pointer. Returns nil if invalid.
-//
-// "0" is the special reference to the root window.
-func (e *editor) idToWindow(id string) *window {
-	log.Printf("idToWindow(%s)", id)
-	cur := e.rootWindow
-	if id != "0" {
-		cur = recurseIDToWindow(cur, id)
-	}
-	log.Printf("idToWindow(%s) = %s", id, cur)
-	return cur
 }
 
 // EventLoop handles both commands and events from the editor. This function

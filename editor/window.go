@@ -32,8 +32,8 @@ const (
 
 // window implements wi.Window. It keeps its own buffer of its display.
 type window struct {
-	id              int
-	nextChildID     int
+	id              int // window ID relative to the parent.
+	lastChildID     int // last ID used for a children window.
 	parent          *window
 	cd              wi.CommandDispatcherFull
 	childrenWindows []*window
@@ -137,6 +137,37 @@ func detachRecursively(w *window) {
 	}
 	w.parent = nil
 	w.childrenWindows = nil
+}
+
+func recurseIDToWindow(w *window, fullID string) *window {
+	parts := strings.SplitN(fullID, ":", 2)
+	intID, err := strconv.Atoi(parts[0])
+	if err != nil {
+		// Element is not a valid number, it's an invalid reference.
+		return nil
+	}
+	for _, child := range w.childrenWindows {
+		if child.id == intID {
+			if len(parts) == 2 {
+				return recurseIDToWindow(child, parts[1])
+			}
+			return child
+		}
+	}
+	return nil
+}
+
+// Converts a wi.Window.ID() to a window pointer. Returns nil if invalid.
+//
+// "0" is the special reference to the root window.
+func (e *editor) idToWindow(id string) *window {
+	log.Printf("idToWindow(%s)", id)
+	cur := e.rootWindow
+	if id != "0" {
+		cur = recurseIDToWindow(cur, id)
+	}
+	log.Printf("idToWindow(%s) = %s", id, cur)
+	return cur
 }
 
 func (w *window) Rect() wi.Rect {
@@ -393,8 +424,8 @@ func makeWindow(parent *window, view wi.View, docking wi.DockingType) *window {
 	id := 0
 	if parent != nil {
 		cd = parent.cd
-		id = parent.nextChildID
-		parent.nextChildID++
+		parent.lastChildID++
+		id = parent.lastChildID
 	}
 	// It's more complex than that but it's a fine default.
 	border := wi.BorderNone
