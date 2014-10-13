@@ -5,10 +5,11 @@
 package editor
 
 import (
-	"github.com/maruel/ut"
-	"github.com/maruel/wi/wi-plugin"
 	"log"
 	"testing"
+
+	"github.com/maruel/ut"
+	"github.com/maruel/wi/wi-plugin"
 )
 
 type nullWriter int

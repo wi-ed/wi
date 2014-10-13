@@ -5,11 +5,12 @@
 package editor
 
 import (
-	"github.com/maruel/wi/wi-plugin"
 	"log"
 	"sort"
 	"time"
 	"unicode/utf8"
+
+	"github.com/maruel/wi/wi-plugin"
 )
 
 // TODO(maruel): Plugable drawing function.

@@ -6,9 +6,10 @@ package editor
 
 import (
 	"fmt"
-	"github.com/maruel/wi/wi-plugin"
 	"log"
 	"sort"
+
+	"github.com/maruel/wi/wi-plugin"
 )
 
 // commands is the map of registered commands.

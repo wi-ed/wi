@@ -6,10 +6,11 @@ package editor
 
 import (
 	"fmt"
-	"github.com/maruel/wi/wi-plugin"
 	"log"
 	"strconv"
 	"strings"
+
+	"github.com/maruel/wi/wi-plugin"
 )
 
 var singleBorder = []rune{'\u2500', '\u2502', '\u250D', '\u2510', '\u2514', '\u2518'}

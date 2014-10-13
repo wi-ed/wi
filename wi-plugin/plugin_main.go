@@ -6,11 +6,12 @@ package wi
 
 import (
 	"fmt"
-	"github.com/maruel/interface_guid"
 	"io"
 	"net/rpc"
 	"os"
 	"reflect"
+
+	"github.com/maruel/interface_guid"
 )
 
 // CalculateVersion returns the hex string of the hash of the primary

@@ -5,8 +5,9 @@
 package editor
 
 import (
-	"github.com/maruel/wi/wi-plugin"
 	"log"
+
+	"github.com/maruel/wi/wi-plugin"
 )
 
 func cmdShell(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {

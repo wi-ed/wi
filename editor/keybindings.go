@@ -5,9 +5,10 @@
 package editor
 
 import (
-	"github.com/maruel/wi/wi-plugin"
 	"log"
 	"sort"
+
+	"github.com/maruel/wi/wi-plugin"
 )
 
 type keyBindings struct {

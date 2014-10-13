@@ -19,11 +19,12 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
+	"os"
+
 	"github.com/maruel/wi/editor"
 	"github.com/maruel/wi/wi-plugin"
 	"github.com/nsf/termbox-go"
-	"log"
-	"os"
 )
 
 type nullWriter struct{}

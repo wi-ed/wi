@@ -5,8 +5,9 @@
 package wi
 
 import (
-	"github.com/maruel/ut"
 	"testing"
+
+	"github.com/maruel/ut"
 )
 
 func TestGetStr(t *testing.T) {

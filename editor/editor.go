@@ -6,12 +6,13 @@ package editor
 
 import (
 	"fmt"
-	"github.com/maruel/wi/wi-plugin"
 	"io"
 	"log"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/maruel/wi/wi-plugin"
 )
 
 const (

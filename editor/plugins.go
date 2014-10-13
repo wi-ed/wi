@@ -6,7 +6,6 @@ package editor
 
 import (
 	"fmt"
-	"github.com/maruel/wi/wi-plugin"
 	"io"
 	"io/ioutil"
 	"log"
@@ -16,6 +15,8 @@ import (
 	"runtime"
 	"strings"
 	"sync"
+
+	"github.com/maruel/wi/wi-plugin"
 )
 
 // TODO(maruel): Implement the RPC to make plugins work.
