@@ -47,16 +47,27 @@ def main():
   parser.add_option(
       '-v', '--verbose', action='store_true', help='Logs what is being run')
   parser.add_option(
-      '--goimport', action='store_true', help=optparse.SUPPRESS_HELP)
+      '--goimports', action='store_true', help=optparse.SUPPRESS_HELP)
+  parser.add_option(
+      '--gofmt', action='store_true', help=optparse.SUPPRESS_HELP)
   options, args = parser.parse_args()
   if args:
     parser.error('Unknown args: %s' % args)
 
-  if options.goimport:
+  if options.goimports:
     # goimports doesn't return non-zero even if some files need to be updated.
     out = subprocess.check_output(['goimports', '-l', '.'])
     if out:
       print('These files are improperly formmatted. Please run: goimports -w .')
+      sys.stdout.write(out)
+      return 1
+    return 0
+
+  if options.gofmt:
+    # gofmt doesn't return non-zero even if some files need to be updated.
+    out = subprocess.check_output(['gofmt', '-l', '-s', '.'])
+    if out:
+      print('These files are improperly formmatted. Please run: gofmt -w -s .')
       sys.stdout.write(out)
       return 1
     return 0
@@ -68,7 +79,8 @@ def main():
   start = time.time()
   procs = [
     check_or_install(['errcheck'], 'github.com/kisielk/errcheck'),
-    check_or_install(['goimports', '.'], 'code.google.com/p/go.tools/cmd/goimports'),
+    check_or_install(
+        ['goimports', '.'], 'code.google.com/p/go.tools/cmd/goimports'),
     check_or_install(['golint'], 'github.com/golang/lint/golint'),
   ]
   while procs:
@@ -88,7 +100,9 @@ def main():
     call(['golint'], 'editor'),
     call(['golint'], 'wi-plugin'),
     call(['golint'], 'wi-plugin-sample'),
-    call([sys.executable, THIS_FILE, '--goimport'], '.'),
+    call([sys.executable, THIS_FILE, '--goimports'], '.'),
+    # TODO(maruel): Likely always redundant with goimports.
+    call([sys.executable, THIS_FILE, '--gofmt'], '.'),
   ]
   failed = False
   out = drain(procs.pop(0))
