@@ -87,7 +87,7 @@ def main():
     drain(procs.pop(0))
 
   procs = [
-    call(['go', 'build'], '.'),
+    call(['go', 'build', '-tags', 'debug'], '.'),
     call(['go', 'test'], 'editor'),
     call(['go', 'test'], 'wi-plugin'),
     call(['go', 'build'], 'wi-plugin-sample'),
