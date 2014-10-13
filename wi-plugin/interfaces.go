@@ -370,7 +370,7 @@ func GetCommand(cd CommandDispatcherFull, w Window, cmdName string) Command {
 		if cmd != nil {
 			return cmd
 		}
-		w := w.Parent()
+		w = w.Parent()
 		if w == nil {
 			return nil
 		}
