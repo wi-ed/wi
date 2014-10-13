@@ -94,7 +94,7 @@ func (e *editor) postKey(key KeyPress) {
 }
 
 func (e *editor) ExecuteCommand(w wi.Window, cmdName string, args ...string) {
-	log.Printf("ExecuteCommand(%s, %s)", cmdName, args)
+	log.Printf("ExecuteCommand(%s, %s, %s)", w, cmdName, args)
 	if w == nil {
 		w = e.ActiveWindow()
 	}
@@ -169,23 +169,34 @@ func (e *editor) onResize() {
 	e.rootWindow.SetRect(wi.Rect{0, 0, w, h})
 }
 
-// Converts a wi.Window.ID() to a window pointer. Returns nil if invalid.
-func (e *editor) idToWindow(id string) *window {
-	cur := e.rootWindow
-	for _, s := range strings.Split(id, ":") {
-		id, err := strconv.Atoi(s)
-		if err != nil {
-			return nil
-		}
-		for _, child := range cur.childrenWindows {
-			if child.id == id {
-				cur = child
-				goto nextID
-			}
-		}
+func recurseIDToWindow(w *window, fullID string) *window {
+	parts := strings.SplitN(fullID, ":", 2)
+	intID, err := strconv.Atoi(parts[0])
+	if err != nil {
+		// Element is not a valid number, it's an invalid reference.
 		return nil
-	nextID:
 	}
+	for _, child := range w.childrenWindows {
+		if child.id == intID {
+			if len(parts) == 2 {
+				return recurseIDToWindow(child, parts[1])
+			}
+			return child
+		}
+	}
+	return nil
+}
+
+// Converts a wi.Window.ID() to a window pointer. Returns nil if invalid.
+//
+// "0" is the special reference to the root window.
+func (e *editor) idToWindow(id string) *window {
+	log.Printf("idToWindow(%s)", id)
+	cur := e.rootWindow
+	if id != "0" {
+		cur = recurseIDToWindow(cur, id)
+	}
+	log.Printf("idToWindow(%s) = %s", id, cur)
 	return cur
 }
 

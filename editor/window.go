@@ -50,7 +50,7 @@ type window struct {
 }
 
 func (w *window) String() string {
-	return fmt.Sprintf("Window(%s, %v)", w.View().Title(), w.Rect())
+	return fmt.Sprintf("Window(%s, %s, %v)", w.ID(), w.View().Title(), w.Rect())
 }
 
 func (w *window) PostCommands(cmds [][]string) {
@@ -100,14 +100,16 @@ func (w *window) newChildWindow(view wi.View, docking wi.DockingType) wi.Window 
 	// TODO(maruel): Reorder .childrenWindows with
 	// CommandDispatcherFull.ActivateWindow() but only with DockingFill.
 	// TODO(maruel): Also allow DockingFloating.
-	if docking != wi.DockingFill {
-		for _, child := range w.childrenWindows {
-			if child.Docking() == docking {
-				panic("TODO(maruel): Likely not a panic, maybe a fallback?")
-				return nil
+	/*
+		if docking != wi.DockingFill {
+			for _, child := range w.childrenWindows {
+				if child.Docking() == docking {
+					panic("TODO(maruel): Likely not a panic, maybe a fallback?")
+					return nil
+				}
 			}
 		}
-	}
+	*/
 	child := makeWindow(w, view, docking)
 	if docking == wi.DockingFloating {
 		width, height := view.NaturalSize()
