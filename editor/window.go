@@ -42,7 +42,7 @@ type window struct {
 	docking         wiCore.DockingType
 	border          wiCore.BorderType
 	effectiveBorder drawnBorder       // effectiveBorder automatically collapses borders when the Window Rect is too small and is based on docking.
-	defaultFormat   wiCore.CellFormat // Default text format to be used in borders.
+	borderFormat    wiCore.CellFormat // Format to be used in borders. It can be different from .View().DefaultFormat().
 }
 
 // wiCore.Window interface.
@@ -385,19 +385,21 @@ func (w *window) updateBorder() {
 	}
 }
 
-func (w *window) cellFormat() wiCore.CellFormat {
-	c := w.defaultFormat
+func (w *window) getBorderFormat() wiCore.CellFormat {
+	c := w.borderFormat
 	if c.Empty() {
+		// Defaults to the view format.
 		c = w.view.DefaultFormat()
 		if c.Empty() && w.parent != nil {
-			c = w.parent.cellFormat()
+			// Defaults to the parent's format.
+			c = w.parent.getBorderFormat()
 		}
 	}
 	return c
 }
 
 func (w *window) cell(r rune) wiCore.Cell {
-	return wiCore.Cell{r, w.cellFormat()}
+	return wiCore.Cell{r, w.getBorderFormat()}
 }
 
 func makeWindow(parent *window, view wiCore.View, docking wiCore.DockingType) *window {
@@ -421,7 +423,7 @@ func makeWindow(parent *window, view wiCore.View, docking wiCore.DockingType) *w
 		view:    view,
 		docking: docking,
 		border:  border,
-		defaultFormat: wiCore.CellFormat{
+		borderFormat: wiCore.CellFormat{
 			Fg: wiCore.White,
 			Bg: wiCore.Black,
 		},

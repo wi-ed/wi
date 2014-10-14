@@ -25,6 +25,7 @@ type view struct {
 	naturalY      int
 	actualX       int
 	actualY       int
+	window        wiCore.Window
 	onAttach      func(v *view, w wiCore.Window)
 	defaultFormat wiCore.CellFormat
 	buffer        *wiCore.Buffer
@@ -67,10 +68,17 @@ func (v *view) OnAttach(w wiCore.Window) {
 	if v.onAttach != nil {
 		v.onAttach(v, w)
 	}
+	v.window = w
 }
 
+// DefaultFormat returns the View's format or the parent Window's View's format.
 func (v *view) DefaultFormat() wiCore.CellFormat {
-	// TODO(maruel): if v.defaultFormat.Empty() { return v.Window().Parent().DefaultFormat() }
+	if v.defaultFormat.Empty() && v.window != nil {
+		w := v.window.Parent()
+		if w != nil {
+			return w.View().DefaultFormat()
+		}
+	}
 	return v.defaultFormat
 }
 

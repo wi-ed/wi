@@ -289,7 +289,9 @@ type View interface {
 	// TODO(maruel): Maybe split in ViewFull?
 	OnAttach(w Window)
 
-	// DefaultFormat returns the default coloring for this View.
+	// DefaultFormat returns the default coloring for this View. If this View has
+	// an CellFormat.Empty()==true format, it will uses whatever parent Window's
+	// View DefaultFormat().
 	DefaultFormat() CellFormat
 }
 
