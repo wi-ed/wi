@@ -44,9 +44,8 @@ type window struct {
 	view            wi_core.View    // View that renders the content. It may be nil if this Window has no content.
 	docking         wi_core.DockingType
 	border          wi_core.BorderType
-	effectiveBorder drawnBorder // effectiveBorder automatically collapses borders when the Window Rect is too small and is based on docking.
-	fg              wi_core.RGB // Default text color, to be used in borders.
-	bg              wi_core.RGB // Default background color, to be used in borders
+	effectiveBorder drawnBorder        // effectiveBorder automatically collapses borders when the Window Rect is too small and is based on docking.
+	defaultFormat   wi_core.CellFormat // Default text format to be used in borders.
 }
 
 func (w *window) String() string {
@@ -379,7 +378,7 @@ func (w *window) updateBorder() {
 }
 
 func (w *window) cell(r rune) wi_core.Cell {
-	return wi_core.MakeCell(r, w.fg, w.bg)
+	return wi_core.Cell{r, w.defaultFormat}
 }
 
 func (w *window) View() wi_core.View {
@@ -407,8 +406,10 @@ func makeWindow(parent *window, view wi_core.View, docking wi_core.DockingType) 
 		view:    view,
 		docking: docking,
 		border:  border,
-		fg:      wi_core.White,
-		bg:      wi_core.Black,
+		defaultFormat: wi_core.CellFormat{
+			Fg: wi_core.White,
+			Bg: wi_core.Black,
+		},
 	}
 }
 

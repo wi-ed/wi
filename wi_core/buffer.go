@@ -113,14 +113,6 @@ func (r Rect) In(s Rect) bool {
 	return s.X <= r.X && (r.X+r.Width) <= (s.X+s.Width) && s.Y <= r.Y && (r.Y+r.Height) <= (s.Y+s.Height)
 }
 
-// Cell represents the properties of a single character on screen.
-//
-// Some properties are ignored on different terminals.
-type Cell struct {
-	R rune
-	F CellFormat
-}
-
 // CellFormat describes all the properties of a single cell on screen.
 type CellFormat struct {
 	Fg        RGB
@@ -128,6 +120,14 @@ type CellFormat struct {
 	Italic    bool
 	Underline bool
 	Blinking  bool
+}
+
+// Cell represents the properties of a single character on screen.
+//
+// Some properties are ignored on different terminals.
+type Cell struct {
+	R rune
+	F CellFormat
 }
 
 // MakeCell is a shorthand to return a Cell.
