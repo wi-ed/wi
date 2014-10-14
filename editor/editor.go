@@ -29,14 +29,14 @@ type commandItem struct {
 // commandQueueItem is a set of commandItem pending to be executed.
 type commandQueueItem []commandItem
 
-// Editor is the inprocess wi.Editor interface. It adds the process life-time
-// management functions to the public interface wi.Editor.
+// Editor is the inprocess wi_core.Editor interface. It adds the process life-time
+// management functions to the public interface wi_core.Editor.
 //
 // It is very important to call the Close() function upon termination.
 type Editor interface {
 	io.Closer
 
-	wi.Editor
+	wi_core.Editor
 
 	// Loads the plugins. This function should be called early but can be skipped
 	// in case the plugins shouldn't be loaded.
@@ -50,17 +50,17 @@ type Editor interface {
 // editor is the global structure that holds everything together. It implements
 // the Editor interface.
 type editor struct {
-	terminal       Terminal                  // Abstract terminal interface to the real terminal.
-	rootWindow     *window                   // The rootWindow is always DockingFill and set to the size of the terminal.
-	lastActive     []wi.Window               // Most recently used order of Window activatd.
-	viewFactories  map[string]wi.ViewFactory // All the ViewFactory's that can be used to create new View.
-	terminalEvents <-chan TerminalEvent      // Events coming from Terminal.SeedEvents().
-	viewReady      chan bool                 // A View.Buffer() is ready to be drawn.
-	commandsQueue  chan commandQueueItem     // Pending commands to be executed.
-	languageMode   wi.LanguageMode           // Actual language used.
-	keyboardMode   wi.KeyboardMode           // Global keyboard mode is either CommandMode or EditMode.
-	plugins        Plugins                   // All loaded plugin processes.
-	quitFlag       bool                      // If true, a shutdown is in progress.
+	terminal       Terminal                       // Abstract terminal interface to the real terminal.
+	rootWindow     *window                        // The rootWindow is always DockingFill and set to the size of the terminal.
+	lastActive     []wi_core.Window               // Most recently used order of Window activatd.
+	viewFactories  map[string]wi_core.ViewFactory // All the ViewFactory's that can be used to create new View.
+	terminalEvents <-chan TerminalEvent           // Events coming from Terminal.SeedEvents().
+	viewReady      chan bool                      // A View.Buffer() is ready to be drawn.
+	commandsQueue  chan commandQueueItem          // Pending commands to be executed.
+	languageMode   wi_core.LanguageMode           // Actual language used.
+	keyboardMode   wi_core.KeyboardMode           // Global keyboard mode is either CommandMode or EditMode.
+	plugins        Plugins                        // All loaded plugin processes.
+	quitFlag       bool                           // If true, a shutdown is in progress.
 }
 
 func (e *editor) Close() error {
@@ -91,24 +91,24 @@ func (e *editor) postKey(key KeyPress) {
 	e.commandsQueue <- commandQueueItem{commandItem{key: key}}
 }
 
-func (e *editor) ExecuteCommand(w wi.Window, cmdName string, args ...string) {
+func (e *editor) ExecuteCommand(w wi_core.Window, cmdName string, args ...string) {
 	log.Printf("ExecuteCommand(%s, %s, %s)", w, cmdName, args)
 	if w == nil {
 		w = e.ActiveWindow()
 	}
-	cmd := wi.GetCommand(e, w, cmdName)
+	cmd := wi_core.GetCommand(e, w, cmdName)
 	if cmd == nil {
-		e.ExecuteCommand(w, "alert", fmt.Sprintf(wi.GetStr(e.CurrentLanguage(), notFound), cmdName))
+		e.ExecuteCommand(w, "alert", fmt.Sprintf(wi_core.GetStr(e.CurrentLanguage(), notFound), cmdName))
 	} else {
 		cmd.Handle(e, w, args...)
 	}
 }
 
-func (e *editor) CurrentLanguage() wi.LanguageMode {
+func (e *editor) CurrentLanguage() wi_core.LanguageMode {
 	return e.languageMode
 }
 
-func (e *editor) KeyboardMode() wi.KeyboardMode {
+func (e *editor) KeyboardMode() wi_core.KeyboardMode {
 	return e.keyboardMode
 }
 
@@ -117,19 +117,19 @@ func (e *editor) draw() {
 	log.Print("draw()")
 	// TODO(maruel): Cache the buffer.
 	w, h := e.terminal.Size()
-	out := wi.NewBuffer(w, h)
+	out := wi_core.NewBuffer(w, h)
 	drawRecurse(e.rootWindow, 0, 0, out)
 	e.terminal.Blit(out)
 }
 
-func (e *editor) ActiveWindow() wi.Window {
+func (e *editor) ActiveWindow() wi_core.Window {
 	return e.lastActive[0]
 }
 
-func (e *editor) activateWindow(w wi.Window) {
+func (e *editor) activateWindow(w wi_core.Window) {
 	log.Printf("ActivateWindow(%s)", w.View().Title())
 	if w.View().IsDisabled() {
-		e.ExecuteCommand(w, "alert", wi.GetStr(e.CurrentLanguage(), activateDisabled))
+		e.ExecuteCommand(w, "alert", wi_core.GetStr(e.CurrentLanguage(), activateDisabled))
 		return
 	}
 
@@ -154,7 +154,7 @@ func (e *editor) activateWindow(w wi.Window) {
 	e.lastActive[0] = w
 }
 
-func (e *editor) RegisterViewFactory(name string, viewFactory wi.ViewFactory) bool {
+func (e *editor) RegisterViewFactory(name string, viewFactory wi_core.ViewFactory) bool {
 	_, present := e.viewFactories[name]
 	e.viewFactories[name] = viewFactory
 	return !present
@@ -164,7 +164,7 @@ func (e *editor) onResize() {
 	// Resize the Windows. This also invalidates it, which will also force a
 	// redraw if the size changed.
 	w, h := e.terminal.Size()
-	e.rootWindow.SetRect(wi.Rect{0, 0, w, h})
+	e.rootWindow.SetRect(wi_core.Rect{0, 0, w, h})
 }
 
 // EventLoop handles both commands and events from the editor. This function
@@ -190,11 +190,11 @@ func (e *editor) EventLoop() int {
 							// enqueued that will change the active window, so using the
 							// active window directly or indirectly here is an incorrect
 							// assumption.
-							cmdName := wi.GetKeyBindingCommand(e, e.KeyboardMode(), keyName)
+							cmdName := wi_core.GetKeyBindingCommand(e, e.KeyboardMode(), keyName)
 							if cmdName != "" {
 								e.ExecuteCommand(e.ActiveWindow(), cmdName)
 							} else {
-								e.ExecuteCommand(e.ActiveWindow(), "alert", fmt.Sprintf(wi.GetStr(e.CurrentLanguage(), notMapped), keyName))
+								e.ExecuteCommand(e.ActiveWindow(), "alert", fmt.Sprintf(wi_core.GetStr(e.CurrentLanguage(), notMapped), keyName))
 							}
 						}
 					} else {
@@ -284,17 +284,17 @@ func MakeEditor(terminal Terminal, noPlugin bool) (Editor, error) {
 	RegisterViewCommands(rootView.Commands())
 	RegisterWindowCommands(rootView.Commands())
 
-	rootWindow := makeWindow(nil, rootView, wi.DockingFill)
+	rootWindow := makeWindow(nil, rootView, wi_core.DockingFill)
 	e := &editor{
 		terminal:       terminal,
 		rootWindow:     rootWindow,
-		lastActive:     []wi.Window{rootWindow},
-		viewFactories:  make(map[string]wi.ViewFactory),
+		lastActive:     []wi_core.Window{rootWindow},
+		viewFactories:  make(map[string]wi_core.ViewFactory),
 		terminalEvents: terminal.SeedEvents(),
 		viewReady:      make(chan bool),
 		commandsQueue:  make(chan commandQueueItem, 500),
-		languageMode:   wi.LangEn,
-		keyboardMode:   wi.EditMode,
+		languageMode:   wi_core.LangEn,
+		keyboardMode:   wi_core.EditMode,
 	}
 	rootWindow.cd = e
 

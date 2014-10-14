@@ -16,24 +16,24 @@ type keyBindings struct {
 	editMappings    map[string]string
 }
 
-func (k *keyBindings) Set(mode wi.KeyboardMode, keyName string, cmdName string) bool {
+func (k *keyBindings) Set(mode wi_core.KeyboardMode, keyName string, cmdName string) bool {
 	var ok bool
-	if mode == wi.AllMode || mode == wi.CommandMode {
+	if mode == wi_core.AllMode || mode == wi_core.CommandMode {
 		_, ok = k.commandMappings[keyName]
 		k.commandMappings[keyName] = cmdName
 	}
-	if mode == wi.AllMode || mode == wi.EditMode {
+	if mode == wi_core.AllMode || mode == wi_core.EditMode {
 		_, ok = k.editMappings[keyName]
 		k.editMappings[keyName] = cmdName
 	}
 	return !ok
 }
 
-func (k *keyBindings) Get(mode wi.KeyboardMode, keyName string) string {
-	if mode == wi.CommandMode {
+func (k *keyBindings) Get(mode wi_core.KeyboardMode, keyName string) string {
+	if mode == wi_core.CommandMode {
 		return k.commandMappings[keyName]
 	}
-	if mode == wi.EditMode {
+	if mode == wi_core.EditMode {
 		return k.editMappings[keyName]
 	}
 	v, ok := k.commandMappings[keyName]
@@ -43,33 +43,33 @@ func (k *keyBindings) Get(mode wi.KeyboardMode, keyName string) string {
 	return v
 }
 
-func makeKeyBindings() wi.KeyBindings {
+func makeKeyBindings() wi_core.KeyBindings {
 	return &keyBindings{make(map[string]string), make(map[string]string)}
 }
 
-func cmdKeyBind(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
+func cmdKeyBind(c *wi_core.CommandImpl, cd wi_core.CommandDispatcherFull, w wi_core.Window, args ...string) {
 	location := args[0]
 	modeName := args[1]
 	keyName := args[2]
 	cmdName := args[3]
 
 	if location == "global" {
-		w = wi.RootWindow(w)
+		w = wi_core.RootWindow(w)
 	} else if location != "window" {
-		cmd := wi.GetCommand(cd, w, "key_bind")
+		cmd := wi_core.GetCommand(cd, w, "key_bind")
 		cd.ExecuteCommand(w, "alert", cmd.LongDesc(cd, w))
 		return
 	}
 
-	var mode wi.KeyboardMode
+	var mode wi_core.KeyboardMode
 	if modeName == "command" {
-		mode = wi.CommandMode
+		mode = wi_core.CommandMode
 	} else if modeName == "edit" {
-		mode = wi.CommandMode
+		mode = wi_core.CommandMode
 	} else if modeName == "all" {
-		mode = wi.AllMode
+		mode = wi_core.AllMode
 	} else {
-		cmd := wi.GetCommand(cd, w, "key_bind")
+		cmd := wi_core.GetCommand(cd, w, "key_bind")
 		cd.ExecuteCommand(w, "alert", cmd.LongDesc(cd, w))
 		return
 	}
@@ -77,13 +77,13 @@ func cmdKeyBind(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Window, arg
 	w.View().KeyBindings().Set(mode, keyName, cmdName)
 }
 
-func keyLogRecurse(w *window, cd wi.CommandDispatcherFull, mode wi.KeyboardMode) {
+func keyLogRecurse(w *window, cd wi_core.CommandDispatcherFull, mode wi_core.KeyboardMode) {
 	// TODO(maruel): Create a proper enumerator.
 	keys := w.view.KeyBindings().(*keyBindings)
 	var mapping *map[string]string
-	if mode == wi.CommandMode {
+	if mode == wi_core.CommandMode {
 		mapping = &keys.commandMappings
-	} else if mode == wi.EditMode {
+	} else if mode == wi_core.EditMode {
 		mapping = &keys.editMappings
 	} else {
 		panic("Errr, fix me")
@@ -103,40 +103,40 @@ func keyLogRecurse(w *window, cd wi.CommandDispatcherFull, mode wi.KeyboardMode)
 
 func cmdKeyLog(c *privilegedCommandImpl, e *editor, w *window, args ...string) {
 	log.Printf("CommandMode commands")
-	keyLogRecurse(e.rootWindow, e, wi.CommandMode)
+	keyLogRecurse(e.rootWindow, e, wi_core.CommandMode)
 	log.Printf("EditMode commands")
-	keyLogRecurse(e.rootWindow, e, wi.EditMode)
+	keyLogRecurse(e.rootWindow, e, wi_core.EditMode)
 }
 
 // RegisterKeyBindingCommands registers the keyboard mapping related commands.
-func RegisterKeyBindingCommands(dispatcher wi.Commands) {
-	defaultCommands := []wi.Command{
-		&wi.CommandImpl{
+func RegisterKeyBindingCommands(dispatcher wi_core.Commands) {
+	defaultCommands := []wi_core.Command{
+		&wi_core.CommandImpl{
 			"key_bind",
 			4,
 			cmdKeyBind,
-			wi.CommandsCategory,
-			wi.LangMap{
-				wi.LangEn: "Binds a keyboard mapping to a command",
+			wi_core.CommandsCategory,
+			wi_core.LangMap{
+				wi_core.LangEn: "Binds a keyboard mapping to a command",
 			},
-			wi.LangMap{
-				wi.LangEn: "Usage: key_bind [window|global] [command|edit|all] <key> <command>\nBinds a keyboard mapping to a command. The binding can be to the active view for view-specific key binding or to the root view for global key bindings.",
+			wi_core.LangMap{
+				wi_core.LangEn: "Usage: key_bind [window|global] [command|edit|all] <key> <command>\nBinds a keyboard mapping to a command. The binding can be to the active view for view-specific key binding or to the root view for global key bindings.",
 			},
 		},
 		&privilegedCommandImpl{
 			"key_log",
 			0,
 			cmdKeyLog,
-			wi.DebugCategory,
-			wi.LangMap{
-				wi.LangEn: "Logs the key bindings",
+			wi_core.DebugCategory,
+			wi_core.LangMap{
+				wi_core.LangEn: "Logs the key bindings",
 			},
-			wi.LangMap{
-				wi.LangEn: "Logs the key bindings, this is only relevant if -verbose is used.",
+			wi_core.LangMap{
+				wi_core.LangEn: "Logs the key bindings, this is only relevant if -verbose is used.",
 			},
 		},
 
-		&wi.CommandAlias{"keybind", "key_bind", nil},
+		&wi_core.CommandAlias{"keybind", "key_bind", nil},
 	}
 	for _, cmd := range defaultCommands {
 		dispatcher.Register(cmd)
@@ -150,9 +150,9 @@ func RegisterKeyBindingCommands(dispatcher wi.Commands) {
 // TODO(maruel): This should be remappable via a configuration flag, for
 // example vim flavor vs emacs flavor. I'm not sure it's worth supporting this
 // without a restart.
-func RegisterDefaultKeyBindings(cd wi.CommandDispatcher) {
-	wi.PostCommand(cd, "key_bind", "global", "all", "F1", "help")
-	wi.PostCommand(cd, "key_bind", "global", "command", ":", "show_command_window")
+func RegisterDefaultKeyBindings(cd wi_core.CommandDispatcher) {
+	wi_core.PostCommand(cd, "key_bind", "global", "all", "F1", "help")
+	wi_core.PostCommand(cd, "key_bind", "global", "command", ":", "show_command_window")
 	// TODO(maruel): Temporary.
-	wi.PostCommand(cd, "key_bind", "global", "all", "Ctrl-c", "quit")
+	wi_core.PostCommand(cd, "key_bind", "global", "all", "Ctrl-c", "quit")
 }

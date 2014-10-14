@@ -8,39 +8,39 @@ import (
 	"github.com/maruel/wi/wi_core"
 )
 
-var activateDisabled = wi.LangMap{
-	wi.LangEn: "Can't activate a disabled view.",
+var activateDisabled = wi_core.LangMap{
+	wi_core.LangEn: "Can't activate a disabled view.",
 }
 
-var cantAddTwoWindowWithSameDocking = wi.LangMap{
-	wi.LangEn: "Can't create two windows with the same docking \"%s\".",
+var cantAddTwoWindowWithSameDocking = wi_core.LangMap{
+	wi_core.LangEn: "Can't create two windows with the same docking \"%s\".",
 }
 
-var invalidDocking = wi.LangMap{
-	wi.LangEn: "String \"%s\" does not refer to a valid Docking type.",
+var invalidDocking = wi_core.LangMap{
+	wi_core.LangEn: "String \"%s\" does not refer to a valid Docking type.",
 }
 
-var invalidRect = wi.LangMap{
-	wi.LangEn: "\"%s, %s, %s, %s\" does not refer to a valid Rect.",
+var invalidRect = wi_core.LangMap{
+	wi_core.LangEn: "\"%s, %s, %s, %s\" does not refer to a valid Rect.",
 }
 
-var invalidViewFactory = wi.LangMap{
-	wi.LangEn: "\"%s\" does not refer to a valid ViewFactory. Make sure the view factory was properly registered.",
+var invalidViewFactory = wi_core.LangMap{
+	wi_core.LangEn: "\"%s\" does not refer to a valid ViewFactory. Make sure the view factory was properly registered.",
 }
 
-var isNotValidWindow = wi.LangMap{
-	wi.LangEn: "ID \"%s\" does not refer to a valid window ID.",
+var isNotValidWindow = wi_core.LangMap{
+	wi_core.LangEn: "ID \"%s\" does not refer to a valid window ID.",
 }
 
-var notFound = wi.LangMap{
-	wi.LangEn: "Command \"%s\" is not registered.",
+var notFound = wi_core.LangMap{
+	wi_core.LangEn: "Command \"%s\" is not registered.",
 }
 
 // notMapped describes that a key is not mapped to any command.
-var notMapped = wi.LangMap{
-	wi.LangEn: "\"%s\" is not mapped to any command.",
+var notMapped = wi_core.LangMap{
+	wi_core.LangEn: "\"%s\" is not mapped to any command.",
 }
 
-var viewDirty = wi.LangMap{
-	wi.LangEn: "View \"%s\" is not saved, aborting quit.",
+var viewDirty = wi_core.LangMap{
+	wi_core.LangEn: "View \"%s\" is not saved, aborting quit.",
 }

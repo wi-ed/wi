@@ -10,11 +10,11 @@ import (
 	"github.com/maruel/wi/wi_core"
 )
 
-func cmdShell(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
+func cmdShell(c *wi_core.CommandImpl, cd wi_core.CommandDispatcherFull, w wi_core.Window, args ...string) {
 	log.Printf("Faking opening a new shell: %s", args)
 }
 
-func cmdDoc(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
+func cmdDoc(c *wi_core.CommandImpl, cd wi_core.CommandDispatcherFull, w wi_core.Window, args ...string) {
 	// TODO(maruel): Grab the current word under selection if no args is
 	// provided. Pass this token to shell.
 	docArgs := make([]string, len(args)+1)
@@ -23,46 +23,46 @@ func cmdDoc(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Window, args ..
 	//dispatcher.Execute(w, "shell", docArgs...)
 }
 
-func cmdHelp(c *wi.CommandImpl, cd wi.CommandDispatcherFull, w wi.Window, args ...string) {
+func cmdHelp(c *wi_core.CommandImpl, cd wi_core.CommandDispatcherFull, w wi_core.Window, args ...string) {
 	// TODO(maruel): Creates a new Window with a ViewHelp.
 	log.Printf("Faking help: %s", args)
 }
 
-var todoCommands = []wi.Command{
-	&wi.CommandImpl{
+var todoCommands = []wi_core.Command{
+	&wi_core.CommandImpl{
 		"doc",
 		-1,
 		cmdDoc,
-		wi.WindowCategory,
-		wi.LangMap{
-			wi.LangEn: "Search godoc documentation",
+		wi_core.WindowCategory,
+		wi_core.LangMap{
+			wi_core.LangEn: "Search godoc documentation",
 		},
-		wi.LangMap{
-			wi.LangEn: "Uses the 'doc' tool to get documentation about the text under the cursor.",
+		wi_core.LangMap{
+			wi_core.LangEn: "Uses the 'doc' tool to get documentation about the text under the cursor.",
 		},
 	},
-	&wi.CommandImpl{
+	&wi_core.CommandImpl{
 		"help",
 		-1,
 		cmdHelp,
-		wi.WindowCategory,
-		wi.LangMap{
-			wi.LangEn: "Prints help",
+		wi_core.WindowCategory,
+		wi_core.LangMap{
+			wi_core.LangEn: "Prints help",
 		},
-		wi.LangMap{
-			wi.LangEn: "Prints general help or help for a particular command.",
+		wi_core.LangMap{
+			wi_core.LangEn: "Prints general help or help for a particular command.",
 		},
 	},
-	&wi.CommandImpl{
+	&wi_core.CommandImpl{
 		"shell",
 		-1,
 		cmdShell,
-		wi.WindowCategory,
-		wi.LangMap{
-			wi.LangEn: "Opens a shell process",
+		wi_core.WindowCategory,
+		wi_core.LangMap{
+			wi_core.LangEn: "Opens a shell process",
 		},
-		wi.LangMap{
-			wi.LangEn: "Opens a shell process in a new buffer.",
+		wi_core.LangMap{
+			wi_core.LangEn: "Opens a shell process in a new buffer.",
 		},
 	},
 }
@@ -72,7 +72,7 @@ var todoCommands = []wi.Command{
 //
 // TODO(maruel): Implement these commands properly and move to
 // RegisterDefaultCommands().
-func RegisterTodoCommands(dispatcher wi.Commands) {
+func RegisterTodoCommands(dispatcher wi_core.Commands) {
 	for _, cmd := range todoCommands {
 		dispatcher.Register(cmd)
 	}

@@ -34,7 +34,7 @@ func TestMainImmediateQuit(t *testing.T) {
 	editor, err := MakeEditor(terminal, true)
 	ut.AssertEqual(t, nil, err)
 	defer editor.Close()
-	wi.PostCommand(editor, "editor_quit")
+	wi_core.PostCommand(editor, "editor_quit")
 	ut.AssertEqual(t, 0, editor.EventLoop())
 	// TODO(maruel): Print something.
 	for y := 0; y < terminal.Height; y++ {
@@ -51,8 +51,8 @@ func TestMainInvalidThenQuit(t *testing.T) {
 	editor, err := MakeEditor(terminal, true)
 	ut.AssertEqual(t, nil, err)
 	defer editor.Close()
-	wi.PostCommand(editor, "invalid")
-	wi.PostCommand(editor, "editor_quit")
+	wi_core.PostCommand(editor, "invalid")
+	wi_core.PostCommand(editor, "editor_quit")
 	ut.AssertEqual(t, 0, editor.EventLoop())
 	// TODO(maruel): Print something.
 	for y := 0; y < terminal.Height; y++ {

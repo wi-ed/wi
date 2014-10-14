@@ -21,7 +21,7 @@ type Terminal interface {
 	//
 	// It is important for the buffer to be the right size, otherwise the display
 	// will be partially updated.
-	Blit(b *wi.Buffer)
+	Blit(b *wi_core.Buffer)
 }
 
 // EventType is the type of supported event.
@@ -201,7 +201,7 @@ type TerminalFake struct {
 	Width  int
 	Height int
 	Events []TerminalEvent
-	Buffer *wi.Buffer
+	Buffer *wi_core.Buffer
 }
 
 // Size implements Terminal.
@@ -221,7 +221,7 @@ func (t *TerminalFake) SeedEvents() <-chan TerminalEvent {
 }
 
 // Blit implements Terminal.
-func (t *TerminalFake) Blit(b *wi.Buffer) {
+func (t *TerminalFake) Blit(b *wi_core.Buffer) {
 	t.Buffer.Blit(b)
 }
 
@@ -234,6 +234,6 @@ func NewTerminalFake(width, height int, events []TerminalEvent) *TerminalFake {
 		width,
 		height,
 		events,
-		wi.NewBuffer(width, height),
+		wi_core.NewBuffer(width, height),
 	}
 }

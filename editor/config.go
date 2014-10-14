@@ -29,6 +29,6 @@ func (c *config) Save() {
 // MakeConfig returns the Config instance.
 //
 // TODO(maruel): Doesn't do anything, implement it.
-func MakeConfig() wi.Config {
+func MakeConfig() wi_core.Config {
 	return &config{}
 }

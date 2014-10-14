@@ -5,7 +5,7 @@
 // This file defines all the interfaces to be used by the wi editor and to be
 // accessable by plugins.
 
-package wi
+package wi_core
 
 import (
 	"fmt"

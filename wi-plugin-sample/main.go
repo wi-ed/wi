@@ -16,5 +16,5 @@ import (
 
 func main() {
 	// This starts the control loop. See its doc for more up-to-date details.
-	wi.Main()
+	wi_core.Main()
 }

@@ -98,7 +98,7 @@ func loadPlugin(server *rpc.Server, f string) Plugin {
 	}()
 
 	// Before starting the RPC, ensures the version matches.
-	expectedVersion := wi.CalculateVersion()
+	expectedVersion := wi_core.CalculateVersion()
 	b := make([]byte, 40)
 	n, err := stdout.Read(b)
 	if err != nil {
@@ -117,7 +117,7 @@ func loadPlugin(server *rpc.Server, f string) Plugin {
 
 	// Start the RPC server for this plugin.
 	go func() {
-		server.ServeConn(wi.MakeReadWriteCloser(stdout, stdin))
+		server.ServeConn(wi_core.MakeReadWriteCloser(stdout, stdin))
 	}()
 
 	return &pluginProcess{cmd.Process}
