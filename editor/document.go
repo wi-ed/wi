@@ -5,10 +5,32 @@
 package editor
 
 import (
+	"io"
 	"log"
 
 	"github.com/maruel/wi/wiCore"
 )
+
+// ReadWriteSeekCloser is a generic handle to a file.
+// TODO(maruel): No idea why package io doesn't provide this interface.
+type ReadWriteSeekCloser interface {
+	io.Closer
+	io.ReadWriteSeeker
+}
+
+// document is a live editable docuent.
+// TODO(maruel): This will probably have to be moved into wiCore, since
+// documents could be useful to plugins (?)
+// TODO(maruel): editor needs to have the list of opened document. They may have multiple views associated to a single document.
+type document struct {
+	filePath string              // filePath encoded in unicode. This can cause problems with systems not using an unicode code page.
+	handle   ReadWriteSeekCloser // Handle to the file. For unsaved files, it's empty.
+}
+
+// RenderInto renders a view of a document.
+func (d *document) RenderInto(buffer *wiCore.Buffer, offsetLine, offsetColumn int) {
+	// TODO(maruel): Implement
+}
 
 func cmdDocumentNew(c *wiCore.CommandImpl, cd wiCore.CommandDispatcherFull, w wiCore.Window, args ...string) {
 	cmd := make([]string, 3+len(args))

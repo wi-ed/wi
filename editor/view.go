@@ -12,9 +12,7 @@ import (
 	"github.com/maruel/wi/wiCore"
 )
 
-// TODO(maruel): Plugable drawing function.
-type drawInto func(v wiCore.View, buffer wiCore.Buffer)
-
+// TODO(maruel): Likely move into wiCore for reuse.
 type view struct {
 	commands      wiCore.Commands
 	keyBindings   wiCore.KeyBindings
@@ -91,8 +89,8 @@ func (v *staticDisabledView) Buffer() *wiCore.Buffer {
 	// TODO(maruel): Use the parent view format by default. No idea how to
 	// surface this information here. Cost is at least a RPC, potentially
 	// multiple when multiple plugins are involved in the tree.
-	v.buffer.Fill(wiCore.Cell{' ', v.defaultFormat})
-	v.buffer.DrawString(v.Title(), 0, 0, v.defaultFormat)
+	v.buffer.Fill(wiCore.Cell{' ', v.DefaultFormat()})
+	v.buffer.DrawString(v.Title(), 0, 0, v.DefaultFormat())
 	return v.buffer
 }
 
@@ -134,8 +132,7 @@ func statusNameViewFactory(args ...string) wiCore.View {
 	// View name.
 	// TODO(maruel): Register events of Window activation, make itself Invalidate().
 	v := makeStaticDisabledView("Status Name", 15, 1)
-	// TODO(maruel): Set to black and have it use the parent's colors.
-	v.defaultFormat.Bg = wiCore.LightGray
+	v.defaultFormat = wiCore.CellFormat{}
 	return v
 }
 
@@ -143,8 +140,7 @@ func statusPositionViewFactory(args ...string) wiCore.View {
 	// Position, % of file.
 	// TODO(maruel): Register events of movement, make itself Invalidate().
 	v := makeStaticDisabledView("Status Position", 15, 1)
-	// TODO(maruel): Set to black and have it use the parent's colors.
-	v.defaultFormat.Bg = wiCore.LightGray
+	v.defaultFormat = wiCore.CellFormat{}
 	return v
 }
 
@@ -153,8 +149,8 @@ type commandView struct {
 }
 
 func (v *commandView) Buffer() *wiCore.Buffer {
-	v.buffer.Fill(wiCore.Cell{' ', v.defaultFormat})
-	v.buffer.DrawString(v.Title(), 0, 0, v.defaultFormat)
+	v.buffer.Fill(wiCore.Cell{' ', v.DefaultFormat()})
+	v.buffer.DrawString(v.Title(), 0, 0, v.DefaultFormat())
 	return v.buffer
 }
 
@@ -174,20 +170,44 @@ func commandViewFactory(args ...string) wiCore.View {
 	}
 }
 
+// ColorMode is the coloring mode in effect.
+// TODO(maruel): Define coloring modes. Could be:
+// - A file type. Likely defined by a string, not a int.
+// - A diff view mode.
+// - No color at all.
+type ColorMode int
+
+// documentView is the View of a Document. There can be multiple views of the
+// same document, each with their own cursor position.
+// TODO(maruel): In some cases, the cursor position could be shared. A good
+// example is vimdiff in 4-way mode.
+// TODO(maruel): The part that is serializable has to be in its own structure
+// for easier deserialization.
 type documentView struct {
 	view
+	document     *document
+	cursorLine   int
+	cursorColumn int
+	offsetLine   int  // Offset of the view of the document.
+	offsetColumn int  // Offset of the view of the document. Only make sense when wordWrap==false.
+	wordWrap     bool // true if word-wrapping is in effect. TODO(maruel): Implement.
+	columnMode   bool // true if free movement is in effect. TODO(maruel): Implement.
+	colorMode    ColorMode
+	selection    wiCore.Rect // selection if any.
 }
 
 func (v *documentView) Buffer() *wiCore.Buffer {
 	v.buffer.Fill(wiCore.Cell{' ', v.defaultFormat})
-	v.buffer.DrawString(v.Title(), 0, 0, v.defaultFormat)
+	v.document.RenderInto(v.buffer, v.offsetLine, v.offsetColumn)
+	// TODO(maruel): Draw the cursor over.
+	// TODO(maruel): Draw the selection over.
 	return v.buffer
 }
 
 func documentViewFactory(args ...string) wiCore.View {
 	// TODO(maruel): Sort out "use max space".
 	return &documentView{
-		view{
+		view: view{
 			commands:      makeCommands(),
 			keyBindings:   makeKeyBindings(),
 			title:         "<Empty document>",
@@ -195,6 +215,7 @@ func documentViewFactory(args ...string) wiCore.View {
 			naturalY:      100,
 			defaultFormat: wiCore.CellFormat{Fg: wiCore.BrightYellow, Bg: wiCore.Black},
 		},
+		document: &document{},
 	}
 }
 
