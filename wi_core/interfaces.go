@@ -243,8 +243,11 @@ type Window interface {
 	// Docking() is DockingFloating.
 	Rect() Rect
 
+	// Docking returns where this Window is docked relative to the parent Window.
+	// A DockingFloating window is effectively starting a new independent Rect.
 	Docking() DockingType
 
+	// View returns the View contained by this Window. There is exactly one.
 	View() View
 }
 
@@ -285,6 +288,9 @@ type View interface {
 	// OnAttach is called by the Window after it was attached.
 	// TODO(maruel): Maybe split in ViewFull?
 	OnAttach(w Window)
+
+	// DefaultFormat returns the default coloring for this View.
+	DefaultFormat() CellFormat
 }
 
 // Config

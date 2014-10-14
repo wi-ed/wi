@@ -122,6 +122,12 @@ type CellFormat struct {
 	Blinking  bool
 }
 
+// Empty reports whether the CellFormat is black on black. In that case it
+// doesn't matter if it's italic or underlined.
+func (c CellFormat) Empty() bool {
+	return c.Fg == Black && c.Bg == Black
+}
+
 // Cell represents the properties of a single character on screen.
 //
 // Some properties are ignored on different terminals.

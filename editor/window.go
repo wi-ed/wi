@@ -45,6 +45,8 @@ type window struct {
 	defaultFormat   wi_core.CellFormat // Default text format to be used in borders.
 }
 
+// wi_core.Window interface.
+
 func (w *window) String() string {
 	return fmt.Sprintf("Window(%s, %s, %v)", w.ID(), w.View().Title(), w.Rect())
 }
@@ -91,6 +93,20 @@ func (w *window) ChildrenWindows() []wi_core.Window {
 	return out
 }
 
+func (w *window) Rect() wi_core.Rect {
+	return w.rect
+}
+
+func (w *window) Docking() wi_core.DockingType {
+	return w.docking
+}
+
+func (w *window) View() wi_core.View {
+	return w.view
+}
+
+// Private methods.
+
 // Recursively detach a window tree.
 func detachRecursively(w *window) {
 	for _, c := range w.childrenWindows {
@@ -131,10 +147,6 @@ func (e *editor) idToWindow(id string) *window {
 		cur = recurseIDToWindow(cur, id[2:])
 	}
 	return cur
-}
-
-func (w *window) Rect() wi_core.Rect {
-	return w.rect
 }
 
 // setRect sets the rect of this Window, based on the parent's Window own
@@ -286,7 +298,7 @@ func (w *window) resizeChildren() {
 	wi_core.PostCommand(w, "editor_redraw")
 }
 
-func (w *window) Buffer() *wi_core.Buffer {
+func (w *window) buffer() *wi_core.Buffer {
 	// TODO(maruel): Redo API.
 	// Opportunistically refresh the view buffer.
 	if w.viewRect.Width != 0 && w.viewRect.Height != 0 {
@@ -296,11 +308,8 @@ func (w *window) Buffer() *wi_core.Buffer {
 	return w.windowBuffer
 }
 
-func (w *window) Docking() wi_core.DockingType {
-	return w.docking
-}
-
-func (w *window) SetView(view wi_core.View) {
+/* TODO(maruel): Is it needed at all?
+func (w *window) setView(view wi_core.View) {
 	if view != w.view {
 		w.view = view
 		b := w.windowBuffer.SubBuffer(w.viewRect)
@@ -309,6 +318,7 @@ func (w *window) SetView(view wi_core.View) {
 	}
 	panic("To test")
 }
+*/
 
 // updateBorder calculates w.effectiveBorder, w.clientAreaRect and draws the
 // borders right away in the Window's buffer.
@@ -375,12 +385,19 @@ func (w *window) updateBorder() {
 	}
 }
 
-func (w *window) cell(r rune) wi_core.Cell {
-	return wi_core.Cell{r, w.defaultFormat}
+func (w *window) cellFormat() wi_core.CellFormat {
+	c := w.defaultFormat
+	if c.Empty() {
+		c = w.view.DefaultFormat()
+		if c.Empty() && w.parent != nil {
+			c = w.parent.cellFormat()
+		}
+	}
+	return c
 }
 
-func (w *window) View() wi_core.View {
-	return w.view
+func (w *window) cell(r rune) wi_core.Cell {
+	return wi_core.Cell{r, w.cellFormat()}
 }
 
 func makeWindow(parent *window, view wi_core.View, docking wi_core.DockingType) *window {
@@ -423,7 +440,7 @@ func drawRecurse(w *window, offsetX, offsetY int, out *wi_core.Buffer) {
 	dest := w.Rect()
 	dest.X += offsetX
 	dest.Y += offsetY
-	out.SubBuffer(dest).Blit(w.Buffer())
+	out.SubBuffer(dest).Blit(w.buffer())
 
 	fillFound := false
 	for _, child := range w.childrenWindows {
