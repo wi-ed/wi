@@ -82,9 +82,12 @@ def main():
     check_or_install(
         ['goimports', '.'], 'code.google.com/p/go.tools/cmd/goimports'),
     check_or_install(['golint'], 'github.com/golang/lint/golint'),
+    check_or_install([
+      'go', 'tool', 'vet', '.'], 'code.google.com/p/go.tools/cmd/vet'),
   ]
   while procs:
     drain(procs.pop(0))
+  logging.info('Prerequisites check completed.')
 
   procs = [
     call(['go', 'build', '-tags', 'debug'], '.'),
@@ -96,13 +99,17 @@ def main():
     call(['errcheck'], 'editor'),
     call(['errcheck'], 'wi-plugin'),
     call(['errcheck'], 'wi-plugin-sample'),
+    call([sys.executable, THIS_FILE, '--goimports'], '.'),
+    # TODO(maruel): Likely always redundant with goimports.
+    call([sys.executable, THIS_FILE, '--gofmt'], '.'),
+
+    # There starts the cheezy part that may return false positives. I'm sorry
+    # David.
     call(['golint'], '.'),
     call(['golint'], 'editor'),
     call(['golint'], 'wi-plugin'),
     call(['golint'], 'wi-plugin-sample'),
-    call([sys.executable, THIS_FILE, '--goimports'], '.'),
-    # TODO(maruel): Likely always redundant with goimports.
-    call([sys.executable, THIS_FILE, '--gofmt'], '.'),
+    #call(['go', 'tool', 'vet', '.'], '.'),
   ]
   failed = False
   out = drain(procs.pop(0))

@@ -40,13 +40,13 @@ func (t TermBox) SeedEvents() <-chan editor.TerminalEvent {
 			case termbox.EventResize:
 				c <- editor.TerminalEvent{
 					Type: editor.EventKey,
-					Size: editor.Size{e.Width, e.Height},
+					Size: editor.Size{Width: e.Width, Height: e.Height},
 				}
 			case termbox.EventError:
-				break
+				close(c)
+				return
 			}
 		}
-		close(c)
 	}()
 	return c
 }
