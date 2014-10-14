@@ -17,7 +17,7 @@ type view struct {
 	commands      wiCore.Commands
 	keyBindings   wiCore.KeyBindings
 	title         string
-	isDirty       bool
+	isDirty       bool // TODO(maruel): Remove.
 	isDisabled    bool
 	naturalX      int
 	naturalY      int
@@ -188,17 +188,17 @@ type documentView struct {
 	document     *document
 	cursorLine   int
 	cursorColumn int
-	offsetLine   int  // Offset of the view of the document.
-	offsetColumn int  // Offset of the view of the document. Only make sense when wordWrap==false.
-	wordWrap     bool // true if word-wrapping is in effect. TODO(maruel): Implement.
-	columnMode   bool // true if free movement is in effect. TODO(maruel): Implement.
-	colorMode    ColorMode
+	offsetLine   int         // Offset of the view of the document.
+	offsetColumn int         // Offset of the view of the document. Only make sense when wordWrap==false.
+	wordWrap     bool        // true if word-wrapping is in effect. TODO(maruel): Implement.
+	columnMode   bool        // true if free movement is in effect. TODO(maruel): Implement.
+	colorMode    ColorMode   // Coloring of the file. Technically it'd be possible to have one file view without color and another with. TODO(maruel): Determine if useful.
 	selection    wiCore.Rect // selection if any.
 }
 
 func (v *documentView) Buffer() *wiCore.Buffer {
 	v.buffer.Fill(wiCore.Cell{' ', v.defaultFormat})
-	v.document.RenderInto(v.buffer, v.offsetLine, v.offsetColumn)
+	v.document.RenderInto(v.buffer, v, v.offsetLine, v.offsetColumn)
 	// TODO(maruel): Draw the cursor over.
 	// TODO(maruel): Draw the selection over.
 	return v.buffer
@@ -210,12 +210,12 @@ func documentViewFactory(args ...string) wiCore.View {
 		view: view{
 			commands:      makeCommands(),
 			keyBindings:   makeKeyBindings(),
-			title:         "<Empty document>",
+			title:         "<Empty document>", // TODO(maruel): Title == document.filePath ?
 			naturalX:      100,
 			naturalY:      100,
 			defaultFormat: wiCore.CellFormat{Fg: wiCore.BrightYellow, Bg: wiCore.Black},
 		},
-		document: &document{},
+		document: makeDocument(),
 	}
 }
 
