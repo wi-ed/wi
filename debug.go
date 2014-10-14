@@ -10,9 +10,11 @@ package main
 
 import (
 	"flag"
+	"io"
 	"log"
 	"net/http"
 	_ "net/http/pprof"
+	"os"
 	"time"
 
 	"github.com/nsf/termbox-go"
@@ -23,19 +25,27 @@ var (
 	prof  = flag.String("prof", "", "Start a profiling web server; access via /debug/pprof")
 )
 
-func DebugHook() {
+func DebugHook() io.Closer {
+	log.SetFlags(log.Lmicroseconds | log.Lshortfile)
+	f, err := os.OpenFile("wi.log", os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0666)
+	if err == nil {
+		log.SetOutput(f)
+	}
+
 	if *crash > 0 {
 		// Crashes but ensure that the terminal is closed first. It's useful to
 		// figure out what's happening with an infinite loop for example.
 		time.AfterFunc(*crash, func() {
+			f.Close()
 			termbox.Close()
 			panic("Timeout")
 		})
 	}
 
-	if len(*prof) == 0 {
+	if len(*prof) > 0 {
 		go func() {
 			log.Println(http.ListenAndServe(*prof, nil))
 		}()
 	}
+	return f
 }

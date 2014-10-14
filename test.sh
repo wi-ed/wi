@@ -7,6 +7,6 @@
 
 set -e
 
-go build
-./wi -verbose -c log_all editor_quit
+go build -tags debug
+./wi -c log_all editor_quit
 cat wi.log

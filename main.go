@@ -19,7 +19,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"log"
 	"os"
 
 	"github.com/maruel/wi/editor"
@@ -27,37 +26,18 @@ import (
 	"github.com/nsf/termbox-go"
 )
 
-type nullWriter struct{}
-
-func (nullWriter) Write(b []byte) (int, error) {
-	return len(b), nil
-}
-
 func mainImpl() int {
-	// All of "flag", "log" and "termbox" use a lot of global variables so they
-	// can't be easily included in parallel tests.
-	log.SetFlags(log.Lmicroseconds | log.Lshortfile)
+	// "flag" and "termbox" use a lot of global variables so they can't be easily
+	// included in parallel tests.
 	command := flag.Bool("c", false, "Runs the commands specified on startup")
 	version := flag.Bool("v", false, "Prints version and exit")
 	noPlugin := flag.Bool("no-plugin", false, "Disable loading plugins")
-	verbose := flag.Bool("verbose", false, "Logs debugging information to wi.log")
 	flag.Parse()
 
 	// Process this one early. No one wants version output to take 1s.
 	if *version {
 		println(version)
 		return 0
-	}
-
-	if *verbose {
-		if f, err := os.OpenFile("wi.log", os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0666); err == nil {
-			defer func() {
-				_ = f.Close()
-			}()
-			log.SetOutput(f)
-		}
-	} else {
-		log.SetOutput(nullWriter{})
 	}
 
 	if *command && flag.NArg() == 0 {
@@ -70,7 +50,12 @@ func mainImpl() int {
 		return 1
 	}
 
-	DebugHook()
+	out := DebugHook()
+	if out != nil {
+		defer func() {
+			_ = out.Close()
+		}()
+	}
 
 	// It is really important that no other goroutine panic() or call
 	// log.Fatal(), otherwise the terminal will be left in a broken state.
