@@ -305,13 +305,13 @@ func (w *window) Docking() wi_core.DockingType {
 }
 
 func (w *window) SetView(view wi_core.View) {
-	panic("To test")
 	if view != w.view {
 		w.view = view
 		b := w.windowBuffer.SubBuffer(w.viewRect)
 		b.Fill(w.cell(' '))
 		wi_core.PostCommand(w, "editor_redraw")
 	}
+	panic("To test")
 }
 
 // updateBorder calculates w.effectiveBorder, w.clientAreaRect and draws the
@@ -369,12 +369,12 @@ func (w *window) updateBorder() {
 	}
 
 	if w.clientAreaRect.Width < 0 {
-		panic("Fix this case")
 		w.clientAreaRect.Width = 0
+		panic("Fix this case")
 	}
 	if w.clientAreaRect.Height < 0 {
-		panic("Fix this case")
 		w.clientAreaRect.Height = 0
+		panic("Fix this case")
 	}
 }
 
@@ -507,7 +507,6 @@ func cmdWindowNew(c *privilegedCommandImpl, e *editor, w *window, args ...string
 	for _, child := range parent.childrenWindows {
 		if child.Docking() == docking {
 			if viewFactoryName != "infobar_alert" {
-				panic("A")
 				e.ExecuteCommand(w, "alert", fmt.Sprintf(wi_core.GetStr(e.CurrentLanguage(), cantAddTwoWindowWithSameDocking), docking))
 			}
 			return

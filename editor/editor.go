@@ -248,7 +248,6 @@ func (e *editor) EventLoop() int {
 			drawTimer = fakeChan
 		}
 	}
-	return 0
 }
 
 func (e *editor) LoadPlugins() error {

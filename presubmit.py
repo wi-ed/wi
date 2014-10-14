@@ -50,6 +50,8 @@ def main():
       '--goimports', action='store_true', help=optparse.SUPPRESS_HELP)
   parser.add_option(
       '--gofmt', action='store_true', help=optparse.SUPPRESS_HELP)
+  parser.add_option(
+      '--govet', action='store_true', help=optparse.SUPPRESS_HELP)
   options, args = parser.parse_args()
   if args:
     parser.error('Unknown args: %s' % args)
@@ -69,6 +71,20 @@ def main():
     if out:
       print('These files are improperly formmatted. Please run: gofmt -w -s .')
       sys.stdout.write(out)
+      return 1
+    return 0
+
+  if options.govet:
+    # govet is very noisy about "composite literal uses unkeyed fields" which
+    # cannot be turned off so strip these and ignore the return code.
+    proc = subprocess.Popen(
+        ['go', 'tool', 'vet', '-all', '.'],
+        stdout=subprocess.PIPE)
+    out = '\n'.join(
+        l for l in proc.communicate()[0].splitlines()
+        if not l.endswith(' composite literal uses unkeyed fields'))
+    if out:
+      print(out)
       return 1
     return 0
 
@@ -109,7 +125,7 @@ def main():
     call(['golint'], 'editor'),
     call(['golint'], 'wi_core'),
     call(['golint'], 'wi-plugin-sample'),
-    #call(['go', 'tool', 'vet', '.'], '.'),
+    call([sys.executable, THIS_FILE, '--govet'], '.'),
   ]
   failed = False
   out = drain(procs.pop(0))
