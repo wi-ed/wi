@@ -122,7 +122,8 @@ func cmdEditorBootstrapUI(c *wi_core.CommandImpl, cd wi_core.CommandDispatcherFu
 
 func cmdDocumentNew(c *wi_core.CommandImpl, cd wi_core.CommandDispatcherFull, w wi_core.Window, args ...string) {
 	cmd := make([]string, 3+len(args))
-	cmd[0] = w.ID()
+	//cmd[0] = w.ID()
+	cmd[0] = wi_core.RootWindow(w).ID()
 	cmd[1] = "fill"
 	cmd[2] = "new_document"
 	copy(cmd[3:], args)
@@ -222,7 +223,7 @@ func RegisterDefaultCommands(dispatcher wi_core.Commands) {
 		},
 		&wi_core.CommandImpl{
 			"document_new",
-			-1,
+			0,
 			cmdDocumentNew,
 			wi_core.WindowCategory,
 			wi_core.LangMap{
@@ -234,7 +235,7 @@ func RegisterDefaultCommands(dispatcher wi_core.Commands) {
 		},
 		&wi_core.CommandImpl{
 			"document_open",
-			-1,
+			1,
 			cmdDocumentOpen,
 			wi_core.WindowCategory,
 			wi_core.LangMap{

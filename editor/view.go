@@ -129,7 +129,7 @@ func commandViewFactory(args ...string) wi_core.View {
 func documentViewFactory(args ...string) wi_core.View {
 	// TODO(maruel): Sort out "use max space".
 	//onAttach
-	return makeView("", 100, 100)
+	return makeView("<Empty document>", 100, 100)
 }
 
 func infobarAlertViewFactory(args ...string) wi_core.View {
