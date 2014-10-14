@@ -61,27 +61,33 @@ func (v *view) SetSize(x, y int) {
 	v.buffer = wi_core.NewBuffer(x, y)
 }
 
-func (v *view) Buffer() *wi_core.Buffer {
-	//log.Printf("View(%s).Buffer(%d, %d)", v.Title(), v.actualX, v.actualY)
-	r, _ := utf8.DecodeRuneInString(v.Title())
-	v.buffer.Fill(wi_core.MakeCell(r, wi_core.Red, wi_core.Black))
-	return v.buffer
-}
-
 func (v *view) OnAttach(w wi_core.Window) {
 	if v.onAttach != nil {
 		v.onAttach(v, w)
 	}
 }
 
+// A disabled static view.
+type staticDisabledView struct {
+	view
+}
+
+func (v *staticDisabledView) Buffer() *wi_core.Buffer {
+	v.buffer.DrawString(v.Title(), 0, 0, wi_core.CellFormat{Fg: wi_core.Red, Bg: wi_core.Black})
+	return v.buffer
+}
+
 // Empty non-editable window.
-func makeView(title string, naturalX, naturalY int) *view {
-	return &view{
-		commands:    makeCommands(),
-		keyBindings: makeKeyBindings(),
-		title:       title,
-		naturalX:    naturalX,
-		naturalY:    naturalY,
+func makeStaticDisabledView(title string, naturalX, naturalY int) *staticDisabledView {
+	return &staticDisabledView{
+		view{
+			commands:    makeCommands(),
+			keyBindings: makeKeyBindings(),
+			title:       title,
+			isDisabled:  true,
+			naturalX:    naturalX,
+			naturalY:    naturalY,
+		},
 	}
 }
 
@@ -91,31 +97,27 @@ func statusRootViewFactory(args ...string) wi_core.View {
 	// TODO(maruel): OnResize(), query the root Window size, if y<=5 or x<=15,
 	// set the root status Window to y=0, so that it becomes effectively
 	// invisible when the editor window is too small.
-	return makeView("Status Root", 1, 1)
+	return makeStaticDisabledView("Status Root", 1, 1)
 }
 
 func statusNameViewFactory(args ...string) wi_core.View {
 	// View name.
 	// TODO(maruel): Register events of Window activation, make itself Invalidate().
-	// TODO(maruel): Drawing code.
-	return makeView("Status Name", 15, 1)
+	return makeStaticDisabledView("Status Name", 15, 1)
 }
 
 func statusPositionViewFactory(args ...string) wi_core.View {
 	// Position, % of file.
 	// TODO(maruel): Register events of movement, make itself Invalidate().
-	// TODO(maruel): Drawing code.
-	return makeView("Status Position", 15, 1)
+	return makeStaticDisabledView("Status Position", 15, 1)
 }
 
 type commandView struct {
-	*view
+	view
 }
 
 func (v *commandView) Buffer() *wi_core.Buffer {
-	r, _ := utf8.DecodeRuneInString(v.Title())
-	v.buffer.Fill(wi_core.MakeCell(r, wi_core.Green, wi_core.Black))
-	v.buffer.DrawString(v.Title(), 0, 0, wi_core.CellFormat{wi_core.Brown, wi_core.Black, false, false, false})
+	v.buffer.DrawString(v.Title(), 0, 0, wi_core.CellFormat{Fg: wi_core.Red, Bg: wi_core.Black})
 	return v.buffer
 }
 
@@ -123,19 +125,44 @@ func (v *commandView) Buffer() *wi_core.Buffer {
 // TODO(maruel): Position it 5 lines below the cursor in the parent Window's
 // View. Do this via onAttach.
 func commandViewFactory(args ...string) wi_core.View {
-	return &commandView{makeView("Command", 30, 1)}
+	return &commandView{
+		view{
+			commands:    makeCommands(),
+			keyBindings: makeKeyBindings(),
+			title:       "Command",
+			naturalX:    30,
+			naturalY:    1,
+		},
+	}
+}
+
+type documentView struct {
+	view
+}
+
+func (v *documentView) Buffer() *wi_core.Buffer {
+	v.buffer.DrawString(v.Title(), 0, 0, wi_core.CellFormat{Fg: wi_core.Red, Bg: wi_core.Black})
+	return v.buffer
 }
 
 func documentViewFactory(args ...string) wi_core.View {
 	// TODO(maruel): Sort out "use max space".
 	//onAttach
-	return makeView("<Empty document>", 100, 100)
+	return &documentView{
+		view{
+			commands:    makeCommands(),
+			keyBindings: makeKeyBindings(),
+			title:       "<Empty document>",
+			naturalX:    100,
+			naturalY:    100,
+		},
+	}
 }
 
 func infobarAlertViewFactory(args ...string) wi_core.View {
 	out := "Alert: " + args[0]
 	l := utf8.RuneCountInString(out)
-	v := makeView(out, l, 1)
+	v := makeStaticDisabledView(out, l, 1)
 	v.onAttach = func(v *view, w wi_core.Window) {
 		go func() {
 			// Dismiss after 5 seconds.
@@ -149,12 +176,14 @@ func infobarAlertViewFactory(args ...string) wi_core.View {
 // RegisterDefaultViewFactories registers the builtins views factories.
 func RegisterDefaultViewFactories(e Editor) {
 	e.RegisterViewFactory("command", commandViewFactory)
-	e.RegisterViewFactory("new_document", documentViewFactory)
 	e.RegisterViewFactory("infobar_alert", infobarAlertViewFactory)
+	e.RegisterViewFactory("new_document", documentViewFactory)
 	e.RegisterViewFactory("status_name", statusNameViewFactory)
 	e.RegisterViewFactory("status_position", statusPositionViewFactory)
 	e.RegisterViewFactory("status_root", statusRootViewFactory)
 }
+
+// Commands
 
 func cmdViewLog(c *privilegedCommandImpl, e *editor, w *window, args ...string) {
 	names := make([]string, 0, len(e.viewFactories))

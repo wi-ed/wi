@@ -275,7 +275,7 @@ func MakeEditor(terminal Terminal, noPlugin bool) (Editor, error) {
 	// The root view is important, it defines all the global commands. It is
 	// pre-filled with the default native commands and keyboard mapping, and it's
 	// up to the plugins to add more global commands on startup.
-	rootView := makeView("Root", -1, -1)
+	rootView := makeStaticDisabledView("Root", -1, -1)
 
 	// These commands are generic commands, they do not require specific access.
 	RegisterCommandCommands(rootView.Commands())
