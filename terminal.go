@@ -8,7 +8,7 @@ package main
 
 import (
 	"github.com/maruel/wi/editor"
-	"github.com/maruel/wi/wi_core"
+	"github.com/maruel/wi/wiCore"
 	"github.com/nsf/termbox-go"
 )
 
@@ -51,7 +51,7 @@ func (t TermBox) SeedEvents() <-chan editor.TerminalEvent {
 	return c
 }
 
-// termboxKeyToKeyPress returns the wi_core.KeyPress compatible event.
+// termboxKeyToKeyPress returns the wiCore.KeyPress compatible event.
 func termboxKeyToKeyPress(key termbox.Event) editor.KeyPress {
 	out := editor.KeyPress{}
 	if key.Mod&termbox.ModAlt != 0 {
@@ -211,39 +211,39 @@ func termboxKeyToKeyPress(key termbox.Event) editor.KeyPress {
 }
 
 // Converts a RGB color into the nearest termbox color.
-func rgbToTermBox(c wi_core.RGB) termbox.Attribute {
-	switch wi_core.NearestEGAColor(c) {
-	case wi_core.Black:
+func rgbToTermBox(c wiCore.RGB) termbox.Attribute {
+	switch wiCore.NearestEGAColor(c) {
+	case wiCore.Black:
 		return termbox.ColorBlack
-	case wi_core.Blue:
+	case wiCore.Blue:
 		return termbox.ColorBlue
-	case wi_core.Green:
+	case wiCore.Green:
 		return termbox.ColorGreen
-	case wi_core.Cyan:
+	case wiCore.Cyan:
 		return termbox.ColorCyan
-	case wi_core.Red:
+	case wiCore.Red:
 		return termbox.ColorRed
-	case wi_core.Magenta:
+	case wiCore.Magenta:
 		return termbox.ColorMagenta
-	case wi_core.Brown:
+	case wiCore.Brown:
 		return termbox.ColorYellow
-	case wi_core.LightGray:
+	case wiCore.LightGray:
 		return termbox.ColorWhite
-	case wi_core.DarkGray:
+	case wiCore.DarkGray:
 		return termbox.ColorBlack | termbox.AttrBold
-	case wi_core.BrightBlue:
+	case wiCore.BrightBlue:
 		return termbox.ColorBlue | termbox.AttrBold
-	case wi_core.BrightGreen:
+	case wiCore.BrightGreen:
 		return termbox.ColorGreen | termbox.AttrBold
-	case wi_core.BrightCyan:
+	case wiCore.BrightCyan:
 		return termbox.ColorCyan | termbox.AttrBold
-	case wi_core.BrightRed:
+	case wiCore.BrightRed:
 		return termbox.ColorRed | termbox.AttrBold
-	case wi_core.BrightMagenta:
+	case wiCore.BrightMagenta:
 		return termbox.ColorMagenta | termbox.AttrBold
-	case wi_core.BrightYellow:
+	case wiCore.BrightYellow:
 		return termbox.ColorYellow | termbox.AttrBold
-	case wi_core.White:
+	case wiCore.White:
 		return termbox.ColorWhite | termbox.AttrBold
 	default:
 		return termbox.ColorDefault
@@ -251,7 +251,7 @@ func rgbToTermBox(c wi_core.RGB) termbox.Attribute {
 }
 
 // Blit converts the editor.Buffer format into termbox format.
-func (t TermBox) Blit(b *wi_core.Buffer) {
+func (t TermBox) Blit(b *wiCore.Buffer) {
 	width, height := termbox.Size()
 	cells := termbox.CellBuffer()
 	if width > b.Width {

@@ -9,15 +9,15 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/maruel/wi/wi_core"
+	"github.com/maruel/wi/wiCore"
 )
 
 // TODO(maruel): Plugable drawing function.
-type drawInto func(v wi_core.View, buffer wi_core.Buffer)
+type drawInto func(v wiCore.View, buffer wiCore.Buffer)
 
 type view struct {
-	commands      wi_core.Commands
-	keyBindings   wi_core.KeyBindings
+	commands      wiCore.Commands
+	keyBindings   wiCore.KeyBindings
 	title         string
 	isDirty       bool
 	isDisabled    bool
@@ -25,18 +25,18 @@ type view struct {
 	naturalY      int
 	actualX       int
 	actualY       int
-	onAttach      func(v *view, w wi_core.Window)
-	defaultFormat wi_core.CellFormat
-	buffer        *wi_core.Buffer
+	onAttach      func(v *view, w wiCore.Window)
+	defaultFormat wiCore.CellFormat
+	buffer        *wiCore.Buffer
 }
 
-// wi_core.View interface.
+// wiCore.View interface.
 
-func (v *view) Commands() wi_core.Commands {
+func (v *view) Commands() wiCore.Commands {
 	return v.commands
 }
 
-func (v *view) KeyBindings() wi_core.KeyBindings {
+func (v *view) KeyBindings() wiCore.KeyBindings {
 	return v.keyBindings
 }
 
@@ -60,16 +60,16 @@ func (v *view) SetSize(x, y int) {
 	log.Printf("View(%s).SetSize(%d, %d)", v.Title(), x, y)
 	v.actualX = x
 	v.actualY = y
-	v.buffer = wi_core.NewBuffer(x, y)
+	v.buffer = wiCore.NewBuffer(x, y)
 }
 
-func (v *view) OnAttach(w wi_core.Window) {
+func (v *view) OnAttach(w wiCore.Window) {
 	if v.onAttach != nil {
 		v.onAttach(v, w)
 	}
 }
 
-func (v *view) DefaultFormat() wi_core.CellFormat {
+func (v *view) DefaultFormat() wiCore.CellFormat {
 	// TODO(maruel): if v.defaultFormat.Empty() { return v.Window().Parent().DefaultFormat() }
 	return v.defaultFormat
 }
@@ -79,11 +79,11 @@ type staticDisabledView struct {
 	view
 }
 
-func (v *staticDisabledView) Buffer() *wi_core.Buffer {
+func (v *staticDisabledView) Buffer() *wiCore.Buffer {
 	// TODO(maruel): Use the parent view format by default. No idea how to
 	// surface this information here. Cost is at least a RPC, potentially
 	// multiple when multiple plugins are involved in the tree.
-	v.buffer.Fill(wi_core.Cell{' ', v.defaultFormat})
+	v.buffer.Fill(wiCore.Cell{' ', v.defaultFormat})
 	v.buffer.DrawString(v.Title(), 0, 0, v.defaultFormat)
 	return v.buffer
 }
@@ -98,37 +98,37 @@ func makeStaticDisabledView(title string, naturalX, naturalY int) *staticDisable
 			isDisabled:    true,
 			naturalX:      naturalX,
 			naturalY:      naturalY,
-			defaultFormat: wi_core.CellFormat{Fg: wi_core.Red, Bg: wi_core.Black},
+			defaultFormat: wiCore.CellFormat{Fg: wiCore.Red, Bg: wiCore.Black},
 		},
 	}
 }
 
 // The status line is a hierarchy of Window, one for each element, each showing
 // a single item.
-func statusRootViewFactory(args ...string) wi_core.View {
+func statusRootViewFactory(args ...string) wiCore.View {
 	// TODO(maruel): OnResize(), query the root Window size, if y<=5 or x<=15,
 	// set the root status Window to y=0, so that it becomes effectively
 	// invisible when the editor window is too small.
 	v := makeStaticDisabledView("Status Root", 1, 1)
-	v.defaultFormat.Bg = wi_core.LightGray
+	v.defaultFormat.Bg = wiCore.LightGray
 	return v
 }
 
-func statusNameViewFactory(args ...string) wi_core.View {
+func statusNameViewFactory(args ...string) wiCore.View {
 	// View name.
 	// TODO(maruel): Register events of Window activation, make itself Invalidate().
 	v := makeStaticDisabledView("Status Name", 15, 1)
 	// TODO(maruel): Set to black and have it use the parent's colors.
-	v.defaultFormat.Bg = wi_core.LightGray
+	v.defaultFormat.Bg = wiCore.LightGray
 	return v
 }
 
-func statusPositionViewFactory(args ...string) wi_core.View {
+func statusPositionViewFactory(args ...string) wiCore.View {
 	// Position, % of file.
 	// TODO(maruel): Register events of movement, make itself Invalidate().
 	v := makeStaticDisabledView("Status Position", 15, 1)
 	// TODO(maruel): Set to black and have it use the parent's colors.
-	v.defaultFormat.Bg = wi_core.LightGray
+	v.defaultFormat.Bg = wiCore.LightGray
 	return v
 }
 
@@ -136,8 +136,8 @@ type commandView struct {
 	view
 }
 
-func (v *commandView) Buffer() *wi_core.Buffer {
-	v.buffer.Fill(wi_core.Cell{' ', v.defaultFormat})
+func (v *commandView) Buffer() *wiCore.Buffer {
+	v.buffer.Fill(wiCore.Cell{' ', v.defaultFormat})
 	v.buffer.DrawString(v.Title(), 0, 0, v.defaultFormat)
 	return v.buffer
 }
@@ -145,7 +145,7 @@ func (v *commandView) Buffer() *wi_core.Buffer {
 // The command dialog box.
 // TODO(maruel): Position it 5 lines below the cursor in the parent Window's
 // View. Do this via onAttach.
-func commandViewFactory(args ...string) wi_core.View {
+func commandViewFactory(args ...string) wiCore.View {
 	return &commandView{
 		view{
 			commands:      makeCommands(),
@@ -153,7 +153,7 @@ func commandViewFactory(args ...string) wi_core.View {
 			title:         "Command",
 			naturalX:      30,
 			naturalY:      1,
-			defaultFormat: wi_core.CellFormat{Fg: wi_core.Green, Bg: wi_core.Black},
+			defaultFormat: wiCore.CellFormat{Fg: wiCore.Green, Bg: wiCore.Black},
 		},
 	}
 }
@@ -162,13 +162,13 @@ type documentView struct {
 	view
 }
 
-func (v *documentView) Buffer() *wi_core.Buffer {
-	v.buffer.Fill(wi_core.Cell{' ', v.defaultFormat})
+func (v *documentView) Buffer() *wiCore.Buffer {
+	v.buffer.Fill(wiCore.Cell{' ', v.defaultFormat})
 	v.buffer.DrawString(v.Title(), 0, 0, v.defaultFormat)
 	return v.buffer
 }
 
-func documentViewFactory(args ...string) wi_core.View {
+func documentViewFactory(args ...string) wiCore.View {
 	// TODO(maruel): Sort out "use max space".
 	//onAttach
 	return &documentView{
@@ -178,20 +178,20 @@ func documentViewFactory(args ...string) wi_core.View {
 			title:         "<Empty document>",
 			naturalX:      100,
 			naturalY:      100,
-			defaultFormat: wi_core.CellFormat{Fg: wi_core.BrightYellow, Bg: wi_core.Black},
+			defaultFormat: wiCore.CellFormat{Fg: wiCore.BrightYellow, Bg: wiCore.Black},
 		},
 	}
 }
 
-func infobarAlertViewFactory(args ...string) wi_core.View {
+func infobarAlertViewFactory(args ...string) wiCore.View {
 	out := "Alert: " + args[0]
 	l := utf8.RuneCountInString(out)
 	v := makeStaticDisabledView(out, l, 1)
-	v.onAttach = func(v *view, w wi_core.Window) {
+	v.onAttach = func(v *view, w wiCore.Window) {
 		go func() {
 			// Dismiss after 5 seconds.
 			<-time.After(5 * time.Second)
-			wi_core.PostCommand(w, "window_close", w.ID())
+			wiCore.PostCommand(w, "window_close", w.ID())
 		}()
 	}
 	return v
@@ -210,8 +210,8 @@ func RegisterDefaultViewFactories(e Editor) {
 // Commands
 
 // RegisterViewCommands registers view-related commands
-func RegisterViewCommands(dispatcher wi_core.Commands) {
-	cmds := []wi_core.Command{}
+func RegisterViewCommands(dispatcher wiCore.Commands) {
+	cmds := []wiCore.Command{}
 	for _, cmd := range cmds {
 		dispatcher.Register(cmd)
 	}

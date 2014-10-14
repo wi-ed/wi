@@ -43,7 +43,7 @@ func (o onDebugClose) Close() error {
 	return nil
 }
 
-func DebugHook() io.Closer {
+func debugHook() io.Closer {
 	o := onDebugClose{}
 	log.SetFlags(log.Lmicroseconds | log.Lshortfile)
 	if f, err := os.OpenFile("wi.log", os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0666); err == nil {

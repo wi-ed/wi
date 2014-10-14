@@ -17,7 +17,7 @@ func (nullWriter) Write(b []byte) (int, error) {
 	return len(b), nil
 }
 
-func DebugHook() io.Closer {
+func debugHook() io.Closer {
 	// It is important to get rid of log output on stderr as it would conflict
 	// with the editor's use of the terminal. Sadly the strings are still
 	// rasterized, I don't know of a way to get rid of this.

@@ -13,10 +13,10 @@ import (
 	"log"
 	"sort"
 
-	"github.com/maruel/wi/wi_core"
+	"github.com/maruel/wi/wiCore"
 )
 
-func commandLogRecurse(w *window, cd wi_core.CommandDispatcherFull) {
+func commandLogRecurse(w *window, cd wiCore.CommandDispatcherFull) {
 	// TODO(maruel): Create a proper enumerator.
 	cmds := w.view.Commands().(*commands)
 	names := make([]string, 0, len(cmds.commands))
@@ -38,13 +38,13 @@ func cmdCommandLog(c *privilegedCommandImpl, e *editor, w *window, args ...strin
 	commandLogRecurse(e.rootWindow, e)
 }
 
-func keyLogRecurse(w *window, cd wi_core.CommandDispatcherFull, mode wi_core.KeyboardMode) {
+func keyLogRecurse(w *window, cd wiCore.CommandDispatcherFull, mode wiCore.KeyboardMode) {
 	// TODO(maruel): Create a proper enumerator.
 	keys := w.view.KeyBindings().(*keyBindings)
 	var mapping *map[string]string
-	if mode == wi_core.CommandMode {
+	if mode == wiCore.CommandMode {
 		mapping = &keys.commandMappings
-	} else if mode == wi_core.EditMode {
+	} else if mode == wiCore.EditMode {
 		mapping = &keys.editMappings
 	} else {
 		panic("Errr, fix me")
@@ -64,12 +64,12 @@ func keyLogRecurse(w *window, cd wi_core.CommandDispatcherFull, mode wi_core.Key
 
 func cmdKeyLog(c *privilegedCommandImpl, e *editor, w *window, args ...string) {
 	log.Printf("CommandMode commands")
-	keyLogRecurse(e.rootWindow, e, wi_core.CommandMode)
+	keyLogRecurse(e.rootWindow, e, wiCore.CommandMode)
 	log.Printf("EditMode commands")
-	keyLogRecurse(e.rootWindow, e, wi_core.EditMode)
+	keyLogRecurse(e.rootWindow, e, wiCore.EditMode)
 }
 
-func cmdLogAll(c *wi_core.CommandImpl, cd wi_core.CommandDispatcherFull, w wi_core.Window, args ...string) {
+func cmdLogAll(c *wiCore.CommandImpl, cd wiCore.CommandDispatcherFull, w wiCore.Window, args ...string) {
 	cd.ExecuteCommand(w, "command_log")
 	cd.ExecuteCommand(w, "window_log")
 	cd.ExecuteCommand(w, "view_log")
@@ -88,71 +88,72 @@ func cmdViewLog(c *privilegedCommandImpl, e *editor, w *window, args ...string) 
 	}
 }
 
-func cmdWindowLog(c *wi_core.CommandImpl, cd wi_core.CommandDispatcherFull, w wi_core.Window, args ...string) {
-	root := wi_core.RootWindow(w)
+func cmdWindowLog(c *wiCore.CommandImpl, cd wiCore.CommandDispatcherFull, w wiCore.Window, args ...string) {
+	root := wiCore.RootWindow(w)
 	log.Printf("Window tree:\n%s", root.Tree())
 }
 
-func RegisterDebugCommands(dispatcher wi_core.Commands) {
-	cmds := []wi_core.Command{
+// RegisterDebugCommands registers all debug related commands in Debug build.
+func RegisterDebugCommands(dispatcher wiCore.Commands) {
+	cmds := []wiCore.Command{
 		&privilegedCommandImpl{
 			"command_log",
 			0,
 			cmdCommandLog,
-			wi_core.DebugCategory,
-			wi_core.LangMap{
-				wi_core.LangEn: "Logs the registered commands",
+			wiCore.DebugCategory,
+			wiCore.LangMap{
+				wiCore.LangEn: "Logs the registered commands",
 			},
-			wi_core.LangMap{
-				wi_core.LangEn: "Logs the registered commands, this is only relevant if -verbose is used.",
+			wiCore.LangMap{
+				wiCore.LangEn: "Logs the registered commands, this is only relevant if -verbose is used.",
 			},
 		},
 		&privilegedCommandImpl{
 			"key_log",
 			0,
 			cmdKeyLog,
-			wi_core.DebugCategory,
-			wi_core.LangMap{
-				wi_core.LangEn: "Logs the key bindings",
+			wiCore.DebugCategory,
+			wiCore.LangMap{
+				wiCore.LangEn: "Logs the key bindings",
 			},
-			wi_core.LangMap{
-				wi_core.LangEn: "Logs the key bindings, this is only relevant if -verbose is used.",
+			wiCore.LangMap{
+				wiCore.LangEn: "Logs the key bindings, this is only relevant if -verbose is used.",
 			},
 		},
-		&wi_core.CommandImpl{
+		&wiCore.CommandImpl{
 			"log_all",
 			0,
 			cmdLogAll,
-			wi_core.DebugCategory,
-			wi_core.LangMap{
-				wi_core.LangEn: "Logs the internal state (commands, view factories, windows)",
+			wiCore.DebugCategory,
+			wiCore.LangMap{
+				wiCore.LangEn: "Logs the internal state (commands, view factories, windows)",
 			},
-			wi_core.LangMap{
-				wi_core.LangEn: "Logs the internal state (commands, view factories, windows), this is only relevant if -verbose is used.",
+			wiCore.LangMap{
+				wiCore.LangEn: "Logs the internal state (commands, view factories, windows), this is only relevant if -verbose is used.",
 			},
 		},
 		&privilegedCommandImpl{
 			"view_log",
 			0,
 			cmdViewLog,
-			wi_core.DebugCategory,
-			wi_core.LangMap{
-				wi_core.LangEn: "Logs the view factories",
+			wiCore.DebugCategory,
+			wiCore.LangMap{
+				wiCore.LangEn: "Logs the view factories",
 			},
-			wi_core.LangMap{
-				wi_core.LangEn: "Logs the view factories, this is only relevant if -verbose is used.",
+			wiCore.LangMap{
+				wiCore.LangEn: "Logs the view factories, this is only relevant if -verbose is used.",
 			},
 		},
-		&wi_core.CommandImpl{
+		&wiCore.CommandImpl{
 			"window_log",
 			0,
 			cmdWindowLog,
-			wi_core.DebugCategory,
-			wi_core.LangMap{
-				wi_core.LangEn: "Logs the window tree",
+			wiCore.DebugCategory,
+			wiCore.LangMap{
+				wiCore.LangEn: "Logs the window tree",
 			},
-			wi_core.LangMap{
-				wi_core.LangEn: "Logs the window tree, this is only relevant if -verbose is used.",
+			wiCore.LangMap{
+				wiCore.LangEn: "Logs the window tree, this is only relevant if -verbose is used.",
 			},
 		},
 

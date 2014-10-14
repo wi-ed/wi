@@ -47,14 +47,25 @@ def main():
   parser.add_option(
       '-v', '--verbose', action='store_true', help='Logs what is being run')
   parser.add_option(
+      '--gofmt', action='store_true', help=optparse.SUPPRESS_HELP)
+  parser.add_option(
       '--goimports', action='store_true', help=optparse.SUPPRESS_HELP)
   parser.add_option(
-      '--gofmt', action='store_true', help=optparse.SUPPRESS_HELP)
+      '--golint', action='store_true', help=optparse.SUPPRESS_HELP)
   parser.add_option(
       '--govet', action='store_true', help=optparse.SUPPRESS_HELP)
   options, args = parser.parse_args()
   if args:
     parser.error('Unknown args: %s' % args)
+
+  if options.gofmt:
+    # gofmt doesn't return non-zero even if some files need to be updated.
+    out = subprocess.check_output(['gofmt', '-l', '-s', '.'])
+    if out:
+      print('These files are improperly formmatted. Please run: gofmt -w -s .')
+      sys.stdout.write(out)
+      return 1
+    return 0
 
   if options.goimports:
     # goimports doesn't return non-zero even if some files need to be updated.
@@ -65,11 +76,11 @@ def main():
       return 1
     return 0
 
-  if options.gofmt:
-    # gofmt doesn't return non-zero even if some files need to be updated.
-    out = subprocess.check_output(['gofmt', '-l', '-s', '.'])
+  if options.golint:
+    # golint doesn't return non-zero ever.
+    out = subprocess.check_output(['golint', '.'])
     if out:
-      print('These files are improperly formmatted. Please run: gofmt -w -s .')
+      print('These files are not golint free.')
       sys.stdout.write(out)
       return 1
     return 0
@@ -108,12 +119,12 @@ def main():
   procs = [
     call(['go', 'build', '-tags', 'debug'], '.'),
     call(['go', 'test'], 'editor'),
-    call(['go', 'test'], 'wi_core'),
+    call(['go', 'test'], 'wiCore'),
     call(['go', 'build'], 'wi-plugin-sample'),
     #call(['go', 'test'], 'wi-plugin-sample'),
     call(['errcheck'], '.'),
     call(['errcheck'], 'editor'),
-    call(['errcheck'], 'wi_core'),
+    call(['errcheck'], 'wiCore'),
     call(['errcheck'], 'wi-plugin-sample'),
     call([sys.executable, THIS_FILE, '--goimports'], '.'),
     # TODO(maruel): Likely always redundant with goimports.
@@ -121,10 +132,10 @@ def main():
 
     # There starts the cheezy part that may return false positives. I'm sorry
     # David.
-    call(['golint'], '.'),
-    call(['golint'], 'editor'),
-    call(['golint'], 'wi_core'),
-    call(['golint'], 'wi-plugin-sample'),
+    call([sys.executable, THIS_FILE, '--golint'], '.'),
+    call([sys.executable, THIS_FILE, '--golint'], 'editor'),
+    call([sys.executable, THIS_FILE, '--golint'], 'wiCore'),
+    call([sys.executable, THIS_FILE, '--golint'], 'wi-plugin-sample'),
     call([sys.executable, THIS_FILE, '--govet'], '.'),
   ]
   failed = False

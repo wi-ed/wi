@@ -5,7 +5,7 @@
 package editor
 
 import (
-	"github.com/maruel/wi/wi_core"
+	"github.com/maruel/wi/wiCore"
 )
 
 // Terminal is the interface to the actual terminal termbox so it can be mocked
@@ -21,7 +21,7 @@ type Terminal interface {
 	//
 	// It is important for the buffer to be the right size, otherwise the display
 	// will be partially updated.
-	Blit(b *wi_core.Buffer)
+	Blit(b *wiCore.Buffer)
 }
 
 // EventType is the type of supported event.
@@ -201,7 +201,7 @@ type TerminalFake struct {
 	Width  int
 	Height int
 	Events []TerminalEvent
-	Buffer *wi_core.Buffer
+	Buffer *wiCore.Buffer
 }
 
 // Size implements Terminal.
@@ -221,7 +221,7 @@ func (t *TerminalFake) SeedEvents() <-chan TerminalEvent {
 }
 
 // Blit implements Terminal.
-func (t *TerminalFake) Blit(b *wi_core.Buffer) {
+func (t *TerminalFake) Blit(b *wiCore.Buffer) {
 	t.Buffer.Blit(b)
 }
 
@@ -234,6 +234,6 @@ func NewTerminalFake(width, height int, events []TerminalEvent) *TerminalFake {
 		width,
 		height,
 		events,
-		wi_core.NewBuffer(width, height),
+		wiCore.NewBuffer(width, height),
 	}
 }

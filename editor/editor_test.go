@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"github.com/maruel/ut"
-	"github.com/maruel/wi/wi_core"
+	"github.com/maruel/wi/wiCore"
 )
 
 type nullWriter int
@@ -34,7 +34,7 @@ func TestMainImmediateQuit(t *testing.T) {
 	editor, err := MakeEditor(terminal, true)
 	ut.AssertEqual(t, nil, err)
 	defer editor.Close()
-	wi_core.PostCommand(editor, "editor_quit")
+	wiCore.PostCommand(editor, "editor_quit")
 	ut.AssertEqual(t, 0, editor.EventLoop())
 	// TODO(maruel): Print something.
 	for y := 0; y < terminal.Height; y++ {
@@ -51,8 +51,8 @@ func TestMainInvalidThenQuit(t *testing.T) {
 	editor, err := MakeEditor(terminal, true)
 	ut.AssertEqual(t, nil, err)
 	defer editor.Close()
-	wi_core.PostCommand(editor, "invalid")
-	wi_core.PostCommand(editor, "editor_quit")
+	wiCore.PostCommand(editor, "invalid")
+	wiCore.PostCommand(editor, "editor_quit")
 	ut.AssertEqual(t, 0, editor.EventLoop())
 	// TODO(maruel): Print something.
 	for y := 0; y < terminal.Height; y++ {

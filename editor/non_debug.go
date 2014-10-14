@@ -7,8 +7,9 @@
 package editor
 
 import (
-	"github.com/maruel/wi/wi_core"
+	"github.com/maruel/wi/wiCore"
 )
 
-func RegisterDebugCommands(dispatcher wi_core.Commands) {
+// RegisterDebugCommands registers nothing in Release build.
+func RegisterDebugCommands(dispatcher wiCore.Commands) {
 }

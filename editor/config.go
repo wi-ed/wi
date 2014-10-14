@@ -5,7 +5,7 @@
 package editor
 
 import (
-	"github.com/maruel/wi/wi_core"
+	"github.com/maruel/wi/wiCore"
 )
 
 // TODO(maruel): Implement simple config feature. Not everything should be a plugin?
@@ -29,6 +29,6 @@ func (c *config) Save() {
 // MakeConfig returns the Config instance.
 //
 // TODO(maruel): Doesn't do anything, implement it.
-func MakeConfig() wi_core.Config {
+func MakeConfig() wiCore.Config {
 	return &config{}
 }

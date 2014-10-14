@@ -7,7 +7,7 @@
 // This package contains only the non-unit-testable part of the editor.
 //
 //   - editor/ contains the editor logic itself. It is terminal-agnostic.
-//   - wi_core/ contains the plugin glue. This module is shared by both the
+//   - wiCore/ contains the plugin glue. This module is shared by both the
 //     editor itself and any wi-plugin-* for RPC.
 //   - wi-plugin-sample/ is a sample plugin executable to `go install`. It is
 //     both meant as a reusable skeleton to write a new plugin and as a way to
@@ -39,7 +39,7 @@ import (
 	"os"
 
 	"github.com/maruel/wi/editor"
-	"github.com/maruel/wi/wi_core"
+	"github.com/maruel/wi/wiCore"
 	"github.com/nsf/termbox-go"
 )
 
@@ -67,7 +67,7 @@ func mainImpl() int {
 		return 1
 	}
 
-	out := DebugHook()
+	out := debugHook()
 	if out != nil {
 		defer func() {
 			_ = out.Close()
@@ -88,18 +88,18 @@ func mainImpl() int {
 		_ = e.Close()
 	}()
 
-	wi_core.PostCommand(e, "editor_bootstrap_ui")
+	wiCore.PostCommand(e, "editor_bootstrap_ui")
 	if *command {
 		for _, i := range flag.Args() {
-			wi_core.PostCommand(e, i)
+			wiCore.PostCommand(e, i)
 		}
 	} else if flag.NArg() > 0 {
 		for _, i := range flag.Args() {
-			wi_core.PostCommand(e, "open", i)
+			wiCore.PostCommand(e, "open", i)
 		}
 	} else {
 		// If nothing, opens a blank editor.
-		wi_core.PostCommand(e, "new")
+		wiCore.PostCommand(e, "new")
 	}
 	return e.EventLoop()
 }
