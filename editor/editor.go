@@ -10,11 +10,11 @@ import (
 	"log"
 	"time"
 
-	"github.com/maruel/wi/wi-plugin"
+	"github.com/maruel/wi/wi_core"
 )
 
 const (
-	// Major.Minor.Bugfix. All plugins should be recompiled with wi-plugin
+	// Major.Minor.Bugfix. All plugins should be recompiled with wi_core
 	// changes.
 	version = "0.0.1"
 )

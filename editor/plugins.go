@@ -16,7 +16,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/maruel/wi/wi-plugin"
+	"github.com/maruel/wi/wi_core"
 )
 
 // TODO(maruel): Implement the RPC to make plugins work.

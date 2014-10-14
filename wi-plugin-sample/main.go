@@ -11,7 +11,7 @@
 package main
 
 import (
-	"github.com/maruel/wi/wi-plugin"
+	"github.com/maruel/wi/wi_core"
 )
 
 func main() {

@@ -5,7 +5,7 @@
 package editor
 
 import (
-	"github.com/maruel/wi/wi-plugin"
+	"github.com/maruel/wi/wi_core"
 )
 
 // TODO(maruel): Implement simple config feature. Not everything should be a plugin?

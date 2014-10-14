@@ -8,7 +8,7 @@ package main
 
 import (
 	"github.com/maruel/wi/editor"
-	"github.com/maruel/wi/wi-plugin"
+	"github.com/maruel/wi/wi_core"
 	"github.com/nsf/termbox-go"
 )
 

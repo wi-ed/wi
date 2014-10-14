@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"github.com/maruel/ut"
-	"github.com/maruel/wi/wi-plugin"
+	"github.com/maruel/wi/wi_core"
 )
 
 type nullWriter int

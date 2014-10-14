@@ -8,7 +8,7 @@ import (
 	"log"
 	"sort"
 
-	"github.com/maruel/wi/wi-plugin"
+	"github.com/maruel/wi/wi_core"
 )
 
 type keyBindings struct {

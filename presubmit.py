@@ -92,12 +92,12 @@ def main():
   procs = [
     call(['go', 'build', '-tags', 'debug'], '.'),
     call(['go', 'test'], 'editor'),
-    call(['go', 'test'], 'wi-plugin'),
+    call(['go', 'test'], 'wi_core'),
     call(['go', 'build'], 'wi-plugin-sample'),
     #call(['go', 'test'], 'wi-plugin-sample'),
     call(['errcheck'], '.'),
     call(['errcheck'], 'editor'),
-    call(['errcheck'], 'wi-plugin'),
+    call(['errcheck'], 'wi_core'),
     call(['errcheck'], 'wi-plugin-sample'),
     call([sys.executable, THIS_FILE, '--goimports'], '.'),
     # TODO(maruel): Likely always redundant with goimports.
@@ -107,7 +107,7 @@ def main():
     # David.
     call(['golint'], '.'),
     call(['golint'], 'editor'),
-    call(['golint'], 'wi-plugin'),
+    call(['golint'], 'wi_core'),
     call(['golint'], 'wi-plugin-sample'),
     #call(['go', 'tool', 'vet', '.'], '.'),
   ]

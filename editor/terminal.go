@@ -5,7 +5,7 @@
 package editor
 
 import (
-	"github.com/maruel/wi/wi-plugin"
+	"github.com/maruel/wi/wi_core"
 )
 
 // Terminal is the interface to the actual terminal termbox so it can be mocked
