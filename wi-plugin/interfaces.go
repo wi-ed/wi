@@ -386,7 +386,7 @@ func GetKeyBindingCommand(e Editor, mode KeyboardMode, keyName string) string {
 		if cmdName != "" {
 			return cmdName
 		}
-		active := active.Parent()
+		active = active.Parent()
 		if active == nil {
 			return ""
 		}
