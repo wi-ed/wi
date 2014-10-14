@@ -278,6 +278,7 @@ func MakeEditor(terminal Terminal, noPlugin bool) (Editor, error) {
 	rootView := makeStaticDisabledView("Root", -1, -1)
 
 	// These commands are generic commands, they do not require specific access.
+	RegisterDebugCommands(rootView.Commands())
 	RegisterCommandCommands(rootView.Commands())
 	RegisterKeyBindingCommands(rootView.Commands())
 	RegisterViewCommands(rootView.Commands())
@@ -376,19 +377,6 @@ func cmdEditorRedraw(c *privilegedCommandImpl, e *editor, w *window, args ...str
 	}()
 }
 
-func cmdCommandAlias(c *wi_core.CommandImpl, cd wi_core.CommandDispatcherFull, w wi_core.Window, args ...string) {
-	if args[0] == "window" {
-	} else if args[0] == "global" {
-		w = wi_core.RootWindow(w)
-	} else {
-		cmd := wi_core.GetCommand(cd, w, "command_alias")
-		cd.ExecuteCommand(w, "alert", cmd.LongDesc(cd, w))
-		return
-	}
-	alias := &wi_core.CommandAlias{args[1], args[2], nil}
-	w.View().Commands().Register(alias)
-}
-
 func cmdShowCommandWindow(c *wi_core.CommandImpl, cd wi_core.CommandDispatcherFull, w wi_core.Window, args ...string) {
 	// Create the Window with the command view and attach it to the currently
 	// focused Window.
@@ -397,7 +385,7 @@ func cmdShowCommandWindow(c *wi_core.CommandImpl, cd wi_core.CommandDispatcherFu
 
 // RegisterEditorCommands registers the top-level native commands.
 func RegisterEditorCommands(dispatcher wi_core.Commands) {
-	defaultCommands := []wi_core.Command{
+	cmds := []wi_core.Command{
 		&wi_core.CommandImpl{
 			"alert",
 			1,
@@ -462,7 +450,7 @@ func RegisterEditorCommands(dispatcher wi_core.Commands) {
 		&wi_core.CommandAlias{"q!", "editor_quit", []string{"force"}},
 		&wi_core.CommandAlias{"quit", "editor_quit", nil},
 	}
-	for _, cmd := range defaultCommands {
+	for _, cmd := range cmds {
 		dispatcher.Register(cmd)
 	}
 }

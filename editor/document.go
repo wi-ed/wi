@@ -29,7 +29,7 @@ func cmdDocumentOpen(c *wi_core.CommandImpl, cd wi_core.CommandDispatcherFull, w
 // RegisterDocumentCommands registers the top-level native commands to manage
 // documents.
 func RegisterDocumentCommands(dispatcher wi_core.Commands) {
-	defaultCommands := []wi_core.Command{
+	cmds := []wi_core.Command{
 		&wi_core.CommandImpl{
 			"document_new",
 			0,
@@ -59,7 +59,7 @@ func RegisterDocumentCommands(dispatcher wi_core.Commands) {
 		&wi_core.CommandAlias{"o", "document_open", nil},
 		&wi_core.CommandAlias{"open", "document_open", nil},
 	}
-	for _, cmd := range defaultCommands {
+	for _, cmd := range cmds {
 		dispatcher.Register(cmd)
 	}
 }

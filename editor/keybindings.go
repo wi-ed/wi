@@ -4,12 +4,7 @@
 
 package editor
 
-import (
-	"log"
-	"sort"
-
-	"github.com/maruel/wi/wi_core"
-)
+import "github.com/maruel/wi/wi_core"
 
 type keyBindings struct {
 	commandMappings map[string]string
@@ -47,6 +42,8 @@ func makeKeyBindings() wi_core.KeyBindings {
 	return &keyBindings{make(map[string]string), make(map[string]string)}
 }
 
+// Commands.
+
 func cmdKeyBind(c *wi_core.CommandImpl, cd wi_core.CommandDispatcherFull, w wi_core.Window, args ...string) {
 	location := args[0]
 	modeName := args[1]
@@ -77,40 +74,9 @@ func cmdKeyBind(c *wi_core.CommandImpl, cd wi_core.CommandDispatcherFull, w wi_c
 	w.View().KeyBindings().Set(mode, keyName, cmdName)
 }
 
-func keyLogRecurse(w *window, cd wi_core.CommandDispatcherFull, mode wi_core.KeyboardMode) {
-	// TODO(maruel): Create a proper enumerator.
-	keys := w.view.KeyBindings().(*keyBindings)
-	var mapping *map[string]string
-	if mode == wi_core.CommandMode {
-		mapping = &keys.commandMappings
-	} else if mode == wi_core.EditMode {
-		mapping = &keys.editMappings
-	} else {
-		panic("Errr, fix me")
-	}
-	names := make([]string, 0, len(*mapping))
-	for k := range *mapping {
-		names = append(names, k)
-	}
-	sort.Strings(names)
-	for _, name := range names {
-		log.Printf("  %s  %s: %s", w.ID(), name, (*mapping)[name])
-	}
-	for _, child := range w.childrenWindows {
-		keyLogRecurse(child, cd, mode)
-	}
-}
-
-func cmdKeyLog(c *privilegedCommandImpl, e *editor, w *window, args ...string) {
-	log.Printf("CommandMode commands")
-	keyLogRecurse(e.rootWindow, e, wi_core.CommandMode)
-	log.Printf("EditMode commands")
-	keyLogRecurse(e.rootWindow, e, wi_core.EditMode)
-}
-
 // RegisterKeyBindingCommands registers the keyboard mapping related commands.
 func RegisterKeyBindingCommands(dispatcher wi_core.Commands) {
-	defaultCommands := []wi_core.Command{
+	cmds := []wi_core.Command{
 		&wi_core.CommandImpl{
 			"key_bind",
 			4,
@@ -123,22 +89,10 @@ func RegisterKeyBindingCommands(dispatcher wi_core.Commands) {
 				wi_core.LangEn: "Usage: key_bind [window|global] [command|edit|all] <key> <command>\nBinds a keyboard mapping to a command. The binding can be to the active view for view-specific key binding or to the root view for global key bindings.",
 			},
 		},
-		&privilegedCommandImpl{
-			"key_log",
-			0,
-			cmdKeyLog,
-			wi_core.DebugCategory,
-			wi_core.LangMap{
-				wi_core.LangEn: "Logs the key bindings",
-			},
-			wi_core.LangMap{
-				wi_core.LangEn: "Logs the key bindings, this is only relevant if -verbose is used.",
-			},
-		},
 
 		&wi_core.CommandAlias{"keybind", "key_bind", nil},
 	}
-	for _, cmd := range defaultCommands {
+	for _, cmd := range cmds {
 		dispatcher.Register(cmd)
 	}
 }

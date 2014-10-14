@@ -28,52 +28,50 @@ func cmdHelp(c *wi_core.CommandImpl, cd wi_core.CommandDispatcherFull, w wi_core
 	log.Printf("Faking help: %s", args)
 }
 
-var todoCommands = []wi_core.Command{
-	&wi_core.CommandImpl{
-		"doc",
-		-1,
-		cmdDoc,
-		wi_core.WindowCategory,
-		wi_core.LangMap{
-			wi_core.LangEn: "Search godoc documentation",
-		},
-		wi_core.LangMap{
-			wi_core.LangEn: "Uses the 'doc' tool to get documentation about the text under the cursor.",
-		},
-	},
-	&wi_core.CommandImpl{
-		"help",
-		-1,
-		cmdHelp,
-		wi_core.WindowCategory,
-		wi_core.LangMap{
-			wi_core.LangEn: "Prints help",
-		},
-		wi_core.LangMap{
-			wi_core.LangEn: "Prints general help or help for a particular command.",
-		},
-	},
-	&wi_core.CommandImpl{
-		"shell",
-		-1,
-		cmdShell,
-		wi_core.WindowCategory,
-		wi_core.LangMap{
-			wi_core.LangEn: "Opens a shell process",
-		},
-		wi_core.LangMap{
-			wi_core.LangEn: "Opens a shell process in a new buffer.",
-		},
-	},
-}
-
 // RegisterTodoCommands registers the top-level native commands that are yet to
 // be implemented.
 //
-// TODO(maruel): Implement these commands properly and move to
-// RegisterDefaultCommands().
+// TODO(maruel): Implement these commands properly and move to the right place.
 func RegisterTodoCommands(dispatcher wi_core.Commands) {
-	for _, cmd := range todoCommands {
+	cmds := []wi_core.Command{
+		&wi_core.CommandImpl{
+			"doc",
+			-1,
+			cmdDoc,
+			wi_core.WindowCategory,
+			wi_core.LangMap{
+				wi_core.LangEn: "Search godoc documentation",
+			},
+			wi_core.LangMap{
+				wi_core.LangEn: "Uses the 'doc' tool to get documentation about the text under the cursor.",
+			},
+		},
+		&wi_core.CommandImpl{
+			"help",
+			-1,
+			cmdHelp,
+			wi_core.WindowCategory,
+			wi_core.LangMap{
+				wi_core.LangEn: "Prints help",
+			},
+			wi_core.LangMap{
+				wi_core.LangEn: "Prints general help or help for a particular command.",
+			},
+		},
+		&wi_core.CommandImpl{
+			"shell",
+			-1,
+			cmdShell,
+			wi_core.WindowCategory,
+			wi_core.LangMap{
+				wi_core.LangEn: "Opens a shell process",
+			},
+			wi_core.LangMap{
+				wi_core.LangEn: "Opens a shell process in a new buffer.",
+			},
+		},
+	}
+	for _, cmd := range cmds {
 		dispatcher.Register(cmd)
 	}
 }

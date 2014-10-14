@@ -4,12 +4,7 @@
 
 package editor
 
-import (
-	"log"
-	"sort"
-
-	"github.com/maruel/wi/wi_core"
-)
+import "github.com/maruel/wi/wi_core"
 
 // commands is the map of registered commands.
 type commands struct {
@@ -79,38 +74,22 @@ func (c *privilegedCommandImpl) LongDesc(cd wi_core.CommandDispatcherFull, w wi_
 
 // Commands
 
-func commandLogRecurse(w *window, cd wi_core.CommandDispatcherFull) {
-	// TODO(maruel): Create a proper enumerator.
-	cmds := w.view.Commands().(*commands)
-	names := make([]string, 0, len(cmds.commands))
-	for k := range cmds.commands {
-		names = append(names, k)
+func cmdCommandAlias(c *wi_core.CommandImpl, cd wi_core.CommandDispatcherFull, w wi_core.Window, args ...string) {
+	if args[0] == "window" {
+	} else if args[0] == "global" {
+		w = wi_core.RootWindow(w)
+	} else {
+		cmd := wi_core.GetCommand(cd, w, "command_alias")
+		cd.ExecuteCommand(w, "alert", cmd.LongDesc(cd, w))
+		return
 	}
-	sort.Strings(names)
-	for _, n := range names {
-		c := cmds.commands[n]
-		log.Printf("  %s  %s: %s", w.ID(), c.Name(), c.ShortDesc(cd, w))
-	}
-	for _, child := range w.childrenWindows {
-		commandLogRecurse(child, cd)
-	}
+	alias := &wi_core.CommandAlias{args[1], args[2], nil}
+	w.View().Commands().Register(alias)
 }
 
-func cmdCommandLog(c *privilegedCommandImpl, e *editor, w *window, args ...string) {
-	// Start at the root and recurse.
-	commandLogRecurse(e.rootWindow, e)
-}
-
-func cmdLogAll(c *wi_core.CommandImpl, cd wi_core.CommandDispatcherFull, w wi_core.Window, args ...string) {
-	cd.ExecuteCommand(w, "command_log")
-	cd.ExecuteCommand(w, "window_log")
-	cd.ExecuteCommand(w, "view_log")
-	cd.ExecuteCommand(w, "key_log")
-}
-
-// RegisterDefaultCommands registers the top-level native commands.
+// RegisterCommandCommands registers the top-level native commands.
 func RegisterCommandCommands(dispatcher wi_core.Commands) {
-	defaultCommands := []wi_core.Command{
+	cmds := []wi_core.Command{
 		&wi_core.CommandImpl{
 			"command_alias",
 			3,
@@ -124,34 +103,10 @@ func RegisterCommandCommands(dispatcher wi_core.Commands) {
 				wi_core.LangEn: "Usage: command_alias [window|global] <alias> <name>\nBinds an alias to another command. The alias can either be local to the window or global",
 			},
 		},
-		&privilegedCommandImpl{
-			"command_log",
-			0,
-			cmdCommandLog,
-			wi_core.DebugCategory,
-			wi_core.LangMap{
-				wi_core.LangEn: "Logs the registered commands",
-			},
-			wi_core.LangMap{
-				wi_core.LangEn: "Logs the registered commands, this is only relevant if -verbose is used.",
-			},
-		},
-		&wi_core.CommandImpl{
-			"log_all",
-			0,
-			cmdLogAll,
-			wi_core.DebugCategory,
-			wi_core.LangMap{
-				wi_core.LangEn: "Logs the internal state (commands, view factories, windows)",
-			},
-			wi_core.LangMap{
-				wi_core.LangEn: "Logs the internal state (commands, view factories, windows), this is only relevant if -verbose is used.",
-			},
-		},
 
 		&wi_core.CommandAlias{"alias", "command_alias", nil},
 	}
-	for _, cmd := range defaultCommands {
+	for _, cmd := range cmds {
 		dispatcher.Register(cmd)
 	}
 }

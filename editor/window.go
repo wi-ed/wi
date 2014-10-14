@@ -490,11 +490,6 @@ func cmdWindowClose(c *privilegedCommandImpl, e *editor, w *window, args ...stri
 	}
 }
 
-func cmdWindowLog(c *wi_core.CommandImpl, cd wi_core.CommandDispatcherFull, w wi_core.Window, args ...string) {
-	root := wi_core.RootWindow(w)
-	log.Printf("Window tree:\n%s", root.Tree())
-}
-
 func cmdWindowNew(c *privilegedCommandImpl, e *editor, w *window, args ...string) {
 	windowName := args[0]
 	dockingName := args[1]
@@ -605,7 +600,7 @@ func cmdWindowSetRect(c *privilegedCommandImpl, e *editor, w *window, args ...st
 // RegisterWindowCommands registers all the commands relative to window
 // management.
 func RegisterWindowCommands(dispatcher wi_core.Commands) {
-	var windowCommands = []wi_core.Command{
+	cmds := []wi_core.Command{
 		&privilegedCommandImpl{
 			"window_activate",
 			1,
@@ -628,18 +623,6 @@ func RegisterWindowCommands(dispatcher wi_core.Commands) {
 			},
 			wi_core.LangMap{
 				wi_core.LangEn: "Closes a window. Note that any window can be closed and all the child window will be destroyed at the same time.",
-			},
-		},
-		&wi_core.CommandImpl{
-			"window_log",
-			0,
-			cmdWindowLog,
-			wi_core.DebugCategory,
-			wi_core.LangMap{
-				wi_core.LangEn: "Logs the window tree",
-			},
-			wi_core.LangMap{
-				wi_core.LangEn: "Logs the window tree, this is only relevant if -verbose is used.",
 			},
 		},
 		&privilegedCommandImpl{
@@ -678,9 +661,8 @@ func RegisterWindowCommands(dispatcher wi_core.Commands) {
 				wi_core.LangEn: "Usage: window_set_rect <window> <x> <y> <w> <h>\nMoves a Window relative to the parent window, unless it is floating, where it is relative to the view port.",
 			},
 		},
-		// 'screenshot', mainly for unit test; open a new buffer with the screenshot, so it can be saved with 'w'.
 	}
-	for _, cmd := range windowCommands {
+	for _, cmd := range cmds {
 		dispatcher.Register(cmd)
 	}
 }
