@@ -164,7 +164,7 @@ func (e *editor) onResize() {
 	// Resize the Windows. This also invalidates it, which will also force a
 	// redraw if the size changed.
 	w, h := e.terminal.Size()
-	e.rootWindow.SetRect(wi_core.Rect{0, 0, w, h})
+	e.rootWindow.setRect(wi_core.Rect{0, 0, w, h})
 }
 
 // EventLoop handles both commands and events from the editor. This function

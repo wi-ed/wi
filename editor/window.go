@@ -140,11 +140,11 @@ func (w *window) Rect() wi_core.Rect {
 	return w.rect
 }
 
-// SetRect sets the rect of this Window, based on the parent's Window own
+// setRect sets the rect of this Window, based on the parent's Window own
 // Rect(). It updates Rect() and synchronously updates the child Window that
 // are not DockingFloating.
-func (w *window) SetRect(rect wi_core.Rect) {
-	// SetRect() recreates the buffer and immediately draws the borders.
+func (w *window) setRect(rect wi_core.Rect) {
+	// setRect() recreates the buffer and immediately draws the borders.
 	if !w.rect.Eq(rect) {
 		w.rect = rect
 		// Internal consistency check.
@@ -217,7 +217,7 @@ func (w *window) resizeChildren() {
 		case wi_core.DockingFloating:
 			// Floating uses its own thing.
 			// TODO(maruel): Not clean. Doesn't handle root Window resize properly.
-			child.SetRect(child.Rect())
+			child.setRect(child.Rect())
 
 		case wi_core.DockingLeft:
 			width, _ := child.View().NaturalSize()
@@ -230,7 +230,7 @@ func (w *window) resizeChildren() {
 			tmp.Width = width
 			remaining.X += width
 			remaining.Width -= width
-			child.SetRect(tmp)
+			child.setRect(tmp)
 
 		case wi_core.DockingRight:
 			width, _ := child.View().NaturalSize()
@@ -243,7 +243,7 @@ func (w *window) resizeChildren() {
 			tmp.X += (remaining.Width - width)
 			tmp.Width = width
 			remaining.Width -= width
-			child.SetRect(tmp)
+			child.setRect(tmp)
 
 		case wi_core.DockingTop:
 			_, height := child.View().NaturalSize()
@@ -256,7 +256,7 @@ func (w *window) resizeChildren() {
 			tmp.Height = height
 			remaining.Y += height
 			remaining.Height -= height
-			child.SetRect(tmp)
+			child.setRect(tmp)
 
 		case wi_core.DockingBottom:
 			_, height := child.View().NaturalSize()
@@ -269,14 +269,14 @@ func (w *window) resizeChildren() {
 			tmp.Y += (remaining.Height - height)
 			tmp.Height = height
 			remaining.Height -= height
-			child.SetRect(tmp)
+			child.setRect(tmp)
 
 		default:
 			panic("Fill me")
 		}
 	}
 	if fill != nil {
-		fill.SetRect(remaining)
+		fill.setRect(remaining)
 		w.viewRect.X = 0
 		w.viewRect.Y = 0
 		w.viewRect.Width = 0
@@ -316,7 +316,7 @@ func (w *window) SetView(view wi_core.View) {
 // updateBorder calculates w.effectiveBorder, w.clientAreaRect and draws the
 // borders right away in the Window's buffer.
 //
-// It's called by SetRect() and will be called by SetBorder (if ever
+// It's called by setRect() and will be called by SetBorder (if ever
 // implemented).
 func (w *window) updateBorder() {
 	if w.border == wi_core.BorderNone {
@@ -584,7 +584,7 @@ func cmdWindowSetRect(c *privilegedCommandImpl, e *editor, w *window, args ...st
 		e.ExecuteCommand(w, "alert", fmt.Sprintf(wi_core.GetStr(e.CurrentLanguage(), invalidRect), args[1], args[2], args[3], args[4]))
 		return
 	}
-	child.SetRect(r)
+	child.setRect(r)
 }
 
 // RegisterWindowCommands registers all the commands relative to window
