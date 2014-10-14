@@ -28,6 +28,8 @@
 //     -http=:6060.
 //   - Has additional commands defined, see editor/debug.go for the list.
 //
+// Run "wi -h" for help about the additional flags after doing a Debug build.
+//
 // See README.md for more details.
 package main
 
