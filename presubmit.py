@@ -32,13 +32,14 @@ def drain(proc):
     return out
 
 
-def check_or_install(tool, url):
+def check_or_install(tool, *urls):
   try:
     # There's no .go files in git-hooks.
     return call(tool, 'git-hooks')
   except OSError:
-    print('Warning: installing %s' % url)
-    subprocess.check_call(['go', 'get', '-u', url])
+    for url in urls:
+      print('Warning: installing %s' % url)
+      subprocess.check_call(['go', 'get', '-u', url])
     return call(tool, 'git-hooks')
 
 
@@ -107,10 +108,11 @@ def main():
   procs = [
     check_or_install(['errcheck'], 'github.com/kisielk/errcheck'),
     check_or_install(
-        ['goimports', '.'], 'code.google.com/p/go.tools/cmd/goimports'),
+        ['goimports', '.'],
+        'code.google.com/p/go.tools/cmd/cover',
+        'code.google.com/p/go.tools/cmd/goimports',
+        'code.google.com/p/go.tools/cmd/vet'),
     check_or_install(['golint'], 'github.com/golang/lint/golint'),
-    check_or_install([
-      'go', 'tool', 'vet', '.'], 'code.google.com/p/go.tools/cmd/vet'),
   ]
   while procs:
     drain(procs.pop(0))
@@ -118,8 +120,8 @@ def main():
 
   procs = [
     call(['go', 'build', '-tags', 'debug'], '.'),
-    call(['go', 'test'], 'editor'),
-    call(['go', 'test'], 'wiCore'),
+    call(['go', 'test', '-cover'], 'editor'),
+    call(['go', 'test', '-cover'], 'wiCore'),
     call(['go', 'build'], 'wi-plugin-sample'),
     #call(['go', 'test'], 'wi-plugin-sample'),
     call(['errcheck'], '.'),
