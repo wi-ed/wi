@@ -19,15 +19,12 @@ var doubleBorder = []rune{'\u2550', '\u2551', '\u2554', '\u2557', '\u255a', '\u2
 type drawnBorder int
 
 const (
-	// TODO(maruel): For combo box (e.g. drop down list of suggestions), it
-	// should be drawBorderLeftBottomRight.
-
-	drawnBorderNone drawnBorder = iota
-	drawnBorderLeft
-	drawnBorderRight
-	drawnBorderTop
-	drawnBorderBottom
-	drawnBorderAll
+	drawnBorderNone   drawnBorder = 0
+	drawnBorderLeft               = 1 << 0
+	drawnBorderRight              = 1 << 1
+	drawnBorderTop                = 1 << 2
+	drawnBorderBottom             = 1 << 3
+	drawnBorderAll                = drawnBorderLeft | drawnBorderRight | drawnBorderTop | drawnBorderBottom
 )
 
 // window implements wi_core.Window. It keeps its own buffer of its display.
@@ -330,6 +327,7 @@ func (w *window) updateBorder() {
 		s = singleBorder
 	}
 
+	// TODO(maruel): Switch to a bitmask check by incrementally reducing w.clientAreaRect.
 	switch w.effectiveBorder {
 	case drawnBorderNone:
 		w.clientAreaRect = wi_core.Rect{0, 0, w.rect.Width, w.rect.Height}
