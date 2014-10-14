@@ -553,6 +553,8 @@ func cmdWindowNew(c *privilegedCommandImpl, e *editor, w *window, args ...string
 	}
 	parent.childrenWindows = append(parent.childrenWindows, child)
 	parent.resizeChildren()
+	// Call OnAttach() after the Window is attached to the parent.
+	view.OnAttach(child)
 	e.activateWindow(child)
 }
 

@@ -119,6 +119,14 @@ func statusRootViewFactory(args ...string) wiCore.View {
 	// invisible when the editor window is too small.
 	v := makeStaticDisabledView("Status Root", 1, 1)
 	v.defaultFormat.Bg = wiCore.LightGray
+	v.onAttach = func(v *view, w wiCore.Window) {
+		id := w.ID()
+		w.PostCommands(
+			[][]string{
+				{"window_new", id, "left", "status_name"},
+				{"window_new", id, "right", "status_position"},
+			})
+	}
 	return v
 }
 
@@ -178,7 +186,6 @@ func (v *documentView) Buffer() *wiCore.Buffer {
 
 func documentViewFactory(args ...string) wiCore.View {
 	// TODO(maruel): Sort out "use max space".
-	//onAttach
 	return &documentView{
 		view{
 			commands:      makeCommands(),

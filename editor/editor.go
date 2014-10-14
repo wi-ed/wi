@@ -313,7 +313,8 @@ func MakeEditor(terminal Terminal, noPlugin bool) (Editor, error) {
 	}
 
 	// Key bindings are loaded after the plugins, so a plugin has the chance to
-	// hook key_bind if desired.
+	// hook the command 'key_bind' if desired. It's also the perfect time to hook
+	// 'editor_bootstrap_ui' to customize the default look on startup.
 	RegisterDefaultKeyBindings(e)
 	return e, nil
 }
@@ -325,10 +326,7 @@ func cmdAlert(c *wiCore.CommandImpl, cd wiCore.CommandDispatcherFull, w wiCore.W
 }
 
 func cmdEditorBootstrapUI(c *wiCore.CommandImpl, cd wiCore.CommandDispatcherFull, w wiCore.Window, args ...string) {
-	// TODO(maruel): Use onAttach instead of hard coding names.
 	cd.ExecuteCommand(w, "window_new", "0", "bottom", "status_root")
-	cd.ExecuteCommand(w, "window_new", "0:1", "left", "status_name")
-	cd.ExecuteCommand(w, "window_new", "0:1", "right", "status_position")
 }
 
 func isDirtyRecurse(cd wiCore.CommandDispatcherFull, w wiCore.Window) bool {
