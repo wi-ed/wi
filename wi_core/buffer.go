@@ -225,9 +225,8 @@ func ElideText(s string, width int) string {
 	if width <= 0 {
 		return ""
 	}
-	// TODO(maruel): Memory copy intensive.
 	length := utf8.RuneCount([]byte(s))
-	if length < width {
+	if length <= width {
 		return s
 	}
 	return s[:length-1] + "…"
