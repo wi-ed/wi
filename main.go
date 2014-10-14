@@ -14,9 +14,12 @@
 //     ensure the plugin system works.
 //
 // This project supports 'Debug' and 'Release' builds. The Release build is the
-// default, the Debug build has to be built explicitly. Use `go build -tags
-// debug` to generate a Debug build. A debug build has additional
-// functionalities:
+// default, the Debug build has to be built explicitly. Use the following
+// command to generate a Debug build:
+//
+//   go build -tags debug
+//
+// A debug build has additional functionalities:
 //
 //   - Logs to wi.log.
 //   - Has additional flags, for example it can create cpu profiles via
