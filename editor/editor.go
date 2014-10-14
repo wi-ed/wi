@@ -278,10 +278,12 @@ func MakeEditor(terminal Terminal, noPlugin bool) (Editor, error) {
 	rootView := makeView("Root", -1, -1)
 
 	// These commands are generic commands, they do not require specific access.
-	RegisterDefaultCommands(rootView.Commands())
+	RegisterCommandCommands(rootView.Commands())
 	RegisterKeyBindingCommands(rootView.Commands())
 	RegisterViewCommands(rootView.Commands())
 	RegisterWindowCommands(rootView.Commands())
+	RegisterDocumentCommands(rootView.Commands())
+	RegisterEditorCommands(rootView.Commands())
 
 	rootWindow := makeWindow(nil, rootView, wi_core.DockingFill)
 	e := &editor{
@@ -313,4 +315,154 @@ func MakeEditor(terminal Terminal, noPlugin bool) (Editor, error) {
 	// hook key_bind if desired.
 	RegisterDefaultKeyBindings(e)
 	return e, nil
+}
+
+// Commands
+
+func cmdAlert(c *wi_core.CommandImpl, cd wi_core.CommandDispatcherFull, w wi_core.Window, args ...string) {
+	cd.ExecuteCommand(w, "window_new", "0", "bottom", "infobar_alert", args[0])
+}
+
+func cmdEditorBootstrapUI(c *wi_core.CommandImpl, cd wi_core.CommandDispatcherFull, w wi_core.Window, args ...string) {
+	// TODO(maruel): Use onAttach instead of hard coding names.
+	cd.ExecuteCommand(w, "window_new", "0", "bottom", "status_root")
+	cd.ExecuteCommand(w, "window_new", "0:1", "left", "status_name")
+	cd.ExecuteCommand(w, "window_new", "0:1", "right", "status_position")
+}
+
+func isDirtyRecurse(cd wi_core.CommandDispatcherFull, w wi_core.Window) bool {
+	for _, child := range w.ChildrenWindows() {
+		if isDirtyRecurse(cd, child) {
+			return true
+		}
+		v := child.View()
+		if v.IsDirty() {
+			cd.ExecuteCommand(w, "alert", fmt.Sprintf(wi_core.GetStr(cd.CurrentLanguage(), viewDirty), v.Title()))
+			return true
+		}
+	}
+	return false
+}
+
+func cmdEditorQuit(c *privilegedCommandImpl, e *editor, w *window, args ...string) {
+	if len(args) >= 1 {
+		e.ExecuteCommand(w, "alert", c.LongDesc(e, w))
+		return
+	} else if len(args) == 1 {
+		if args[0] != "force" {
+			e.ExecuteCommand(w, "alert", c.LongDesc(e, w))
+			return
+		}
+	} else {
+		// TODO(maruel): For all the View, question if fine to quit via
+		// view.IsDirty(). If not fine, "prompt" y/n to force quit. If n, stop
+		// there.
+		// - Send a signal to each plugin.
+		// - Send a signal back to the main loop.
+		if isDirtyRecurse(e, e.rootWindow) {
+			return
+		}
+	}
+
+	e.quitFlag = true
+	// editor_redraw wakes up the command event loop so it detects it's time to
+	// quit.
+	wi_core.PostCommand(e, "editor_redraw")
+}
+
+func cmdEditorRedraw(c *privilegedCommandImpl, e *editor, w *window, args ...string) {
+	go func() {
+		e.viewReady <- true
+	}()
+}
+
+func cmdCommandAlias(c *wi_core.CommandImpl, cd wi_core.CommandDispatcherFull, w wi_core.Window, args ...string) {
+	if args[0] == "window" {
+	} else if args[0] == "global" {
+		w = wi_core.RootWindow(w)
+	} else {
+		cmd := wi_core.GetCommand(cd, w, "command_alias")
+		cd.ExecuteCommand(w, "alert", cmd.LongDesc(cd, w))
+		return
+	}
+	alias := &wi_core.CommandAlias{args[1], args[2], nil}
+	w.View().Commands().Register(alias)
+}
+
+func cmdShowCommandWindow(c *wi_core.CommandImpl, cd wi_core.CommandDispatcherFull, w wi_core.Window, args ...string) {
+	// Create the Window with the command view and attach it to the currently
+	// focused Window.
+	cd.ExecuteCommand(w, "window_new", w.ID(), "floating", "command")
+}
+
+// RegisterEditorCommands registers the top-level native commands.
+func RegisterEditorCommands(dispatcher wi_core.Commands) {
+	defaultCommands := []wi_core.Command{
+		&wi_core.CommandImpl{
+			"alert",
+			1,
+			cmdAlert,
+			wi_core.WindowCategory,
+			wi_core.LangMap{
+				wi_core.LangEn: "Shows a modal message",
+			},
+			wi_core.LangMap{
+				wi_core.LangEn: "Prints a message in a modal dialog box.",
+			},
+		},
+		&wi_core.CommandImpl{
+			"editor_bootstrap_ui",
+			0,
+			cmdEditorBootstrapUI,
+			wi_core.WindowCategory,
+			wi_core.LangMap{
+				wi_core.LangEn: "Bootstraps the editor's UI",
+			},
+			wi_core.LangMap{
+				wi_core.LangEn: "Bootstraps the editor's UI. This command is automatically run on startup and cannot be executed afterward. It adds the standard status bar. This command exists so it can be overriden by a plugin, so it can create its own status bar.",
+			},
+		},
+		&privilegedCommandImpl{
+			"editor_quit",
+			-1,
+			cmdEditorQuit,
+			wi_core.EditorCategory,
+			wi_core.LangMap{
+				wi_core.LangEn: "Quits",
+			},
+			wi_core.LangMap{
+				wi_core.LangEn: "Quits the editor. Use 'force' to bypasses writing the files to disk.",
+			},
+		},
+		&privilegedCommandImpl{
+			"editor_redraw",
+			0,
+			cmdEditorRedraw,
+			wi_core.EditorCategory,
+			wi_core.LangMap{
+				wi_core.LangEn: "Forcibly redraws the terminal",
+			},
+			wi_core.LangMap{
+				wi_core.LangEn: "Forcibly redraws the terminal.",
+			},
+		},
+		&wi_core.CommandImpl{
+			"show_command_window",
+			0,
+			cmdShowCommandWindow,
+			wi_core.CommandsCategory,
+			wi_core.LangMap{
+				wi_core.LangEn: "Shows the interactive command window",
+			},
+			wi_core.LangMap{
+				wi_core.LangEn: "This commands exists so it can be bound to a key to pop up the interactive command window.",
+			},
+		},
+		&wi_core.CommandAlias{"q", "editor_quit", nil},
+		&wi_core.CommandAlias{"q!", "editor_quit", []string{"force"}},
+		&wi_core.CommandAlias{"quit", "editor_quit", nil},
+	}
+	for _, cmd := range defaultCommands {
+		dispatcher.Register(cmd)
+	}
 }
