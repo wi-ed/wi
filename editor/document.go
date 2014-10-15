@@ -60,6 +60,8 @@ func (d *document) IsDirty() bool {
 	return d.isDirty
 }
 
+// Commands.
+
 func cmdDocumentNew(c *wiCore.CommandImpl, cd wiCore.CommandDispatcherFull, w wiCore.Window, args ...string) {
 	cmd := make([]string, 3+len(args))
 	//cmd[0] = w.ID()

@@ -180,15 +180,16 @@ type ColorMode int
 // for easier deserialization.
 type documentView struct {
 	view
-	document     *document
-	cursorLine   int
-	cursorColumn int
-	offsetLine   int         // Offset of the view of the document.
-	offsetColumn int         // Offset of the view of the document. Only make sense when wordWrap==false.
-	wordWrap     bool        // true if word-wrapping is in effect. TODO(maruel): Implement.
-	columnMode   bool        // true if free movement is in effect. TODO(maruel): Implement.
-	colorMode    ColorMode   // Coloring of the file. Technically it'd be possible to have one file view without color and another with. TODO(maruel): Determine if useful.
-	selection    wiCore.Rect // selection if any.
+	document        *document
+	cursorLine      int
+	cursorColumn    int
+	cursorColumnMax int         // cursor position if the line was long enough.
+	offsetLine      int         // Offset of the view of the document.
+	offsetColumn    int         // Offset of the view of the document. Only make sense when wordWrap==false.
+	wordWrap        bool        // true if word-wrapping is in effect. TODO(maruel): Implement.
+	columnMode      bool        // true if free movement is in effect. TODO(maruel): Implement.
+	colorMode       ColorMode   // Coloring of the file. Technically it'd be possible to have one file view without color and another with. TODO(maruel): Determine if useful.
+	selection       wiCore.Rect // selection if any. TODO(maruel): Selection in columnMode vs normal selection vs line selection.
 }
 
 func (v *documentView) Buffer() *wiCore.Buffer {
