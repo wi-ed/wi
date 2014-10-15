@@ -170,25 +170,15 @@ func (b *Buffer) Line(Y int) []Cell {
 	return b.Cells[base : base+b.Width]
 }
 
-// Get gets a specific character cell.
+// Cell returns the pointer to a specific character cell.
 //
-// If the position is outside the buffer, an empty cell is returned.
-func (b *Buffer) Get(X, Y int) Cell {
+// If the position is outside the buffer, an empty temporary cell is returned.
+func (b *Buffer) Cell(X, Y int) *Cell {
 	line := b.Line(Y)
 	if len(line) < X {
-		return Cell{}
+		return &Cell{}
 	}
-	return line[X]
-}
-
-// Set sets a specific character cell.
-//
-// If the position is outside the buffer, the call is ignored.
-func (b *Buffer) Set(X, Y int, cell Cell) {
-	line := b.Line(Y)
-	if len(line) < X {
-		line[X] = cell
-	}
+	return &line[X]
 }
 
 // DrawString draws a string into the buffer.

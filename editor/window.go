@@ -361,10 +361,10 @@ func (w *window) updateBorder() {
 	case drawnBorderAll:
 		w.clientAreaRect = wiCore.Rect{1, 1, w.rect.Width - 2, w.rect.Height - 2}
 		// Corners.
-		w.windowBuffer.Set(0, 0, w.cell(s[2]))
-		w.windowBuffer.Set(0, w.rect.Height-1, w.cell(s[4]))
-		w.windowBuffer.Set(w.rect.Width-1, 0, w.cell(s[3]))
-		w.windowBuffer.Set(w.rect.Width-1, w.rect.Height-1, w.cell(s[5]))
+		*w.windowBuffer.Cell(0, 0) = w.cell(s[2])
+		*w.windowBuffer.Cell(0, w.rect.Height-1) = w.cell(s[4])
+		*w.windowBuffer.Cell(w.rect.Width-1, 0) = w.cell(s[3])
+		*w.windowBuffer.Cell(w.rect.Width-1, w.rect.Height-1) = w.cell(s[5])
 		// Lines.
 		w.windowBuffer.SubBuffer(wiCore.Rect{1, 0, w.rect.Width - 2, 1}).Fill(w.cell(s[0]))
 		w.windowBuffer.SubBuffer(wiCore.Rect{1, w.rect.Height - 1, w.rect.Width - 2, w.rect.Height - 1}).Fill(w.cell(s[0]))

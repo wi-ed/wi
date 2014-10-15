@@ -14,8 +14,8 @@ import (
 
 type nullWriter int
 
-func (nullWriter) Write([]byte) (int, error) {
-	return 0, nil
+func (nullWriter) Write(b []byte) (int, error) {
+	return len(b), nil
 }
 
 func init() {
@@ -28,37 +28,60 @@ func init() {
 // TODO(maruel): Add a test with small display (10x2) and ensure it's somewhat
 // usable.
 
+func keepLog(t *testing.T) func() {
+	out := ut.NewWriter(t)
+	log.SetOutput(out)
+	return func() {
+		log.SetOutput(new(nullWriter))
+		out.Close()
+	}
+}
+
 func TestMainImmediateQuit(t *testing.T) {
-	t.Parallel()
+	defer keepLog(t)()
+
 	terminal := NewTerminalFake(80, 25, []TerminalEvent{})
 	editor, err := MakeEditor(terminal, true)
 	ut.AssertEqual(t, nil, err)
 	defer editor.Close()
+
+	wiCore.PostCommand(editor, "editor_bootstrap_ui")
+	wiCore.PostCommand(editor, "new")
+	// Supporting this command requires using "go test -tags debug"
+	// wiCore.PostCommand(editor, "log_all")
 	wiCore.PostCommand(editor, "editor_quit")
 	ut.AssertEqual(t, 0, editor.EventLoop())
-	// TODO(maruel): Print something.
-	for y := 0; y < terminal.Height; y++ {
-		for x := 0; x < terminal.Width; x++ {
-			c := terminal.Buffer.Get(x, y)
-			ut.AssertEqual(t, '\u0000', c.R)
-		}
+
+	expected := wiCore.NewBuffer(80, 25)
+	expected.Fill(wiCore.MakeCell(' ', wiCore.BrightYellow, wiCore.Black))
+	expected.DrawString("Dummy content\n", 0, 0, wiCore.CellFormat{Fg: wiCore.BrightYellow, Bg: wiCore.Black})
+	expected.DrawString("Really\n", 0, 1, wiCore.CellFormat{Fg: wiCore.BrightYellow, Bg: wiCore.Black})
+	expected.DrawString("Status Name    Status Root                                       Status Position", 0, 24, wiCore.CellFormat{Fg: wiCore.Red, Bg: wiCore.LightGray})
+	ut.AssertEqual(t, len(expected.Cells), len(terminal.Buffer.Cells))
+	for i := 0; i < len(expected.Cells); i++ {
+		ut.AssertEqualIndex(t, i, expected.Cells[i], terminal.Buffer.Cells[i])
 	}
 }
 
 func TestMainInvalidThenQuit(t *testing.T) {
-	t.Parallel()
+	defer keepLog(t)()
+
 	terminal := NewTerminalFake(80, 25, []TerminalEvent{})
 	editor, err := MakeEditor(terminal, true)
 	ut.AssertEqual(t, nil, err)
 	defer editor.Close()
+
+	wiCore.PostCommand(editor, "editor_bootstrap_ui")
 	wiCore.PostCommand(editor, "invalid")
 	wiCore.PostCommand(editor, "editor_quit")
 	ut.AssertEqual(t, 0, editor.EventLoop())
-	// TODO(maruel): Print something.
-	for y := 0; y < terminal.Height; y++ {
-		for x := 0; x < terminal.Width; x++ {
-			c := terminal.Buffer.Get(x, y)
-			ut.AssertEqual(t, '\u0000', c.R)
-		}
+
+	expected := wiCore.NewBuffer(80, 25)
+	expected.Fill(wiCore.MakeCell(' ', wiCore.Red, wiCore.Black))
+	expected.DrawString("Root", 0, 0, wiCore.CellFormat{Fg: wiCore.Red, Bg: wiCore.Black})
+	expected.DrawString("Status Name    Status Root                                       Status Position", 0, 24, wiCore.CellFormat{Fg: wiCore.Red, Bg: wiCore.LightGray})
+	ut.AssertEqual(t, len(expected.Cells), len(terminal.Buffer.Cells))
+	for i := 0; i < len(expected.Cells); i++ {
+		ut.AssertEqualIndex(t, i, expected.Cells[i], terminal.Buffer.Cells[i])
 	}
 }

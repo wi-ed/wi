@@ -230,9 +230,11 @@ func (e *editor) EventLoop() int {
 			}
 
 		case <-drawTimer:
-			if e.quitFlag {
-				return 0
-			}
+			// TODO(maruel): Temporary for unit tests. Figure out a way to enforce
+			// drawing in test cases but not on real process exit, since it's useless.
+			//if e.quitFlag {
+			//	return 0
+			//}
 
 			// Empty e.viewReady first.
 		EmptyViewReady:
@@ -246,6 +248,9 @@ func (e *editor) EventLoop() int {
 
 			e.draw()
 			drawTimer = fakeChan
+			if e.quitFlag {
+				return 0
+			}
 		}
 	}
 }

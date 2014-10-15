@@ -264,7 +264,7 @@ func (t TermBox) Blit(b *wiCore.Buffer) {
 	for y := 0; y < height; y++ {
 		for x := 0; x < width; x++ {
 			i := y*width + x
-			cell := b.Get(x, y)
+			cell := b.Cell(x, y)
 			cells[i].Ch = cell.R
 			cells[i].Fg = rgbToTermBox(cell.F.Fg)
 			// TODO(maruel): Not sure.
