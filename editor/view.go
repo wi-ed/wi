@@ -17,7 +17,6 @@ type view struct {
 	commands      wiCore.Commands
 	keyBindings   wiCore.KeyBindings
 	title         string
-	isDirty       bool // TODO(maruel): Remove.
 	isDisabled    bool
 	naturalX      int
 	naturalY      int
@@ -41,10 +40,6 @@ func (v *view) KeyBindings() wiCore.KeyBindings {
 
 func (v *view) Title() string {
 	return v.title
-}
-
-func (v *view) IsDirty() bool {
-	return v.isDirty
 }
 
 func (v *view) IsDisabled() bool {

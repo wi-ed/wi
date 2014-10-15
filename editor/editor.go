@@ -53,6 +53,7 @@ type editor struct {
 	terminal       Terminal                      // Abstract terminal interface to the real terminal.
 	rootWindow     *window                       // The rootWindow is always DockingFill and set to the size of the terminal.
 	lastActive     []wiCore.Window               // Most recently used order of Window activatd.
+	documents      []wiCore.Document             // All loaded documents.
 	viewFactories  map[string]wiCore.ViewFactory // All the ViewFactory's that can be used to create new View.
 	terminalEvents <-chan TerminalEvent          // Events coming from Terminal.SeedEvents().
 	viewReady      chan bool                     // A View.Buffer() is ready to be drawn.
@@ -120,6 +121,10 @@ func (e *editor) draw() {
 	out := wiCore.NewBuffer(w, h)
 	drawRecurse(e.rootWindow, 0, 0, out)
 	e.terminal.Blit(out)
+}
+
+func (e *editor) AllDocuments() []wiCore.Document {
+	return e.documents[:]
 }
 
 func (e *editor) ActiveWindow() wiCore.Window {
@@ -296,6 +301,7 @@ func MakeEditor(terminal Terminal, noPlugin bool) (Editor, error) {
 		terminal:       terminal,
 		rootWindow:     rootWindow,
 		lastActive:     []wiCore.Window{rootWindow},
+		documents:      []wiCore.Document{},
 		viewFactories:  make(map[string]wiCore.ViewFactory),
 		terminalEvents: terminal.SeedEvents(),
 		viewReady:      make(chan bool),
@@ -334,14 +340,9 @@ func cmdEditorBootstrapUI(c *wiCore.CommandImpl, cd wiCore.CommandDispatcherFull
 	cd.ExecuteCommand(w, "window_new", "0", "bottom", "status_root")
 }
 
-func isDirtyRecurse(cd wiCore.CommandDispatcherFull, w wiCore.Window) bool {
-	for _, child := range w.ChildrenWindows() {
-		if isDirtyRecurse(cd, child) {
-			return true
-		}
-		v := child.View()
-		if v.IsDirty() {
-			cd.ExecuteCommand(w, "alert", fmt.Sprintf(wiCore.GetStr(cd.CurrentLanguage(), viewDirty), v.Title()))
+func (e *editor) isDirty() bool {
+	for _, doc := range e.documents {
+		if doc.IsDirty() {
 			return true
 		}
 	}
@@ -358,14 +359,14 @@ func cmdEditorQuit(c *privilegedCommandImpl, e *editor, w *window, args ...strin
 			return
 		}
 	} else {
-		// TODO(maruel): For all the View, question if fine to quit via
-		// view.IsDirty(). If not fine, "prompt" y/n to force quit. If n, stop
-		// there.
-		// - Send a signal to each plugin.
-		// - Send a signal back to the main loop.
-		if isDirtyRecurse(e, e.rootWindow) {
+		if e.isDirty() {
+			// TODO(maruel): For each dirty Document, "prompt" y/n to force quit. If
+			// 'n', stop there.
 			return
 		}
+		// TODO(maruel):
+		// - Send a signal to each plugin.
+		// - Send a signal back to the main loop.
 	}
 
 	e.quitFlag = true

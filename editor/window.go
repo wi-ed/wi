@@ -28,6 +28,9 @@ const (
 )
 
 // window implements wiCore.Window. It keeps its own buffer of its display.
+//
+// window is the only structure guaranteed to be in the wi main process. View
+// and Documents can be served via plugins.
 type window struct {
 	id              int // window ID relative to the parent.
 	lastChildID     int // last ID used for a children window.

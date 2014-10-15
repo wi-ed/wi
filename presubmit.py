@@ -18,7 +18,7 @@ ROOT_DIR = os.path.dirname(THIS_FILE)
 
 
 def call(cmd, reldir):
-  logging.info('cwd=%s; %s', reldir, ' '.join(cmd))
+  logging.info('cwd=%-16s; %s', reldir, ' '.join(cmd))
   return subprocess.Popen(
       cmd, cwd=os.path.join(ROOT_DIR, reldir),
       stdout=subprocess.PIPE, stderr=subprocess.STDOUT)

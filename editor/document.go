@@ -42,7 +42,6 @@ func makeDocument() *document {
 	}
 }
 
-// RenderInto renders a view of a document.
 func (d *document) RenderInto(buffer *wiCore.Buffer, view wiCore.View, offsetLine, offsetColumn int) {
 	for row, l := range d.content {
 		// This will automatically elide text.
@@ -55,6 +54,10 @@ func (d *document) RenderInto(buffer *wiCore.Buffer, view wiCore.View, offsetLin
 		}
 		buffer.DrawString(l, offsetColumn, row+offsetLine, view.DefaultFormat())
 	}
+}
+
+func (d *document) IsDirty() bool {
+	return d.isDirty
 }
 
 func cmdDocumentNew(c *wiCore.CommandImpl, cd wiCore.CommandDispatcherFull, w wiCore.Window, args ...string) {

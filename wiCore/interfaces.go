@@ -268,8 +268,6 @@ type View interface {
 	// Title is View's title, which can be the current file name or any other
 	// relevant detail.
 	Title() string
-	// IsDirty is true if the content should be saved before quitting.
-	IsDirty() bool
 
 	// IsDisabled returns false if the View can be activated to receive user
 	// inputs at all.
@@ -293,6 +291,21 @@ type View interface {
 	// an CellFormat.Empty()==true format, it will uses whatever parent Window's
 	// View DefaultFormat().
 	DefaultFormat() CellFormat
+}
+
+// Document represents an open document. It can be accessed by zero, one or
+// multiple View. For example the document may not be visible at all as a 'back
+// buffer', may be loaded in a View or in multiple View, each having their own
+// coloring and cursor position.
+type Document interface {
+	// RenderInto renders a view of a document.
+	//
+	// TODO(maruel): Likely return a new Buffer instance instead, for RPC
+	// friendlyness. To be decided.
+	RenderInto(buffer *Buffer, view View, offsetLine, offsetColumn int)
+
+	// IsDirty is true if the content should be saved before quitting.
+	IsDirty() bool
 }
 
 // Config
