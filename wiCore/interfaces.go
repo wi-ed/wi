@@ -368,6 +368,31 @@ type KeyBindings interface {
 	Get(mode KeyboardMode, keyName string) string
 }
 
+// EventType is the type of the event being flowed through the Window hierarchy
+// and plugins. EventListener receive these.
+// TODO(maruel): Dedupe from editor/terminal.go, testing.
+type EventType string
+
+// TODO(maruel): Dedupe from editor/terminal.go, testing.
+// TODO(maruel): Use int or string? int is faster, string is likely more
+// "extendable".
+const (
+	EventKey                 EventType = "key"
+	EventResize                        = "resize"
+	EventWindowCreated                 = "window_created"
+	EventViewCreated                   = "view_created"
+	EventDocumentCreated               = "document_created"
+	EventDocumentCursorMoved           = "document_cursor_moved"
+
+// Etc.
+)
+
+// EventListener are called on events.
+// TODO(maruel): Experimenting with the idea.
+type EventListener interface {
+	OnEvent(t EventType, i interface{})
+}
+
 // Utility functions.
 
 // PostCommand appends a Command at the end of the queue.

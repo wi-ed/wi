@@ -23,10 +23,14 @@ func (v *commandView) Buffer() *wiCore.Buffer {
 // TODO(maruel): Position it 5 lines below the cursor in the parent Window's
 // View. Do this via onAttach.
 func commandViewFactory(args ...string) wiCore.View {
+	keys := makeKeyBindings()
+	// Fill up the key bindings. This includes basic cursor movement, help, etc.
+	//keys.Set(wiCore.CommandMode, "Enter", "ExecuteCommmad")
+
 	return &commandView{
 		view{
 			commands:      makeCommands(),
-			keyBindings:   makeKeyBindings(),
+			keyBindings:   keys,
 			title:         "Command",
 			naturalX:      30,
 			naturalY:      1,
