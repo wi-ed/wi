@@ -1,4 +1,20 @@
+# Install with:
+# cp git-hooks-go/sample.travis.yml .travis.yml
+#
+# travis-ci.org does *not* support .travis.yml to be a symlink!
+
 language: go
 
 go:
 - 1.3
+
+before_install:
+  - go get github.com/axw/gocov/gocov
+  - go get github.com/golang/lint
+  - go get github.com/mattn/goveralls
+  - go get code.google.com/p/go.tools/cmd/cover
+  - go get code.google.com/p/go.tools/cmd/goimports
+  - go get code.google.com/p/go.tools/cmd/vet
+
+script:
+  - ./git-hooks-go/travis_check.sh

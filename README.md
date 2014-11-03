@@ -10,6 +10,11 @@ wi - right after vi
 _Bringing text based editor technology past 1200 bauds._
 
 
+[![GoDoc](https://godoc.org/github.com/maruel/wi?status.svg)](https://godoc.org/github.com/maruel/wi)
+[![Build Status](https://travis-ci.org/maruel/wi.svg?branch=master)](https://travis-ci.org/maruel/wi)
+[![Coverage Status](https://img.shields.io/coveralls/maruel/wi.svg)](https://coveralls.io/r/maruel/wi?branch=master)
+
+
 Features
 --------
 
@@ -75,6 +80,3 @@ Contributing
 
 Run the presubmit check `./presubmit.py` first before doing a pull request. Even
 better is to install the git pre-commit hook with `./git-hooks/install.py`.
-
-See online documentation on
-[![GoDoc](https://godoc.org/github.com/maruel/wi?status.svg)](https://godoc.org/github.com/maruel/wi)
