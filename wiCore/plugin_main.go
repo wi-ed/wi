@@ -11,7 +11,7 @@ import (
 	"os"
 	"reflect"
 
-	"github.com/maruel/interface_guid"
+	"github.com/maruel/interfaceGUID"
 )
 
 // CalculateVersion returns the hex string of the hash of the primary
@@ -21,7 +21,7 @@ import (
 // recursively. This data is used to generate an hash, that will represent the
 // version of this interface.
 func CalculateVersion() string {
-	return interface_guid.CalculateGUID(reflect.TypeOf((*Editor)(nil)).Elem())
+	return interfaceGUID.CalculateGUID(reflect.TypeOf((*Editor)(nil)).Elem())
 }
 
 type multiCloser []io.Closer
