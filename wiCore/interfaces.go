@@ -149,13 +149,23 @@ const (
 	AllMode
 )
 
+// CommandID describes a command in the queue.
+type CommandID struct {
+	ProcessID    int
+	CommandIndex int
+}
+
+func (c CommandID) String() string {
+	return fmt.Sprintf("%d:%d", c.ProcessID, c.CommandIndex)
+}
+
 // CommandDispatcher owns the command queue. Use this interface to enqueue
 // commands for execution.
 type CommandDispatcher interface {
 	// PostCommands appends several Command calls at the end of the queue. Using
 	// this function guarantees that all the commands will be executed in order
 	// without commands interfering.
-	PostCommands(cmds [][]string)
+	PostCommands(cmds [][]string) CommandID
 }
 
 // ViewFactory returns a new View.
@@ -397,11 +407,11 @@ type EventListener interface {
 
 // PostCommand appends a Command at the end of the queue.
 // It is a shortcut to cd.PostCommands([][]string{[]string{cmdName, args...}})
-func PostCommand(cd CommandDispatcher, cmdName string, args ...string) {
+func PostCommand(cd CommandDispatcher, cmdName string, args ...string) CommandID {
 	line := make([]string, len(args)+1)
 	line[0] = cmdName
 	copy(line[1:], args)
-	cd.PostCommands([][]string{line})
+	return cd.PostCommands([][]string{line})
 }
 
 // GetCommand traverses the Window hierarchy tree to find a View that has

@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"sync/atomic"
 	"time"
 
 	"github.com/maruel/wi/wiCore"
@@ -55,6 +56,7 @@ type editor struct {
 	lastActive     []wiCore.Window               // Most recently used order of Window activatd.
 	documents      []wiCore.Document             // All loaded documents.
 	viewFactories  map[string]wiCore.ViewFactory // All the ViewFactory's that can be used to create new View.
+	lastCommandID  int64                         // Used by PostCommand.
 	terminalEvents <-chan TerminalEvent          // Events coming from Terminal.SeedEvents().
 	viewReady      chan bool                     // A View.Buffer() is ready to be drawn.
 	commandsQueue  chan commandQueueItem         // Pending commands to be executed.
@@ -77,7 +79,7 @@ func (e *editor) Version() string {
 	return version
 }
 
-func (e *editor) PostCommands(cmds [][]string) {
+func (e *editor) PostCommands(cmds [][]string) wiCore.CommandID {
 	log.Printf("PostCommands(%s)", cmds)
 	tmp := make(commandQueueItem, len(cmds))
 	for i, cmd := range cmds {
@@ -85,6 +87,7 @@ func (e *editor) PostCommands(cmds [][]string) {
 		tmp[i].args = cmd[1:]
 	}
 	e.commandsQueue <- tmp
+	return wiCore.CommandID{0, int(atomic.AddInt64(&e.lastCommandID, 1))}
 }
 
 func (e *editor) postKey(key KeyPress) {

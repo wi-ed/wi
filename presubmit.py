@@ -48,6 +48,8 @@ def main():
   parser.add_option(
       '-v', '--verbose', action='store_true', help='Logs what is being run')
   parser.add_option(
+      '--errcheck', action='store_true', help=optparse.SUPPRESS_HELP)
+  parser.add_option(
       '--gofmt', action='store_true', help=optparse.SUPPRESS_HELP)
   parser.add_option(
       '--goimports', action='store_true', help=optparse.SUPPRESS_HELP)
@@ -59,7 +61,24 @@ def main():
   if args:
     parser.error('Unknown args: %s' % args)
 
+  if options.errcheck:
+    # Walk up to GOPATH.
+    root = os.path.realpath(os.path.join(os.environ['GOPATH'], 'src'))
+    to_process = []
+    for r, d, f in os.walk(os.path.realpath('.')):
+      for i in xrange(len(d) - 1, -1, -1):
+        if d[i].startswith('.'):
+          del d[i]
+      if any(i.endswith('.go') for i in f):
+        to_process.append(r)
+
+    # TODO(maruel): I don't know what happened around Oct 2014 but errcheck
+    # became super slow.
+    cmd = ['errcheck'] + [os.path.relpath(d, root) for d in to_process]
+    return subprocess.call(cmd)
+
   if options.gofmt:
+    # TODO(maruel): Likely always redundant with goimports.
     # gofmt doesn't return non-zero even if some files need to be updated.
     out = subprocess.check_output(['gofmt', '-l', '-s', '.'])
     if out:
@@ -124,12 +143,8 @@ def main():
     call(['go', 'test', '-cover'], 'wiCore'),
     call(['go', 'build'], 'wi-plugin-sample'),
     #call(['go', 'test'], 'wi-plugin-sample'),
-    call(['errcheck'], '.'),
-    call(['errcheck'], 'editor'),
-    call(['errcheck'], 'wiCore'),
-    call(['errcheck'], 'wi-plugin-sample'),
+    call([sys.executable, THIS_FILE, '--errcheck'], '.'),
     call([sys.executable, THIS_FILE, '--goimports'], '.'),
-    # TODO(maruel): Likely always redundant with goimports.
     call([sys.executable, THIS_FILE, '--gofmt'], '.'),
 
     # There starts the cheezy part that may return false positives. I'm sorry
@@ -140,6 +155,7 @@ def main():
     call([sys.executable, THIS_FILE, '--golint'], 'wi-plugin-sample'),
     call([sys.executable, THIS_FILE, '--govet'], '.'),
   ]
+
   failed = False
   out = drain(procs.pop(0))
   if out:

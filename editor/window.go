@@ -54,8 +54,8 @@ func (w *window) String() string {
 	return fmt.Sprintf("Window(%s, %s, %v)", w.ID(), w.View().Title(), w.Rect())
 }
 
-func (w *window) PostCommands(cmds [][]string) {
-	w.cd.PostCommands(cmds)
+func (w *window) PostCommands(cmds [][]string) wiCore.CommandID {
+	return w.cd.PostCommands(cmds)
 }
 
 func (w *window) ID() string {
