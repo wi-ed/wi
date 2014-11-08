@@ -9,13 +9,7 @@ go:
 - 1.3
 
 before_install:
-  - go get code.google.com/p/go.tools/cmd/cover
-  - go get code.google.com/p/go.tools/cmd/goimports
-  - go get code.google.com/p/go.tools/cmd/vet
-  - go get github.com/axw/gocov/gocov
-  - go get github.com/golang/lint/golint
-  - go get github.com/kisielk/errcheck
-  - go get github.com/mattn/goveralls
+  - python git-hooks-go/install_prerequisites.py
 
 script:
   - ./presubmit.py
