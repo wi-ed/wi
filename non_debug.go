@@ -8,20 +8,15 @@ package main
 
 import (
 	"io"
+	"io/ioutil"
 	"log"
 )
-
-type nullWriter struct{}
-
-func (nullWriter) Write(b []byte) (int, error) {
-	return len(b), nil
-}
 
 func debugHook() io.Closer {
 	// It is important to get rid of log output on stderr as it would conflict
 	// with the editor's use of the terminal. Sadly the strings are still
 	// rasterized, I don't know of a way to get rid of this.
 	log.SetFlags(0)
-	log.SetOutput(nullWriter{})
+	log.SetOutput(ioutil.Discard)
 	return nil
 }

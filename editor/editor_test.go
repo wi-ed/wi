@@ -5,6 +5,7 @@
 package editor
 
 import (
+	"io/ioutil"
 	"log"
 	"testing"
 
@@ -12,17 +13,11 @@ import (
 	"github.com/maruel/wi/wiCore"
 )
 
-type nullWriter int
-
-func (nullWriter) Write(b []byte) (int, error) {
-	return len(b), nil
-}
-
 func init() {
 	// TODO(maruel): This has persistent side-effect. Figure out how to handle
 	// "log" properly. Likely by using the same mechanism as used in package
 	// "subcommands".
-	log.SetOutput(new(nullWriter))
+	log.SetOutput(ioutil.Discard)
 }
 
 // TODO(maruel): Add a test with small display (10x2) and ensure it's somewhat
@@ -32,7 +27,7 @@ func keepLog(t *testing.T) func() {
 	out := ut.NewWriter(t)
 	log.SetOutput(out)
 	return func() {
-		log.SetOutput(new(nullWriter))
+		log.SetOutput(ioutil.Discard)
 		out.Close()
 	}
 }
