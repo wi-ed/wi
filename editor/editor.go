@@ -269,8 +269,8 @@ func (e *editor) LoadPlugins() error {
 	if err != nil {
 		return err
 	}
-	e.plugins = loadPlugins(paths)
-	return nil
+	e.plugins, err = loadPlugins(paths)
+	return err
 }
 
 // MakeEditor creates an object that implements the Editor interface. The root

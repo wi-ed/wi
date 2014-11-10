@@ -5,6 +5,7 @@
 package editor
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -64,28 +65,27 @@ func (p Plugins) Close() error {
 }
 
 // loadPlugin starts a plugin and returns the process.
-func loadPlugin(server *rpc.Server, f string) Plugin {
-	log.Printf("loadPlugin(%s)", f)
-	cmd := exec.Command(f)
+func loadPlugin(server *rpc.Server, args ...string) (Plugin, error) {
+	log.Printf("loadPlugin(%v)", args)
+	cmd := exec.Command(args[0], args[1:]...)
 	cmd.Env = append(os.Environ(), "WI=plugin")
 
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	stderr, err := cmd.StderrPipe()
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	if err := cmd.Start(); err != nil {
-		// Surface the error as an "alert", since it's not a fatal error.
-		log.Fatal(err)
+		return nil, err
 	}
 
 	// Fail on any write to Stderr.
@@ -93,26 +93,20 @@ func loadPlugin(server *rpc.Server, f string) Plugin {
 		buf := make([]byte, 2048)
 		n, _ := stderr.Read(buf)
 		if n != 0 {
-			panic(fmt.Sprintf("Plugin %s failed: %s", f, buf))
+			// TODO(maruel): Must not panic but instead send an alert command.
+			panic(fmt.Sprintf("Plugin %v failed: %s", args, buf))
 		}
 	}()
 
 	// Before starting the RPC, ensures the version matches.
 	expectedVersion := wiCore.CalculateVersion()
 	b := make([]byte, 40)
-	n, err := stdout.Read(b)
-	if err != nil {
-		// Surface the error as an "alert", since it's not a fatal error.
-		log.Fatal(err)
-	}
-	if n != 40 {
-		// Surface the error as an "alert", since it's not a fatal error.
-		log.Fatal("Unexpected size")
+	if _, err := stdout.Read(b); err != nil {
+		return nil, err
 	}
 	actualVersion := string(b)
 	if expectedVersion != actualVersion {
-		// Surface the error as an "alert", since it's not a fatal error.
-		log.Fatalf("For %s; expected %s, got %s", f, expectedVersion, actualVersion)
+		return nil, fmt.Errorf("unexpected wiCore version; expected %s, got %s", expectedVersion, actualVersion)
 	}
 
 	// Start the RPC server for this plugin.
@@ -120,7 +114,13 @@ func loadPlugin(server *rpc.Server, f string) Plugin {
 		server.ServeConn(wiCore.MakeReadWriteCloser(stdout, stdin))
 	}()
 
-	return &pluginProcess{cmd.Process}
+	return &pluginProcess{cmd.Process}, nil
+}
+
+// executeRaw starts a plugin present as source file for quick hacking. It
+// first compile the file then run it.
+func executeRaw(server *rpc.Server, filePath string) (Plugin, error) {
+	return loadPlugin(server, "go", "run", filePath)
 }
 
 // EnumPlugins enumerate the plugins that should be loaded.
@@ -161,9 +161,10 @@ func EnumPlugins(searchDir string) ([]string, error) {
 	return out, nil
 }
 
-func loadPlugins(pluginExecutables []string) Plugins {
+func loadPlugins(pluginExecutables []string) (Plugins, error) {
 	var wg sync.WaitGroup
 	c := make(chan Plugin)
+	e := make(chan error)
 	server := rpc.NewServer()
 	// TODO(maruel): http://golang.org/pkg/net/rpc/#Server.RegisterName
 	// It should be an interface with methods of style DoStuff(Foo, Bar) Baz
@@ -171,17 +172,25 @@ func loadPlugins(pluginExecutables []string) Plugins {
 	for _, name := range pluginExecutables {
 		wg.Add(1)
 		go func(s *rpc.Server, n string) {
-			c <- loadPlugin(s, n)
+			if p, err := loadPlugin(s, n); err != nil {
+				e <- fmt.Errorf("failed to load %s: %s", n, err)
+			} else {
+				c <- p
+			}
 			wg.Done()
 		}(server, name)
 	}
 
 	var wg2 sync.WaitGroup
-	out := make(Plugins, 0)
+	out := make(Plugins, 0, len(pluginExecutables))
+	errs := make([]error, 0)
 	wg2.Add(1)
 	go func() {
 		for i := range c {
 			out = append(out, i)
+		}
+		for i := range e {
+			errs = append(errs, i)
 		}
 		wg2.Done()
 	}()
@@ -192,5 +201,14 @@ func loadPlugins(pluginExecutables []string) Plugins {
 	// Convert to a slice.
 	close(c)
 	wg2.Wait()
-	return out
+
+	var err error
+	if len(errs) != 0 {
+		tmp := ""
+		for _, e := range errs {
+			tmp += e.Error() + "\n"
+		}
+		err = errors.New(tmp[:len(tmp)-1])
+	}
+	return out, err
 }
