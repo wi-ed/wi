@@ -162,45 +162,49 @@ func EnumPlugins(searchDir string) ([]string, error) {
 }
 
 func loadPlugins(pluginExecutables []string) (Plugins, error) {
-	var wg sync.WaitGroup
-	c := make(chan Plugin)
-	e := make(chan error)
+	type x struct {
+		Plugin
+		error
+	}
+	c := make(chan x)
 	server := rpc.NewServer()
 	// TODO(maruel): http://golang.org/pkg/net/rpc/#Server.RegisterName
 	// It should be an interface with methods of style DoStuff(Foo, Bar) Baz
 	//server.RegisterName("Editor", e)
-	for _, name := range pluginExecutables {
-		wg.Add(1)
-		go func(s *rpc.Server, n string) {
-			if p, err := loadPlugin(s, n); err != nil {
-				e <- fmt.Errorf("failed to load %s: %s", n, err)
-			} else {
-				c <- p
-			}
-			wg.Done()
-		}(server, name)
-	}
-
-	var wg2 sync.WaitGroup
-	out := make(Plugins, 0, len(pluginExecutables))
-	errs := make([]error, 0)
-	wg2.Add(1)
 	go func() {
-		for i := range c {
-			out = append(out, i)
+		var wg sync.WaitGroup
+		for _, name := range pluginExecutables {
+			wg.Add(1)
+			go func(s *rpc.Server, n string) {
+				defer wg.Done()
+				if p, err := loadPlugin(s, n); err != nil {
+					c <- x{error: fmt.Errorf("failed to load %s: %s", n, err)}
+				} else {
+					c <- x{Plugin: p}
+				}
+			}(server, name)
 		}
-		for i := range e {
-			errs = append(errs, i)
-		}
-		wg2.Done()
+		// Wait for all the plugins to be loaded.
+		wg.Wait()
+		close(c)
 	}()
 
-	// Wait for all the plugins to be loaded.
-	wg.Wait()
-
 	// Convert to a slice.
-	close(c)
-	wg2.Wait()
+	var wg sync.WaitGroup
+	out := make(Plugins, 0, len(pluginExecutables))
+	errs := make([]error, 0)
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for i := range c {
+			if i.error != nil {
+				errs = append(errs, i.error)
+			} else {
+				out = append(out, i.Plugin)
+			}
+		}
+	}()
+	wg.Wait()
 
 	var err error
 	if len(errs) != 0 {
