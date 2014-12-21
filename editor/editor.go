@@ -39,10 +39,6 @@ type Editor interface {
 
 	wiCore.Editor
 
-	// Loads the plugins. This function should be called early but can be skipped
-	// in case the plugins shouldn't be loaded.
-	LoadPlugins() error
-
 	// EventLoop runs the event loop until the command "quit" executes
 	// successfully.
 	EventLoop() int
@@ -263,14 +259,19 @@ func (e *editor) EventLoop() int {
 	}
 }
 
-func (e *editor) LoadPlugins() error {
+func (e *editor) loadPlugins() {
 	// TODO(maruel): Get path.
 	paths, err := EnumPlugins(".")
 	if err != nil {
-		return err
+		log.Printf("Failed to enum plugins: %s", err)
+	} else {
+		e.plugins, err = loadPlugins(paths)
+		// Failing to load plugins is not a hard error.
+		log.Printf("Loaded %d plugins", len(e.plugins))
+		if err != nil {
+			log.Printf("Failed to load plugins: %s", err)
+		}
 	}
-	e.plugins, err = loadPlugins(paths)
-	return err
 }
 
 // MakeEditor creates an object that implements the Editor interface. The root
@@ -320,10 +321,7 @@ func MakeEditor(terminal Terminal, noPlugin bool) (Editor, error) {
 	e.onResize()
 
 	if !noPlugin {
-		if err := e.LoadPlugins(); err != nil {
-			_ = e.Close()
-			return nil, err
-		}
+		e.loadPlugins()
 	}
 
 	// Key bindings are loaded after the plugins, so a plugin has the chance to
