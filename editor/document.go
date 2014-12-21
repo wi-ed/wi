@@ -7,6 +7,8 @@ package editor
 import (
 	"io"
 	"log"
+	"strings"
+	"unicode"
 
 	"github.com/maruel/wi/wiCore"
 )
@@ -52,6 +54,8 @@ func (d *document) RenderInto(buffer *wiCore.Buffer, view wiCore.View, offsetLin
 			// not take any space.
 			l = string([]rune(l)[offsetColumn:])
 		}
+		// It is particularly important on Windows, as "\n" would be rendered as an invalid character.
+		l := strings.TrimRightFunc(l, unicode.IsSpace)
 		buffer.DrawString(l, offsetColumn, row+offsetLine, view.DefaultFormat())
 	}
 }

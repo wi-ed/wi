@@ -49,8 +49,8 @@ func TestMainImmediateQuit(t *testing.T) {
 
 	expected := wiCore.NewBuffer(80, 25)
 	expected.Fill(wiCore.MakeCell(' ', wiCore.BrightYellow, wiCore.Black))
-	expected.DrawString("Dummy content\n", 0, 0, wiCore.CellFormat{Fg: wiCore.BrightYellow, Bg: wiCore.Black})
-	expected.DrawString("Really\n", 0, 1, wiCore.CellFormat{Fg: wiCore.BrightYellow, Bg: wiCore.Black})
+	expected.DrawString("Dummy content", 0, 0, wiCore.CellFormat{Fg: wiCore.BrightYellow, Bg: wiCore.Black})
+	expected.DrawString("Really", 0, 1, wiCore.CellFormat{Fg: wiCore.BrightYellow, Bg: wiCore.Black})
 	expected.DrawString("Status Name    Status Root                                       Status Position", 0, 24, wiCore.CellFormat{Fg: wiCore.Red, Bg: wiCore.LightGray})
 	ut.AssertEqual(t, len(expected.Cells), len(terminal.Buffer.Cells))
 	for i := 0; i < len(expected.Cells); i++ {
