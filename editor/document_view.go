@@ -7,10 +7,11 @@ package editor
 import "github.com/maruel/wi/wiCore"
 
 // ColorMode is the coloring mode in effect.
+//
 // TODO(maruel): Define coloring modes. Could be:
-// - A file type. Likely defined by a string, not a int.
-// - A diff view mode.
-// - No color at all.
+//   - A file type. Likely defined by a string, not a int.
+//   - A diff view mode.
+//   - No color at all.
 type ColorMode int
 
 // documentView is the View of a Document. There can be multiple views of the

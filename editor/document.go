@@ -14,6 +14,7 @@ import (
 )
 
 // ReadWriteSeekCloser is a generic handle to a file.
+//
 // TODO(maruel): No idea why package io doesn't provide this interface.
 type ReadWriteSeekCloser interface {
 	io.Closer
