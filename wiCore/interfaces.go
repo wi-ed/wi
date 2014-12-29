@@ -373,10 +373,10 @@ type KeyBindings interface {
 	// should normally be registered on startup. Returns false if a key mapping
 	// was already registered and was lost. Set cmdName to "" to remove a key
 	// binding.
-	Set(mode KeyboardMode, keyName string, cmdName string) bool
+	Set(mode KeyboardMode, key KeyPress, cmdName string) bool
 
 	// Get returns a command if registered, nil otherwise.
-	Get(mode KeyboardMode, keyName string) string
+	Get(mode KeyboardMode, key KeyPress) string
 }
 
 // EventType is the type of the event being flowed through the Window hierarchy
@@ -440,10 +440,10 @@ func GetCommand(cd CommandDispatcherFull, w Window, cmdName string) Command {
 
 // GetKeyBindingCommand traverses the Editor's Window tree to find a View that
 // has the key binding in its Keyboard mapping.
-func GetKeyBindingCommand(e Editor, mode KeyboardMode, keyName string) string {
+func GetKeyBindingCommand(e Editor, mode KeyboardMode, key KeyPress) string {
 	active := e.ActiveWindow()
 	for {
-		cmdName := active.View().KeyBindings().Get(mode, keyName)
+		cmdName := active.View().KeyBindings().Get(mode, key)
 		if cmdName != "" {
 			return cmdName
 		}

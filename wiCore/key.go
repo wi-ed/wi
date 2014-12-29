@@ -4,6 +4,10 @@
 
 package wiCore
 
+import (
+	"strings"
+)
+
 // Key represents a non-character key.
 type Key int
 
@@ -39,6 +43,7 @@ const (
 	KeyArrowRight
 	KeyPageUp
 	KeyPageDown
+	keyLast
 )
 
 func (k Key) String() string {
@@ -108,6 +113,71 @@ func (k Key) String() string {
 	}
 }
 
+func KeyFromString(key string) Key {
+	switch key {
+	case "F1":
+		return KeyF1
+	case "F2":
+		return KeyF2
+	case "F3":
+		return KeyF3
+	case "F4":
+		return KeyF4
+	case "F5":
+		return KeyF5
+	case "F6":
+		return KeyF6
+	case "F7":
+		return KeyF7
+	case "F8":
+		return KeyF8
+	case "F9":
+		return KeyF9
+	case "F10":
+		return KeyF10
+	case "F11":
+		return KeyF11
+	case "F12":
+		return KeyF12
+	case "F13":
+		return KeyF13
+	case "F14":
+		return KeyF14
+	case "F15":
+		return KeyF15
+	case "Escape":
+		return KeyEscape
+	case "Backspace":
+		return KeyBackspace
+	case "Tab":
+		return KeyTab
+	case "Enter":
+		return KeyEnter
+	case "Insert":
+		return KeyInsert
+	case "Delete":
+		return KeyDelete
+	case "Home":
+		return KeyHome
+	case "End":
+		return KeyEnd
+	case "Up":
+		return KeyArrowUp
+	case "Down":
+		return KeyArrowDown
+	case "Left":
+		return KeyArrowLeft
+	case "Right":
+		return KeyArrowRight
+	case "PageUp":
+		return KeyPageUp
+	case "PageDown":
+		return KeyPageDown
+	default:
+		return KeyNone
+	}
+}
+
 // KeyPress represents a key press.
 //
 // Only one of Key or Ch is set.
@@ -129,14 +199,14 @@ func (k KeyPress) String() string {
 	if k.Alt {
 		out += "Alt-"
 	}
-	if k.Key == KeyNone {
+	if k.Key > KeyNone && k.Key < keyLast {
+		out += k.Key.String()
+	} else {
 		if k.Ch == ' ' {
 			out += "Space"
 		} else {
 			out += string(k.Ch)
 		}
-	} else {
-		out += k.String()
 	}
 	return out
 }
@@ -149,4 +219,29 @@ func (k KeyPress) IsMeta() bool {
 // IsValid returns true if the object represents a key press.
 func (k KeyPress) IsValid() bool {
 	return k.Alt || k.Ctrl || k.Key != KeyNone || k.Ch != rune(0)
+}
+
+// Parses a string and returns a KeyPress.
+func KeyPressFromString(keyName string) KeyPress {
+	out := KeyPress{}
+	if strings.HasPrefix(keyName, "Ctrl-") {
+		keyName = keyName[5:]
+		out.Ctrl = true
+	}
+	if strings.HasPrefix(keyName, "Alt-") {
+		keyName = keyName[4:]
+		out.Alt = true
+	}
+	rest := []rune(keyName)
+	l := len(rest)
+	if l == 1 {
+		out.Ch = rest[0]
+	} else if l > 1 {
+		if keyName == "Space" {
+			out.Ch = ' '
+		} else {
+			out.Key = KeyFromString(keyName)
+		}
+	}
+	return out
 }

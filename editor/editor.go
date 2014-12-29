@@ -15,8 +15,7 @@ import (
 )
 
 const (
-	// Major.Minor.Bugfix. All plugins should be recompiled with wiCore
-	// changes.
+	// Major.Minor.Bugfix.
 	version = "0.0.1"
 )
 
@@ -197,7 +196,7 @@ func (e *editor) EventLoop() int {
 							// enqueued that will change the active window, so using the
 							// active window directly or indirectly here is an incorrect
 							// assumption.
-							cmdName := wiCore.GetKeyBindingCommand(e, e.KeyboardMode(), keyName)
+							cmdName := wiCore.GetKeyBindingCommand(e, e.KeyboardMode(), cmd.key)
 							if cmdName != "" {
 								e.ExecuteCommand(e.ActiveWindow(), cmdName)
 							} else {

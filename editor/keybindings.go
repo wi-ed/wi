@@ -7,39 +7,45 @@ package editor
 import "github.com/maruel/wi/wiCore"
 
 type keyBindings struct {
-	commandMappings map[string]string
-	editMappings    map[string]string
+	commandMappings map[wiCore.KeyPress]string
+	editMappings    map[wiCore.KeyPress]string
 }
 
-func (k *keyBindings) Set(mode wiCore.KeyboardMode, keyName string, cmdName string) bool {
+func (k *keyBindings) Set(mode wiCore.KeyboardMode, key wiCore.KeyPress, cmdName string) bool {
+	if !key.IsValid() {
+		return false
+	}
 	var ok bool
 	if mode == wiCore.AllMode || mode == wiCore.CommandMode {
-		_, ok = k.commandMappings[keyName]
-		k.commandMappings[keyName] = cmdName
+		_, ok = k.commandMappings[key]
+		k.commandMappings[key] = cmdName
 	}
 	if mode == wiCore.AllMode || mode == wiCore.EditMode {
-		_, ok = k.editMappings[keyName]
-		k.editMappings[keyName] = cmdName
+		_, ok = k.editMappings[key]
+		k.editMappings[key] = cmdName
 	}
 	return !ok
 }
 
-func (k *keyBindings) Get(mode wiCore.KeyboardMode, keyName string) string {
+func (k *keyBindings) Get(mode wiCore.KeyboardMode, key wiCore.KeyPress) string {
+	if !key.IsValid() {
+		return ""
+	}
 	if mode == wiCore.CommandMode {
-		return k.commandMappings[keyName]
+		return k.commandMappings[key]
 	}
 	if mode == wiCore.EditMode {
-		return k.editMappings[keyName]
+		return k.editMappings[key]
 	}
-	v, ok := k.commandMappings[keyName]
+	v, ok := k.commandMappings[key]
 	if !ok {
-		return k.editMappings[keyName]
+		return k.editMappings[key]
 	}
 	return v
 }
 
 func makeKeyBindings() wiCore.KeyBindings {
-	return &keyBindings{make(map[string]string), make(map[string]string)}
+	return &keyBindings{make(map[wiCore.KeyPress]string), make(map[wiCore.KeyPress]string)}
 }
 
 // Commands.
@@ -71,7 +77,8 @@ func cmdKeyBind(c *wiCore.CommandImpl, cd wiCore.CommandDispatcherFull, w wiCore
 		return
 	}
 	// TODO(maruel): Refuse invalid keyName.
-	w.View().KeyBindings().Set(mode, keyName, cmdName)
+	key := wiCore.KeyPressFromString(keyName)
+	w.View().KeyBindings().Set(mode, key, cmdName)
 }
 
 // RegisterKeyBindingCommands registers the keyboard mapping related commands.
