@@ -99,13 +99,26 @@ func (b BorderType) String() string {
 	}
 }
 
-// ViewFactory returns a new View.
-type ViewFactory func(args ...string) View
+// EventID is to be used to cancel an event listener.
+type EventID int
+
+// EventRegistry permits to register callbacks that are called on events.
+type EventRegistry interface {
+	Unregister(eventID EventID)
+	RegisterDocumentCreated(callback func(doc Document)) EventID
+	RegisterDocumentCursorMoved(callback func(doc Document)) EventID
+	RegisterTerminalResized(callback func()) EventID
+	RegisterTerminalKeyPressed(callback func(key KeyPress)) EventID
+	RegisterViewCreated(callback func(view View)) EventID
+	RegisterWindowCreated(callback func(window Window)) EventID
+	RegisterWindowResized(callback func(window Window)) EventID
+}
 
 // Editor is the output device and the main process context. It shows the root
 // window which covers the whole screen estate.
 type Editor interface {
 	CommandDispatcherFull
+	EventRegistry
 
 	KeyboardMode() KeyboardMode
 
@@ -216,6 +229,9 @@ type View interface {
 	DefaultFormat() CellFormat
 }
 
+// ViewFactory returns a new View.
+type ViewFactory func(args ...string) View
+
 // Document represents an open document. It can be accessed by zero, one or
 // multiple View. For example the document may not be visible at all as a 'back
 // buffer', may be loaded in a View or in multiple View, each having their own
@@ -229,35 +245,6 @@ type Document interface {
 
 	// IsDirty is true if the content should be saved before quitting.
 	IsDirty() bool
-}
-
-// EventType is the type of the event being flowed through the Window hierarchy
-// and plugins. EventListener receive these.
-//
-// TODO(maruel): Dedupe from editor/terminal.go, testing.
-type EventType string
-
-// TODO(maruel): Dedupe from editor/terminal.go, testing.
-//
-// TODO(maruel): Use int or string? int is faster, string is likely more
-// "extendable".
-const (
-	EventDocumentCreated     EventType = "document_created"
-	EventDocumentCursorMoved           = "document_cursor_moved"
-	EventTerminalResized               = "terminal_resized"
-	EventTerminalKeyPressed            = "terminal_key_pressed"
-	EventViewCreated                   = "view_created"
-	EventWindowCreated                 = "window_created"
-	EventWindowResized                 = "window_resized"
-
-// Etc.
-)
-
-// EventListener are called on events.
-//
-// TODO(maruel): Experimenting with the idea.
-type EventListener interface {
-	OnEvent(t EventType, i interface{})
 }
 
 // Config
