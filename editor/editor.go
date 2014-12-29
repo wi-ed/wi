@@ -22,9 +22,9 @@ const (
 
 // commandItem is a command pending to be executed.
 type commandItem struct {
-	cmdName string   // Set on command execution
-	args    []string // Set on command execution
-	key     KeyPress // Set on key press
+	cmdName string          // Set on command execution
+	args    []string        // Set on command execution
+	key     wiCore.KeyPress // Set on key press
 }
 
 // commandQueueItem is a set of commandItem pending to be executed.
@@ -86,7 +86,7 @@ func (e *editor) PostCommands(cmds [][]string) wiCore.CommandID {
 	return wiCore.CommandID{0, int(atomic.AddInt64(&e.lastCommandID, 1))}
 }
 
-func (e *editor) postKey(key KeyPress) {
+func (e *editor) postKey(key wiCore.KeyPress) {
 	log.Printf("PostKey(%s)", key)
 	e.commandsQueue <- commandQueueItem{commandItem{key: key}}
 }

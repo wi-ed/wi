@@ -52,56 +52,56 @@ func (t TermBox) SeedEvents() <-chan editor.TerminalEvent {
 }
 
 // termboxKeyToKeyPress returns the wiCore.KeyPress compatible event.
-func termboxKeyToKeyPress(key termbox.Event) editor.KeyPress {
-	out := editor.KeyPress{}
+func termboxKeyToKeyPress(key termbox.Event) wiCore.KeyPress {
+	out := wiCore.KeyPress{}
 	if key.Mod&termbox.ModAlt != 0 {
 		out.Alt = true
 	}
 	switch termbox.Key(key.Key) {
 	case termbox.KeyF1:
-		out.Key = editor.KeyF1
+		out.Key = wiCore.KeyF1
 	case termbox.KeyF2:
-		out.Key = editor.KeyF2
+		out.Key = wiCore.KeyF2
 	case termbox.KeyF3:
-		out.Key = editor.KeyF3
+		out.Key = wiCore.KeyF3
 	case termbox.KeyF4:
-		out.Key = editor.KeyF4
+		out.Key = wiCore.KeyF4
 	case termbox.KeyF5:
-		out.Key = editor.KeyF5
+		out.Key = wiCore.KeyF5
 	case termbox.KeyF6:
-		out.Key = editor.KeyF6
+		out.Key = wiCore.KeyF6
 	case termbox.KeyF7:
-		out.Key = editor.KeyF7
+		out.Key = wiCore.KeyF7
 	case termbox.KeyF8:
-		out.Key = editor.KeyF8
+		out.Key = wiCore.KeyF8
 	case termbox.KeyF9:
-		out.Key = editor.KeyF9
+		out.Key = wiCore.KeyF9
 	case termbox.KeyF10:
-		out.Key = editor.KeyF10
+		out.Key = wiCore.KeyF10
 	case termbox.KeyF11:
-		out.Key = editor.KeyF11
+		out.Key = wiCore.KeyF11
 	case termbox.KeyF12:
-		out.Key = editor.KeyF12
+		out.Key = wiCore.KeyF12
 	case termbox.KeyInsert:
-		out.Key = editor.KeyInsert
+		out.Key = wiCore.KeyInsert
 	case termbox.KeyDelete:
-		out.Key = editor.KeyDelete
+		out.Key = wiCore.KeyDelete
 	case termbox.KeyHome:
-		out.Key = editor.KeyHome
+		out.Key = wiCore.KeyHome
 	case termbox.KeyEnd:
-		out.Key = editor.KeyEnd
+		out.Key = wiCore.KeyEnd
 	case termbox.KeyPgup:
-		out.Key = editor.KeyPageUp
+		out.Key = wiCore.KeyPageUp
 	case termbox.KeyPgdn:
-		out.Key = editor.KeyPageDown
+		out.Key = wiCore.KeyPageDown
 	case termbox.KeyArrowUp:
-		out.Key = editor.KeyArrowUp
+		out.Key = wiCore.KeyArrowUp
 	case termbox.KeyArrowDown:
-		out.Key = editor.KeyArrowDown
+		out.Key = wiCore.KeyArrowDown
 	case termbox.KeyArrowLeft:
-		out.Key = editor.KeyArrowLeft
+		out.Key = wiCore.KeyArrowLeft
 	case termbox.KeyArrowRight:
-		out.Key = editor.KeyArrowRight
+		out.Key = wiCore.KeyArrowRight
 
 	case termbox.KeyCtrlSpace: // KeyCtrlTilde, KeyCtrl2
 		// This value is 0, which cannot be distinguished from non-keypress.
@@ -135,9 +135,9 @@ func termboxKeyToKeyPress(key termbox.Event) editor.KeyPress {
 		out.Ctrl = true
 		out.Ch = 'g'
 	case termbox.KeyBackspace: // KeyCtrlH
-		out.Key = editor.KeyBackspace
+		out.Key = wiCore.KeyBackspace
 	case termbox.KeyTab: // KeyCtrlI
-		out.Key = editor.KeyTab
+		out.Key = wiCore.KeyTab
 	case termbox.KeyCtrlJ:
 		out.Ctrl = true
 		out.Ch = 'j'
@@ -148,7 +148,7 @@ func termboxKeyToKeyPress(key termbox.Event) editor.KeyPress {
 		out.Ctrl = true
 		out.Ch = 'l'
 	case termbox.KeyEnter: // KeyCtrlM
-		out.Key = editor.KeyEnter
+		out.Key = wiCore.KeyEnter
 	case termbox.KeyCtrlN:
 		out.Ctrl = true
 		out.Ch = 'n'
@@ -189,7 +189,7 @@ func termboxKeyToKeyPress(key termbox.Event) editor.KeyPress {
 		out.Ctrl = true
 		out.Ch = 'z'
 	case termbox.KeyEsc: // KeyCtrlLsqBracket, KeyCtrl3
-		out.Key = editor.KeyEscape
+		out.Key = wiCore.KeyEscape
 	case termbox.KeyCtrl4: // KeyCtrlBackslash
 		out.Ctrl = true
 		out.Ch = '4'
