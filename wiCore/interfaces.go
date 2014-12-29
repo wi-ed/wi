@@ -390,17 +390,19 @@ type EventType string
 // TODO(maruel): Use int or string? int is faster, string is likely more
 // "extendable".
 const (
-	EventKey                 EventType = "key"
-	EventResize                        = "resize"
-	EventWindowCreated                 = "window_created"
-	EventViewCreated                   = "view_created"
-	EventDocumentCreated               = "document_created"
+	EventDocumentCreated     EventType = "document_created"
 	EventDocumentCursorMoved           = "document_cursor_moved"
+	EventTerminalResized               = "terminal_resized"
+	EventTerminalKeyPressed            = "terminal_key_pressed"
+	EventViewCreated                   = "view_created"
+	EventWindowCreated                 = "window_created"
+	EventWindowResized                 = "window_resized"
 
 // Etc.
 )
 
 // EventListener are called on events.
+//
 // TODO(maruel): Experimenting with the idea.
 type EventListener interface {
 	OnEvent(t EventType, i interface{})
