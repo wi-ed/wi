@@ -4,7 +4,7 @@
 
 package editor
 
-import "github.com/maruel/wi/wiCore"
+import "github.com/maruel/wi/wicore"
 
 // commandView would normally be in a floating Window near the current cursor
 // on the last focused Window or at the very last line at the bottom of the
@@ -13,8 +13,8 @@ type commandView struct {
 	view
 }
 
-func (v *commandView) Buffer() *wiCore.Buffer {
-	v.buffer.Fill(wiCore.Cell{' ', v.DefaultFormat()})
+func (v *commandView) Buffer() *wicore.Buffer {
+	v.buffer.Fill(wicore.Cell{' ', v.DefaultFormat()})
 	v.buffer.DrawString(v.Title(), 0, 0, v.DefaultFormat())
 	return v.buffer
 }
@@ -22,10 +22,10 @@ func (v *commandView) Buffer() *wiCore.Buffer {
 // The command dialog box.
 // TODO(maruel): Position it 5 lines below the cursor in the parent Window's
 // View. Do this via onAttach.
-func commandViewFactory(args ...string) wiCore.View {
+func commandViewFactory(args ...string) wicore.View {
 	keys := makeKeyBindings()
 	// Fill up the key bindings. This includes basic cursor movement, help, etc.
-	//keys.Set(wiCore.CommandMode, "Enter", "ExecuteCommmad")
+	//keys.Set(wicore.CommandMode, "Enter", "ExecuteCommmad")
 
 	return &commandView{
 		view{
@@ -34,7 +34,7 @@ func commandViewFactory(args ...string) wiCore.View {
 			title:         "Command",
 			naturalX:      30,
 			naturalY:      1,
-			defaultFormat: wiCore.CellFormat{Fg: wiCore.Green, Bg: wiCore.Black},
+			defaultFormat: wicore.CellFormat{Fg: wicore.Green, Bg: wicore.Black},
 		},
 	}
 }

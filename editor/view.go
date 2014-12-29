@@ -9,32 +9,32 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/maruel/wi/wiCore"
+	"github.com/maruel/wi/wicore"
 )
 
-// TODO(maruel): Likely move into wiCore for reuse.
+// TODO(maruel): Likely move into wicore for reuse.
 type view struct {
-	commands      wiCore.Commands
-	keyBindings   wiCore.KeyBindings
+	commands      wicore.Commands
+	keyBindings   wicore.KeyBindings
 	title         string
 	isDisabled    bool
 	naturalX      int
 	naturalY      int
 	actualX       int
 	actualY       int
-	window        wiCore.Window
-	onAttach      func(v *view, w wiCore.Window)
-	defaultFormat wiCore.CellFormat
-	buffer        *wiCore.Buffer
+	window        wicore.Window
+	onAttach      func(v *view, w wicore.Window)
+	defaultFormat wicore.CellFormat
+	buffer        *wicore.Buffer
 }
 
-// wiCore.View interface.
+// wicore.View interface.
 
-func (v *view) Commands() wiCore.Commands {
+func (v *view) Commands() wicore.Commands {
 	return v.commands
 }
 
-func (v *view) KeyBindings() wiCore.KeyBindings {
+func (v *view) KeyBindings() wicore.KeyBindings {
 	return v.keyBindings
 }
 
@@ -54,10 +54,10 @@ func (v *view) SetSize(x, y int) {
 	log.Printf("View(%s).SetSize(%d, %d)", v.Title(), x, y)
 	v.actualX = x
 	v.actualY = y
-	v.buffer = wiCore.NewBuffer(x, y)
+	v.buffer = wicore.NewBuffer(x, y)
 }
 
-func (v *view) OnAttach(w wiCore.Window) {
+func (v *view) OnAttach(w wicore.Window) {
 	if v.onAttach != nil {
 		v.onAttach(v, w)
 	}
@@ -65,7 +65,7 @@ func (v *view) OnAttach(w wiCore.Window) {
 }
 
 // DefaultFormat returns the View's format or the parent Window's View's format.
-func (v *view) DefaultFormat() wiCore.CellFormat {
+func (v *view) DefaultFormat() wicore.CellFormat {
 	if v.defaultFormat.Empty() && v.window != nil {
 		w := v.window.Parent()
 		if w != nil {
@@ -80,11 +80,11 @@ type staticDisabledView struct {
 	view
 }
 
-func (v *staticDisabledView) Buffer() *wiCore.Buffer {
+func (v *staticDisabledView) Buffer() *wicore.Buffer {
 	// TODO(maruel): Use the parent view format by default. No idea how to
 	// surface this information here. Cost is at least a RPC, potentially
 	// multiple when multiple plugins are involved in the tree.
-	v.buffer.Fill(wiCore.Cell{' ', v.DefaultFormat()})
+	v.buffer.Fill(wicore.Cell{' ', v.DefaultFormat()})
 	v.buffer.DrawString(v.Title(), 0, 0, v.DefaultFormat())
 	return v.buffer
 }
@@ -99,20 +99,20 @@ func makeStaticDisabledView(title string, naturalX, naturalY int) *staticDisable
 			isDisabled:    true,
 			naturalX:      naturalX,
 			naturalY:      naturalY,
-			defaultFormat: wiCore.CellFormat{Fg: wiCore.Red, Bg: wiCore.Black},
+			defaultFormat: wicore.CellFormat{Fg: wicore.Red, Bg: wicore.Black},
 		},
 	}
 }
 
 // The status line is a hierarchy of Window, one for each element, each showing
 // a single item.
-func statusRootViewFactory(args ...string) wiCore.View {
+func statusRootViewFactory(args ...string) wicore.View {
 	// TODO(maruel): OnResize(), query the root Window size, if y<=5 or x<=15,
 	// set the root status Window to y=0, so that it becomes effectively
 	// invisible when the editor window is too small.
 	v := makeStaticDisabledView("Status Root", 1, 1)
-	v.defaultFormat.Bg = wiCore.LightGray
-	v.onAttach = func(v *view, w wiCore.Window) {
+	v.defaultFormat.Bg = wicore.LightGray
+	v.onAttach = func(v *view, w wicore.Window) {
 		id := w.ID()
 		w.PostCommands(
 			[][]string{
@@ -124,38 +124,38 @@ func statusRootViewFactory(args ...string) wiCore.View {
 	return v
 }
 
-func statusActiveWindowNameViewFactory(args ...string) wiCore.View {
+func statusActiveWindowNameViewFactory(args ...string) wicore.View {
 	// Active Window View name.
 	// TODO(maruel): Register events of Window activation, make itself Invalidate().
 	v := makeStaticDisabledView("Status Name", 15, 1)
-	v.defaultFormat = wiCore.CellFormat{}
+	v.defaultFormat = wicore.CellFormat{}
 	return v
 }
 
-func statusModeViewFactory(args ...string) wiCore.View {
+func statusModeViewFactory(args ...string) wicore.View {
 	// Mostly for testing purpose, will contain the current mode "Insert" or "Command".
 	v := makeStaticDisabledView("Status Mode", 10, 1)
-	v.defaultFormat = wiCore.CellFormat{}
+	v.defaultFormat = wicore.CellFormat{}
 	return v
 }
 
-func statusPositionViewFactory(args ...string) wiCore.View {
+func statusPositionViewFactory(args ...string) wicore.View {
 	// Position, % of file.
 	// TODO(maruel): Register events of movement, make itself Invalidate().
 	v := makeStaticDisabledView("Status Position", 15, 1)
-	v.defaultFormat = wiCore.CellFormat{}
+	v.defaultFormat = wicore.CellFormat{}
 	return v
 }
 
-func infobarAlertViewFactory(args ...string) wiCore.View {
+func infobarAlertViewFactory(args ...string) wicore.View {
 	out := "Alert: " + args[0]
 	l := utf8.RuneCountInString(out)
 	v := makeStaticDisabledView(out, l, 1)
-	v.onAttach = func(v *view, w wiCore.Window) {
+	v.onAttach = func(v *view, w wicore.Window) {
 		go func() {
 			// Dismiss after 5 seconds.
 			<-time.After(5 * time.Second)
-			wiCore.PostCommand(w, nil, "window_close", w.ID())
+			wicore.PostCommand(w, nil, "window_close", w.ID())
 		}()
 	}
 	return v
@@ -175,8 +175,8 @@ func RegisterDefaultViewFactories(e Editor) {
 // Commands
 
 // RegisterViewCommands registers view-related commands
-func RegisterViewCommands(dispatcher wiCore.Commands) {
-	cmds := []wiCore.Command{}
+func RegisterViewCommands(dispatcher wicore.Commands) {
+	cmds := []wicore.Command{}
 	for _, cmd := range cmds {
 		dispatcher.Register(cmd)
 	}

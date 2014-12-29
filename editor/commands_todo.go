@@ -7,10 +7,10 @@ package editor
 import (
 	"log"
 
-	"github.com/maruel/wi/wiCore"
+	"github.com/maruel/wi/wicore"
 )
 
-func cmdDoc(c *wiCore.CommandImpl, cd wiCore.CommandDispatcherFull, w wiCore.Window, args ...string) {
+func cmdDoc(c *wicore.CommandImpl, cd wicore.CommandDispatcherFull, w wicore.Window, args ...string) {
 	// TODO(maruel): Grab the current word under selection if no args is
 	// provided. Pass this token to shell.
 	docArgs := make([]string, len(args)+1)
@@ -19,12 +19,12 @@ func cmdDoc(c *wiCore.CommandImpl, cd wiCore.CommandDispatcherFull, w wiCore.Win
 	//dispatcher.Execute(w, "shell", docArgs...)
 }
 
-func cmdHelp(c *wiCore.CommandImpl, cd wiCore.CommandDispatcherFull, w wiCore.Window, args ...string) {
+func cmdHelp(c *wicore.CommandImpl, cd wicore.CommandDispatcherFull, w wicore.Window, args ...string) {
 	// TODO(maruel): Creates a new Window with a ViewHelp.
 	log.Printf("Faking help: %s", args)
 }
 
-func cmdShell(c *wiCore.CommandImpl, cd wiCore.CommandDispatcherFull, w wiCore.Window, args ...string) {
+func cmdShell(c *wicore.CommandImpl, cd wicore.CommandDispatcherFull, w wicore.Window, args ...string) {
 	log.Printf("Faking opening a new shell: %s", args)
 }
 
@@ -32,42 +32,42 @@ func cmdShell(c *wiCore.CommandImpl, cd wiCore.CommandDispatcherFull, w wiCore.W
 // be implemented.
 //
 // TODO(maruel): Implement these commands properly and move to the right place.
-func RegisterTodoCommands(dispatcher wiCore.Commands) {
-	cmds := []wiCore.Command{
-		&wiCore.CommandImpl{
+func RegisterTodoCommands(dispatcher wicore.Commands) {
+	cmds := []wicore.Command{
+		&wicore.CommandImpl{
 			"doc",
 			-1,
 			cmdDoc,
-			wiCore.WindowCategory,
-			wiCore.LangMap{
-				wiCore.LangEn: "Search godoc documentation",
+			wicore.WindowCategory,
+			wicore.LangMap{
+				wicore.LangEn: "Search godoc documentation",
 			},
-			wiCore.LangMap{
-				wiCore.LangEn: "Uses the 'doc' tool to get documentation about the text under the cursor.",
+			wicore.LangMap{
+				wicore.LangEn: "Uses the 'doc' tool to get documentation about the text under the cursor.",
 			},
 		},
-		&wiCore.CommandImpl{
+		&wicore.CommandImpl{
 			"help",
 			-1,
 			cmdHelp,
-			wiCore.WindowCategory,
-			wiCore.LangMap{
-				wiCore.LangEn: "Prints help",
+			wicore.WindowCategory,
+			wicore.LangMap{
+				wicore.LangEn: "Prints help",
 			},
-			wiCore.LangMap{
-				wiCore.LangEn: "Prints general help or help for a particular command.",
+			wicore.LangMap{
+				wicore.LangEn: "Prints general help or help for a particular command.",
 			},
 		},
-		&wiCore.CommandImpl{
+		&wicore.CommandImpl{
 			"shell",
 			-1,
 			cmdShell,
-			wiCore.WindowCategory,
-			wiCore.LangMap{
-				wiCore.LangEn: "Opens a shell process",
+			wicore.WindowCategory,
+			wicore.LangMap{
+				wicore.LangEn: "Opens a shell process",
 			},
-			wiCore.LangMap{
-				wiCore.LangEn: "Opens a shell process in a new buffer.",
+			wicore.LangMap{
+				wicore.LangEn: "Opens a shell process in a new buffer.",
 			},
 		},
 	}

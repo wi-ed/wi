@@ -4,37 +4,37 @@
 
 package editor
 
-import "github.com/maruel/wi/wiCore"
+import "github.com/maruel/wi/wicore"
 
 type keyBindings struct {
-	commandMappings map[wiCore.KeyPress]string
-	editMappings    map[wiCore.KeyPress]string
+	commandMappings map[wicore.KeyPress]string
+	editMappings    map[wicore.KeyPress]string
 }
 
-func (k *keyBindings) Set(mode wiCore.KeyboardMode, key wiCore.KeyPress, cmdName string) bool {
+func (k *keyBindings) Set(mode wicore.KeyboardMode, key wicore.KeyPress, cmdName string) bool {
 	if !key.IsValid() {
 		return false
 	}
 	var ok bool
-	if mode == wiCore.AllMode || mode == wiCore.CommandMode {
+	if mode == wicore.AllMode || mode == wicore.CommandMode {
 		_, ok = k.commandMappings[key]
 		k.commandMappings[key] = cmdName
 	}
-	if mode == wiCore.AllMode || mode == wiCore.EditMode {
+	if mode == wicore.AllMode || mode == wicore.EditMode {
 		_, ok = k.editMappings[key]
 		k.editMappings[key] = cmdName
 	}
 	return !ok
 }
 
-func (k *keyBindings) Get(mode wiCore.KeyboardMode, key wiCore.KeyPress) string {
+func (k *keyBindings) Get(mode wicore.KeyboardMode, key wicore.KeyPress) string {
 	if !key.IsValid() {
 		return ""
 	}
-	if mode == wiCore.CommandMode {
+	if mode == wicore.CommandMode {
 		return k.commandMappings[key]
 	}
-	if mode == wiCore.EditMode {
+	if mode == wicore.EditMode {
 		return k.editMappings[key]
 	}
 	v, ok := k.commandMappings[key]
@@ -44,60 +44,60 @@ func (k *keyBindings) Get(mode wiCore.KeyboardMode, key wiCore.KeyPress) string 
 	return v
 }
 
-func makeKeyBindings() wiCore.KeyBindings {
-	return &keyBindings{make(map[wiCore.KeyPress]string), make(map[wiCore.KeyPress]string)}
+func makeKeyBindings() wicore.KeyBindings {
+	return &keyBindings{make(map[wicore.KeyPress]string), make(map[wicore.KeyPress]string)}
 }
 
 // Commands.
 
-func cmdKeyBind(c *wiCore.CommandImpl, cd wiCore.CommandDispatcherFull, w wiCore.Window, args ...string) {
+func cmdKeyBind(c *wicore.CommandImpl, cd wicore.CommandDispatcherFull, w wicore.Window, args ...string) {
 	location := args[0]
 	modeName := args[1]
 	keyName := args[2]
 	cmdName := args[3]
 
 	if location == "global" {
-		w = wiCore.RootWindow(w)
+		w = wicore.RootWindow(w)
 	} else if location != "window" {
-		cmd := wiCore.GetCommand(cd, w, "key_bind")
+		cmd := wicore.GetCommand(cd, w, "key_bind")
 		cd.ExecuteCommand(w, "alert", cmd.LongDesc(cd, w))
 		return
 	}
 
-	var mode wiCore.KeyboardMode
+	var mode wicore.KeyboardMode
 	if modeName == "command" {
-		mode = wiCore.CommandMode
+		mode = wicore.CommandMode
 	} else if modeName == "edit" {
-		mode = wiCore.CommandMode
+		mode = wicore.CommandMode
 	} else if modeName == "all" {
-		mode = wiCore.AllMode
+		mode = wicore.AllMode
 	} else {
-		cmd := wiCore.GetCommand(cd, w, "key_bind")
+		cmd := wicore.GetCommand(cd, w, "key_bind")
 		cd.ExecuteCommand(w, "alert", cmd.LongDesc(cd, w))
 		return
 	}
 	// TODO(maruel): Refuse invalid keyName.
-	key := wiCore.KeyPressFromString(keyName)
+	key := wicore.KeyPressFromString(keyName)
 	w.View().KeyBindings().Set(mode, key, cmdName)
 }
 
 // RegisterKeyBindingCommands registers the keyboard mapping related commands.
-func RegisterKeyBindingCommands(dispatcher wiCore.Commands) {
-	cmds := []wiCore.Command{
-		&wiCore.CommandImpl{
+func RegisterKeyBindingCommands(dispatcher wicore.Commands) {
+	cmds := []wicore.Command{
+		&wicore.CommandImpl{
 			"key_bind",
 			4,
 			cmdKeyBind,
-			wiCore.CommandsCategory,
-			wiCore.LangMap{
-				wiCore.LangEn: "Binds a keyboard mapping to a command",
+			wicore.CommandsCategory,
+			wicore.LangMap{
+				wicore.LangEn: "Binds a keyboard mapping to a command",
 			},
-			wiCore.LangMap{
-				wiCore.LangEn: "Usage: key_bind [window|global] [command|edit|all] <key> <command>\nBinds a keyboard mapping to a command. The binding can be to the active view for view-specific key binding or to the root view for global key bindings.",
+			wicore.LangMap{
+				wicore.LangEn: "Usage: key_bind [window|global] [command|edit|all] <key> <command>\nBinds a keyboard mapping to a command. The binding can be to the active view for view-specific key binding or to the root view for global key bindings.",
 			},
 		},
 
-		&wiCore.CommandAlias{"keybind", "key_bind", nil},
+		&wicore.CommandAlias{"keybind", "key_bind", nil},
 	}
 	for _, cmd := range cmds {
 		dispatcher.Register(cmd)
@@ -111,9 +111,9 @@ func RegisterKeyBindingCommands(dispatcher wiCore.Commands) {
 // TODO(maruel): This should be remappable via a configuration flag, for
 // example vim flavor vs emacs flavor. I'm not sure it's worth supporting this
 // without a restart.
-func RegisterDefaultKeyBindings(cd wiCore.CommandDispatcher) {
-	wiCore.PostCommand(cd, nil, "key_bind", "global", "all", "F1", "help")
-	wiCore.PostCommand(cd, nil, "key_bind", "global", "command", ":", "show_command_window")
+func RegisterDefaultKeyBindings(cd wicore.CommandDispatcher) {
+	wicore.PostCommand(cd, nil, "key_bind", "global", "all", "F1", "help")
+	wicore.PostCommand(cd, nil, "key_bind", "global", "command", ":", "show_command_window")
 	// TODO(maruel): Temporary.
-	wiCore.PostCommand(cd, nil, "key_bind", "global", "all", "Ctrl-c", "quit")
+	wicore.PostCommand(cd, nil, "key_bind", "global", "all", "Ctrl-c", "quit")
 }

@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/maruel/wi/wiCore"
+	"github.com/maruel/wi/wicore"
 )
 
 var singleBorder = []rune{'\u2500', '\u2502', '\u250D', '\u2510', '\u2514', '\u2518'}
@@ -27,7 +27,7 @@ const (
 	drawnBorderAll = drawnBorderLeft | drawnBorderRight | drawnBorderTop | drawnBorderBottom
 )
 
-// window implements wiCore.Window. It keeps its own buffer of its display.
+// window implements wicore.Window. It keeps its own buffer of its display.
 //
 // window is the only structure guaranteed to be in the wi main process. View
 // and Documents can be served via plugins.
@@ -35,26 +35,26 @@ type window struct {
 	id              int // window ID relative to the parent.
 	lastChildID     int // last ID used for a children window.
 	parent          *window
-	cd              wiCore.CommandDispatcherFull
+	cd              wicore.CommandDispatcherFull
 	childrenWindows []*window
-	windowBuffer    *wiCore.Buffer // includes the border
-	rect            wiCore.Rect    // Window Rect as described in wiCore.Window.Rect().
-	clientAreaRect  wiCore.Rect    // Usable area within the Window, the part not obscured by borders.
-	viewRect        wiCore.Rect    // Window View Rect, which is the client area not used by childrenWindows.
-	view            wiCore.View    // View that renders the content. It may be nil if this Window has no content.
-	docking         wiCore.DockingType
-	border          wiCore.BorderType
+	windowBuffer    *wicore.Buffer // includes the border
+	rect            wicore.Rect    // Window Rect as described in wicore.Window.Rect().
+	clientAreaRect  wicore.Rect    // Usable area within the Window, the part not obscured by borders.
+	viewRect        wicore.Rect    // Window View Rect, which is the client area not used by childrenWindows.
+	view            wicore.View    // View that renders the content. It may be nil if this Window has no content.
+	docking         wicore.DockingType
+	border          wicore.BorderType
 	effectiveBorder drawnBorder       // effectiveBorder automatically collapses borders when the Window Rect is too small and is based on docking.
-	borderFormat    wiCore.CellFormat // Format to be used in borders. It can be different from .View().DefaultFormat().
+	borderFormat    wicore.CellFormat // Format to be used in borders. It can be different from .View().DefaultFormat().
 }
 
-// wiCore.Window interface.
+// wicore.Window interface.
 
 func (w *window) String() string {
 	return fmt.Sprintf("Window(%s, %s, %v)", w.ID(), w.View().Title(), w.Rect())
 }
 
-func (w *window) PostCommands(cmds [][]string, callback func()) wiCore.CommandID {
+func (w *window) PostCommands(cmds [][]string, callback func()) wicore.CommandID {
 	return w.cd.PostCommands(cmds, callback)
 }
 
@@ -80,7 +80,7 @@ func (w *window) Tree() string {
 	return out
 }
 
-func (w *window) Parent() wiCore.Window {
+func (w *window) Parent() wicore.Window {
 	// TODO(maruel): Understand why this is necessary at all.
 	if w.parent != nil {
 		return w.parent
@@ -88,23 +88,23 @@ func (w *window) Parent() wiCore.Window {
 	return nil
 }
 
-func (w *window) ChildrenWindows() []wiCore.Window {
-	out := make([]wiCore.Window, len(w.childrenWindows))
+func (w *window) ChildrenWindows() []wicore.Window {
+	out := make([]wicore.Window, len(w.childrenWindows))
 	for i, v := range w.childrenWindows {
 		out[i] = v
 	}
 	return out
 }
 
-func (w *window) Rect() wiCore.Rect {
+func (w *window) Rect() wicore.Rect {
 	return w.rect
 }
 
-func (w *window) Docking() wiCore.DockingType {
+func (w *window) Docking() wicore.DockingType {
 	return w.docking
 }
 
-func (w *window) View() wiCore.View {
+func (w *window) View() wicore.View {
 	return w.view
 }
 
@@ -137,7 +137,7 @@ func recurseIDToWindow(w *window, fullID string) *window {
 	return nil
 }
 
-// Converts a wiCore.Window.ID() to a window pointer. Returns nil if invalid.
+// Converts a wicore.Window.ID() to a window pointer. Returns nil if invalid.
 //
 // "0" is the special reference to the root window.
 func (e *editor) idToWindow(id string) *window {
@@ -155,7 +155,7 @@ func (e *editor) idToWindow(id string) *window {
 // setRect sets the rect of this Window, based on the parent's Window own
 // Rect(). It updates Rect() and synchronously updates the child Window that
 // are not DockingFloating.
-func (w *window) setRect(rect wiCore.Rect) {
+func (w *window) setRect(rect wicore.Rect) {
 	// setRect() recreates the buffer and immediately draws the borders.
 	if !w.rect.Eq(rect) {
 		w.rect = rect
@@ -166,7 +166,7 @@ func (w *window) setRect(rect wiCore.Rect) {
 			}
 		}
 
-		w.windowBuffer = wiCore.NewBuffer(w.rect.Width, w.rect.Height)
+		w.windowBuffer = wicore.NewBuffer(w.rect.Width, w.rect.Height)
 		w.updateBorder()
 	}
 	// Still flow the call through children Window, so DockingFloating are
@@ -175,36 +175,36 @@ func (w *window) setRect(rect wiCore.Rect) {
 }
 
 // calculateEffectiveBorder calculates window.effectiveBorder.
-func calculateEffectiveBorder(r wiCore.Rect, d wiCore.DockingType) drawnBorder {
+func calculateEffectiveBorder(r wicore.Rect, d wicore.DockingType) drawnBorder {
 	switch d {
-	case wiCore.DockingFill:
+	case wicore.DockingFill:
 		return drawnBorderNone
 
-	case wiCore.DockingFloating:
+	case wicore.DockingFloating:
 		if r.Width >= 5 && r.Height >= 3 {
 			return drawnBorderAll
 		}
 		return drawnBorderNone
 
-	case wiCore.DockingLeft:
+	case wicore.DockingLeft:
 		if r.Width > 1 && r.Height > 0 {
 			return drawnBorderRight
 		}
 		return drawnBorderNone
 
-	case wiCore.DockingRight:
+	case wicore.DockingRight:
 		if r.Width > 1 && r.Height > 0 {
 			return drawnBorderLeft
 		}
 		return drawnBorderNone
 
-	case wiCore.DockingTop:
+	case wicore.DockingTop:
 		if r.Height > 1 && r.Width > 0 {
 			return drawnBorderBottom
 		}
 		return drawnBorderNone
 
-	case wiCore.DockingBottom:
+	case wicore.DockingBottom:
 		if r.Height > 1 && r.Width > 0 {
 			return drawnBorderTop
 		}
@@ -223,19 +223,19 @@ func (w *window) resizeChildren() {
 	var fill *window
 	for _, child := range w.childrenWindows {
 		switch child.Docking() {
-		case wiCore.DockingFill:
+		case wicore.DockingFill:
 			fill = child
 
-		case wiCore.DockingFloating:
+		case wicore.DockingFloating:
 			// Floating uses its own thing.
 			// TODO(maruel): Not clean. Doesn't handle root Window resize properly.
 			child.setRect(child.Rect())
 
-		case wiCore.DockingLeft:
+		case wicore.DockingLeft:
 			width, _ := child.View().NaturalSize()
 			if width >= remaining.Width {
 				width = remaining.Width
-			} else if child.border != wiCore.BorderNone {
+			} else if child.border != wicore.BorderNone {
 				width++
 			}
 			tmp := remaining
@@ -244,11 +244,11 @@ func (w *window) resizeChildren() {
 			remaining.Width -= width
 			child.setRect(tmp)
 
-		case wiCore.DockingRight:
+		case wicore.DockingRight:
 			width, _ := child.View().NaturalSize()
 			if width >= remaining.Width {
 				width = remaining.Width
-			} else if child.border != wiCore.BorderNone {
+			} else if child.border != wicore.BorderNone {
 				width++
 			}
 			tmp := remaining
@@ -257,11 +257,11 @@ func (w *window) resizeChildren() {
 			remaining.Width -= width
 			child.setRect(tmp)
 
-		case wiCore.DockingTop:
+		case wicore.DockingTop:
 			_, height := child.View().NaturalSize()
 			if height >= remaining.Height {
 				height = remaining.Height
-			} else if child.border != wiCore.BorderNone {
+			} else if child.border != wicore.BorderNone {
 				height++
 			}
 			tmp := remaining
@@ -270,11 +270,11 @@ func (w *window) resizeChildren() {
 			remaining.Height -= height
 			child.setRect(tmp)
 
-		case wiCore.DockingBottom:
+		case wicore.DockingBottom:
 			_, height := child.View().NaturalSize()
 			if height >= remaining.Height {
 				height = remaining.Height
-			} else if child.border != wiCore.BorderNone {
+			} else if child.border != wicore.BorderNone {
 				height++
 			}
 			tmp := remaining
@@ -298,10 +298,10 @@ func (w *window) resizeChildren() {
 		w.viewRect = remaining
 		w.view.SetSize(w.viewRect.Width, w.viewRect.Height)
 	}
-	wiCore.PostCommand(w, nil, "editor_redraw")
+	wicore.PostCommand(w, nil, "editor_redraw")
 }
 
-func (w *window) buffer() *wiCore.Buffer {
+func (w *window) buffer() *wicore.Buffer {
 	// TODO(maruel): Redo API.
 	// Opportunistically refresh the view buffer.
 	if w.viewRect.Width != 0 && w.viewRect.Height != 0 {
@@ -312,12 +312,12 @@ func (w *window) buffer() *wiCore.Buffer {
 }
 
 /* TODO(maruel): Is it needed at all?
-func (w *window) setView(view wiCore.View) {
+func (w *window) setView(view wicore.View) {
 	if view != w.view {
 		w.view = view
 		b := w.windowBuffer.SubBuffer(w.viewRect)
 		b.Fill(w.cell(' '))
-		wiCore.PostCommand(w, "editor_redraw")
+		wicore.PostCommand(w, "editor_redraw")
 	}
 	panic("To test")
 }
@@ -329,50 +329,50 @@ func (w *window) setView(view wiCore.View) {
 // It's called by setRect() and will be called by SetBorder (if ever
 // implemented).
 func (w *window) updateBorder() {
-	if w.border == wiCore.BorderNone {
+	if w.border == wicore.BorderNone {
 		w.effectiveBorder = drawnBorderNone
 	} else {
 		w.effectiveBorder = calculateEffectiveBorder(w.rect, w.docking)
 	}
 
 	s := doubleBorder
-	if w.border == wiCore.BorderSingle {
+	if w.border == wicore.BorderSingle {
 		s = singleBorder
 	}
 
 	// TODO(maruel): Switch to a bitmask check by incrementally reducing w.clientAreaRect.
 	switch w.effectiveBorder {
 	case drawnBorderNone:
-		w.clientAreaRect = wiCore.Rect{0, 0, w.rect.Width, w.rect.Height}
+		w.clientAreaRect = wicore.Rect{0, 0, w.rect.Width, w.rect.Height}
 
 	case drawnBorderLeft:
-		w.clientAreaRect = wiCore.Rect{1, 0, w.rect.Width - 1, w.rect.Height}
-		w.windowBuffer.SubBuffer(wiCore.Rect{0, 0, 1, w.rect.Height}).Fill(w.cell(s[1]))
+		w.clientAreaRect = wicore.Rect{1, 0, w.rect.Width - 1, w.rect.Height}
+		w.windowBuffer.SubBuffer(wicore.Rect{0, 0, 1, w.rect.Height}).Fill(w.cell(s[1]))
 
 	case drawnBorderRight:
-		w.clientAreaRect = wiCore.Rect{0, 0, w.rect.Width - 1, w.rect.Height}
-		w.windowBuffer.SubBuffer(wiCore.Rect{w.rect.Width - 1, 0, 1, w.rect.Height}).Fill(w.cell(s[1]))
+		w.clientAreaRect = wicore.Rect{0, 0, w.rect.Width - 1, w.rect.Height}
+		w.windowBuffer.SubBuffer(wicore.Rect{w.rect.Width - 1, 0, 1, w.rect.Height}).Fill(w.cell(s[1]))
 
 	case drawnBorderTop:
-		w.clientAreaRect = wiCore.Rect{0, 1, w.rect.Width, w.rect.Height - 1}
-		w.windowBuffer.SubBuffer(wiCore.Rect{0, 0, w.rect.Width, 1}).Fill(w.cell(s[0]))
+		w.clientAreaRect = wicore.Rect{0, 1, w.rect.Width, w.rect.Height - 1}
+		w.windowBuffer.SubBuffer(wicore.Rect{0, 0, w.rect.Width, 1}).Fill(w.cell(s[0]))
 
 	case drawnBorderBottom:
-		w.clientAreaRect = wiCore.Rect{0, 0, w.rect.Width, w.rect.Height - 1}
-		w.windowBuffer.SubBuffer(wiCore.Rect{0, w.rect.Height - 1, w.rect.Width, 1}).Fill(w.cell(s[0]))
+		w.clientAreaRect = wicore.Rect{0, 0, w.rect.Width, w.rect.Height - 1}
+		w.windowBuffer.SubBuffer(wicore.Rect{0, w.rect.Height - 1, w.rect.Width, 1}).Fill(w.cell(s[0]))
 
 	case drawnBorderAll:
-		w.clientAreaRect = wiCore.Rect{1, 1, w.rect.Width - 2, w.rect.Height - 2}
+		w.clientAreaRect = wicore.Rect{1, 1, w.rect.Width - 2, w.rect.Height - 2}
 		// Corners.
 		*w.windowBuffer.Cell(0, 0) = w.cell(s[2])
 		*w.windowBuffer.Cell(0, w.rect.Height-1) = w.cell(s[4])
 		*w.windowBuffer.Cell(w.rect.Width-1, 0) = w.cell(s[3])
 		*w.windowBuffer.Cell(w.rect.Width-1, w.rect.Height-1) = w.cell(s[5])
 		// Lines.
-		w.windowBuffer.SubBuffer(wiCore.Rect{1, 0, w.rect.Width - 2, 1}).Fill(w.cell(s[0]))
-		w.windowBuffer.SubBuffer(wiCore.Rect{1, w.rect.Height - 1, w.rect.Width - 2, w.rect.Height - 1}).Fill(w.cell(s[0]))
-		w.windowBuffer.SubBuffer(wiCore.Rect{0, 1, 1, w.rect.Height - 2}).Fill(w.cell(s[1]))
-		w.windowBuffer.SubBuffer(wiCore.Rect{w.rect.Width - 1, 1, w.rect.Width - 1, w.rect.Height - 2}).Fill(w.cell(s[1]))
+		w.windowBuffer.SubBuffer(wicore.Rect{1, 0, w.rect.Width - 2, 1}).Fill(w.cell(s[0]))
+		w.windowBuffer.SubBuffer(wicore.Rect{1, w.rect.Height - 1, w.rect.Width - 2, w.rect.Height - 1}).Fill(w.cell(s[0]))
+		w.windowBuffer.SubBuffer(wicore.Rect{0, 1, 1, w.rect.Height - 2}).Fill(w.cell(s[1]))
+		w.windowBuffer.SubBuffer(wicore.Rect{w.rect.Width - 1, 1, w.rect.Width - 1, w.rect.Height - 2}).Fill(w.cell(s[1]))
 
 	default:
 		panic("Unknown drawnBorder")
@@ -388,7 +388,7 @@ func (w *window) updateBorder() {
 	}
 }
 
-func (w *window) getBorderFormat() wiCore.CellFormat {
+func (w *window) getBorderFormat() wicore.CellFormat {
 	c := w.borderFormat
 	if c.Empty() {
 		// Defaults to the view format.
@@ -401,13 +401,13 @@ func (w *window) getBorderFormat() wiCore.CellFormat {
 	return c
 }
 
-func (w *window) cell(r rune) wiCore.Cell {
-	return wiCore.Cell{r, w.getBorderFormat()}
+func (w *window) cell(r rune) wicore.Cell {
+	return wicore.Cell{r, w.getBorderFormat()}
 }
 
-func makeWindow(parent *window, view wiCore.View, docking wiCore.DockingType) *window {
+func makeWindow(parent *window, view wicore.View, docking wicore.DockingType) *window {
 	log.Printf("makeWindow(%s, %s, %s)", parent, view.Title(), docking)
-	var cd wiCore.CommandDispatcherFull
+	var cd wicore.CommandDispatcherFull
 	id := 0
 	if parent != nil {
 		cd = parent.cd
@@ -415,9 +415,9 @@ func makeWindow(parent *window, view wiCore.View, docking wiCore.DockingType) *w
 		id = parent.lastChildID
 	}
 	// It's more complex than that but it's a fine default.
-	border := wiCore.BorderNone
-	if docking == wiCore.DockingFloating {
-		border = wiCore.BorderDouble
+	border := wicore.BorderNone
+	if docking == wicore.DockingFloating {
+		border = wicore.BorderDouble
 	}
 	return &window{
 		id:      id,
@@ -426,17 +426,17 @@ func makeWindow(parent *window, view wiCore.View, docking wiCore.DockingType) *w
 		view:    view,
 		docking: docking,
 		border:  border,
-		borderFormat: wiCore.CellFormat{
-			Fg: wiCore.White,
-			Bg: wiCore.Black,
+		borderFormat: wicore.CellFormat{
+			Fg: wicore.White,
+			Bg: wicore.Black,
 		},
 	}
 }
 
 // drawRecurse recursively draws the Window tree into buffer out.
-func drawRecurse(w *window, offsetX, offsetY int, out *wiCore.Buffer) {
+func drawRecurse(w *window, offsetX, offsetY int, out *wicore.Buffer) {
 	log.Printf("drawRecurse(%s, %d, %d); %v", w.View().Title(), offsetX, offsetY, w.Rect())
-	if w.Docking() == wiCore.DockingFloating {
+	if w.Docking() == wicore.DockingFloating {
 		// Floating Window are relative to the screen, not the parent Window.
 		offsetX = 0
 		offsetY = 0
@@ -452,7 +452,7 @@ func drawRecurse(w *window, offsetX, offsetY int, out *wiCore.Buffer) {
 		// In the case of DockingFill, only the first one should be drawn. In
 		// particular, the DockingFloating child of an hidden DockingFill will not
 		// be drawn.
-		if child.docking == wiCore.DockingFill {
+		if child.docking == wicore.DockingFill {
 			if fillFound {
 				continue
 			}
@@ -469,7 +469,7 @@ func cmdWindowActivate(c *privilegedCommandImpl, e *editor, w *window, args ...s
 
 	child := e.idToWindow(windowName)
 	if child == nil {
-		e.ExecuteCommand(w, "alert", fmt.Sprintf(wiCore.GetStr(e.CurrentLanguage(), isNotValidWindow), windowName))
+		e.ExecuteCommand(w, "alert", fmt.Sprintf(wicore.GetStr(e.CurrentLanguage(), isNotValidWindow), windowName))
 		return
 	}
 	e.activateWindow(child)
@@ -480,7 +480,7 @@ func cmdWindowClose(c *privilegedCommandImpl, e *editor, w *window, args ...stri
 
 	child := e.idToWindow(windowName)
 	if child == nil {
-		e.ExecuteCommand(w, "alert", fmt.Sprintf(wiCore.GetStr(e.CurrentLanguage(), isNotValidWindow), windowName))
+		e.ExecuteCommand(w, "alert", fmt.Sprintf(wicore.GetStr(e.CurrentLanguage(), isNotValidWindow), windowName))
 		return
 	}
 	for i, v := range child.parent.childrenWindows {
@@ -489,7 +489,7 @@ func cmdWindowClose(c *privilegedCommandImpl, e *editor, w *window, args ...stri
 			w.childrenWindows[len(w.childrenWindows)-1] = nil
 			w.childrenWindows = w.childrenWindows[:len(w.childrenWindows)-1]
 			detachRecursively(v)
-			wiCore.PostCommand(e, nil, "editor_redraw")
+			wicore.PostCommand(e, nil, "editor_redraw")
 			return
 		}
 	}
@@ -503,15 +503,15 @@ func cmdWindowNew(c *privilegedCommandImpl, e *editor, w *window, args ...string
 	parent := e.idToWindow(windowName)
 	if parent == nil {
 		if viewFactoryName != "infobar_alert" {
-			e.ExecuteCommand(w, "alert", fmt.Sprintf(wiCore.GetStr(e.CurrentLanguage(), isNotValidWindow), windowName))
+			e.ExecuteCommand(w, "alert", fmt.Sprintf(wicore.GetStr(e.CurrentLanguage(), isNotValidWindow), windowName))
 		}
 		return
 	}
 
-	docking := wiCore.StringToDockingType(dockingName)
-	if docking == wiCore.DockingUnknown {
+	docking := wicore.StringToDockingType(dockingName)
+	if docking == wicore.DockingUnknown {
 		if viewFactoryName != "infobar_alert" {
-			e.ExecuteCommand(w, "alert", fmt.Sprintf(wiCore.GetStr(e.CurrentLanguage(), invalidDocking), dockingName))
+			e.ExecuteCommand(w, "alert", fmt.Sprintf(wicore.GetStr(e.CurrentLanguage(), invalidDocking), dockingName))
 		}
 		return
 	}
@@ -519,11 +519,11 @@ func cmdWindowNew(c *privilegedCommandImpl, e *editor, w *window, args ...string
 	// TODO(maruel): Reorder .childrenWindows with
 	// CommandDispatcherFull.ActivateWindow() but only with DockingFill.
 	// TODO(maruel): Also allow DockingFloating.
-	//if docking != wiCore.DockingFill {
+	//if docking != wicore.DockingFill {
 	for _, child := range parent.childrenWindows {
 		if child.Docking() == docking {
 			if viewFactoryName != "infobar_alert" {
-				e.ExecuteCommand(w, "alert", fmt.Sprintf(wiCore.GetStr(e.CurrentLanguage(), cantAddTwoWindowWithSameDocking), docking))
+				e.ExecuteCommand(w, "alert", fmt.Sprintf(wicore.GetStr(e.CurrentLanguage(), cantAddTwoWindowWithSameDocking), docking))
 			}
 			return
 		}
@@ -533,16 +533,16 @@ func cmdWindowNew(c *privilegedCommandImpl, e *editor, w *window, args ...string
 	viewFactory, ok := e.viewFactories[viewFactoryName]
 	if !ok {
 		if viewFactoryName != "infobar_alert" {
-			e.ExecuteCommand(w, "alert", fmt.Sprintf(wiCore.GetStr(e.CurrentLanguage(), invalidViewFactory), viewFactoryName))
+			e.ExecuteCommand(w, "alert", fmt.Sprintf(wicore.GetStr(e.CurrentLanguage(), invalidViewFactory), viewFactoryName))
 		}
 		return
 	}
 	view := viewFactory(args[3:]...)
 
 	child := makeWindow(parent, view, docking)
-	if docking == wiCore.DockingFloating {
+	if docking == wicore.DockingFloating {
 		width, height := view.NaturalSize()
-		if child.border != wiCore.BorderNone {
+		if child.border != wicore.BorderNone {
 			width += 2
 			height += 2
 		}
@@ -567,19 +567,19 @@ func cmdWindowSetDocking(c *privilegedCommandImpl, e *editor, w *window, args ..
 
 	child := e.idToWindow(windowName)
 	if child == nil {
-		e.ExecuteCommand(w, "alert", fmt.Sprintf(wiCore.GetStr(e.CurrentLanguage(), isNotValidWindow), windowName))
+		e.ExecuteCommand(w, "alert", fmt.Sprintf(wicore.GetStr(e.CurrentLanguage(), isNotValidWindow), windowName))
 		return
 	}
-	docking := wiCore.StringToDockingType(dockingName)
-	if docking == wiCore.DockingUnknown {
-		e.ExecuteCommand(w, "alert", fmt.Sprintf(wiCore.GetStr(e.CurrentLanguage(), invalidDocking), dockingName))
+	docking := wicore.StringToDockingType(dockingName)
+	if docking == wicore.DockingUnknown {
+		e.ExecuteCommand(w, "alert", fmt.Sprintf(wicore.GetStr(e.CurrentLanguage(), invalidDocking), dockingName))
 		return
 	}
 	if w.docking != docking {
 		// TODO(maruel): Check no other parent's child window have the same dock.
 		w.docking = docking
 		w.parent.resizeChildren()
-		wiCore.PostCommand(w, nil, "editor_redraw")
+		wicore.PostCommand(w, nil, "editor_redraw")
 	}
 }
 
@@ -588,17 +588,17 @@ func cmdWindowSetRect(c *privilegedCommandImpl, e *editor, w *window, args ...st
 
 	child := e.idToWindow(windowName)
 	if child == nil {
-		e.ExecuteCommand(w, "alert", fmt.Sprintf(wiCore.GetStr(e.CurrentLanguage(), isNotValidWindow), windowName))
+		e.ExecuteCommand(w, "alert", fmt.Sprintf(wicore.GetStr(e.CurrentLanguage(), isNotValidWindow), windowName))
 		return
 	}
-	r := wiCore.Rect{}
+	r := wicore.Rect{}
 	var err1, err2, err3, err4 error
 	r.X, err1 = strconv.Atoi(args[1])
 	r.Y, err2 = strconv.Atoi(args[2])
 	r.Width, err3 = strconv.Atoi(args[3])
 	r.Height, err4 = strconv.Atoi(args[4])
 	if err1 != nil || err2 != nil || err3 != nil || err4 != nil {
-		e.ExecuteCommand(w, "alert", fmt.Sprintf(wiCore.GetStr(e.CurrentLanguage(), invalidRect), args[1], args[2], args[3], args[4]))
+		e.ExecuteCommand(w, "alert", fmt.Sprintf(wicore.GetStr(e.CurrentLanguage(), invalidRect), args[1], args[2], args[3], args[4]))
 		return
 	}
 	child.setRect(r)
@@ -606,66 +606,66 @@ func cmdWindowSetRect(c *privilegedCommandImpl, e *editor, w *window, args ...st
 
 // RegisterWindowCommands registers all the commands relative to window
 // management.
-func RegisterWindowCommands(dispatcher wiCore.Commands) {
-	cmds := []wiCore.Command{
+func RegisterWindowCommands(dispatcher wicore.Commands) {
+	cmds := []wicore.Command{
 		&privilegedCommandImpl{
 			"window_activate",
 			1,
 			cmdWindowActivate,
-			wiCore.WindowCategory,
-			wiCore.LangMap{
-				wiCore.LangEn: "Activate a window",
+			wicore.WindowCategory,
+			wicore.LangMap{
+				wicore.LangEn: "Activate a window",
 			},
-			wiCore.LangMap{
-				wiCore.LangEn: "Active a window. This means the Window will have keyboard focus.",
+			wicore.LangMap{
+				wicore.LangEn: "Active a window. This means the Window will have keyboard focus.",
 			},
 		},
 		&privilegedCommandImpl{
 			"window_close",
 			1,
 			cmdWindowClose,
-			wiCore.WindowCategory,
-			wiCore.LangMap{
-				wiCore.LangEn: "Closes a window",
+			wicore.WindowCategory,
+			wicore.LangMap{
+				wicore.LangEn: "Closes a window",
 			},
-			wiCore.LangMap{
-				wiCore.LangEn: "Closes a window. Note that any window can be closed and all the child window will be destroyed at the same time.",
+			wicore.LangMap{
+				wicore.LangEn: "Closes a window. Note that any window can be closed and all the child window will be destroyed at the same time.",
 			},
 		},
 		&privilegedCommandImpl{
 			"window_new",
 			-1,
 			cmdWindowNew,
-			wiCore.WindowCategory,
-			wiCore.LangMap{
-				wiCore.LangEn: "Creates a new window",
+			wicore.WindowCategory,
+			wicore.LangMap{
+				wicore.LangEn: "Creates a new window",
 			},
-			wiCore.LangMap{
-				wiCore.LangEn: "Usage: window_new <parent> <docking> <view name> <view args...>\nCreates a new window. The new window is created as a child to the specified parent. It creates inside the window the view specified. The Window is activated. It is invalid to add a child Window with the same docking as one already present.",
+			wicore.LangMap{
+				wicore.LangEn: "Usage: window_new <parent> <docking> <view name> <view args...>\nCreates a new window. The new window is created as a child to the specified parent. It creates inside the window the view specified. The Window is activated. It is invalid to add a child Window with the same docking as one already present.",
 			},
 		},
 		&privilegedCommandImpl{
 			"window_set_docking",
 			2,
 			cmdWindowSetDocking,
-			wiCore.WindowCategory,
-			wiCore.LangMap{
-				wiCore.LangEn: "Change the docking of a window",
+			wicore.WindowCategory,
+			wicore.LangMap{
+				wicore.LangEn: "Change the docking of a window",
 			},
-			wiCore.LangMap{
-				wiCore.LangEn: "Changes the docking of this Window relative to the parent window. This will forces an invalidation and a redraw.",
+			wicore.LangMap{
+				wicore.LangEn: "Changes the docking of this Window relative to the parent window. This will forces an invalidation and a redraw.",
 			},
 		},
 		&privilegedCommandImpl{
 			"window_set_rect",
 			5,
 			cmdWindowSetRect,
-			wiCore.WindowCategory,
-			wiCore.LangMap{
-				wiCore.LangEn: "Move a window",
+			wicore.WindowCategory,
+			wicore.LangMap{
+				wicore.LangEn: "Move a window",
 			},
-			wiCore.LangMap{
-				wiCore.LangEn: "Usage: window_set_rect <window> <x> <y> <w> <h>\nMoves a Window relative to the parent window, unless it is floating, where it is relative to the view port.",
+			wicore.LangMap{
+				wicore.LangEn: "Usage: window_set_rect <window> <x> <y> <w> <h>\nMoves a Window relative to the parent window, unless it is floating, where it is relative to the view port.",
 			},
 		},
 	}

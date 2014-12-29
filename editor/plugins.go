@@ -17,7 +17,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/maruel/wi/wiCore"
+	"github.com/maruel/wi/wicore"
 )
 
 // TODO(maruel): Implement the RPC to make plugins work.
@@ -99,19 +99,19 @@ func loadPlugin(server *rpc.Server, args ...string) (Plugin, error) {
 	}()
 
 	// Before starting the RPC, ensures the version matches.
-	expectedVersion := wiCore.CalculateVersion()
+	expectedVersion := wicore.CalculateVersion()
 	b := make([]byte, 40)
 	if _, err := stdout.Read(b); err != nil {
 		return nil, err
 	}
 	actualVersion := string(b)
 	if expectedVersion != actualVersion {
-		return nil, fmt.Errorf("unexpected wiCore version; expected %s, got %s", expectedVersion, actualVersion)
+		return nil, fmt.Errorf("unexpected wicore version; expected %s, got %s", expectedVersion, actualVersion)
 	}
 
 	// Start the RPC server for this plugin.
 	go func() {
-		server.ServeConn(wiCore.MakeReadWriteCloser(stdout, stdin))
+		server.ServeConn(wicore.MakeReadWriteCloser(stdout, stdin))
 	}()
 
 	return &pluginProcess{cmd.Process}, nil

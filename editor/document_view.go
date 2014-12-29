@@ -4,7 +4,7 @@
 
 package editor
 
-import "github.com/maruel/wi/wiCore"
+import "github.com/maruel/wi/wicore"
 
 // ColorMode is the coloring mode in effect.
 //
@@ -31,18 +31,18 @@ type documentView struct {
 	wordWrap        bool        // true if word-wrapping is in effect. TODO(maruel): Implement.
 	columnMode      bool        // true if free movement is in effect. TODO(maruel): Implement.
 	colorMode       ColorMode   // Coloring of the file. Technically it'd be possible to have one file view without color and another with. TODO(maruel): Determine if useful.
-	selection       wiCore.Rect // selection if any. TODO(maruel): Selection in columnMode vs normal selection vs line selection.
+	selection       wicore.Rect // selection if any. TODO(maruel): Selection in columnMode vs normal selection vs line selection.
 }
 
-func (v *documentView) Buffer() *wiCore.Buffer {
-	v.buffer.Fill(wiCore.Cell{' ', v.defaultFormat})
+func (v *documentView) Buffer() *wicore.Buffer {
+	v.buffer.Fill(wicore.Cell{' ', v.defaultFormat})
 	v.document.RenderInto(v.buffer, v, v.offsetLine, v.offsetColumn)
 	// TODO(maruel): Draw the cursor over.
 	// TODO(maruel): Draw the selection over.
 	return v.buffer
 }
 
-func documentViewFactory(args ...string) wiCore.View {
+func documentViewFactory(args ...string) wicore.View {
 	// TODO(maruel): Sort out "use max space".
 	return &documentView{
 		view: view{
@@ -51,7 +51,7 @@ func documentViewFactory(args ...string) wiCore.View {
 			title:         "<Empty document>", // TODO(maruel): Title == document.filePath ?
 			naturalX:      100,
 			naturalY:      100,
-			defaultFormat: wiCore.CellFormat{Fg: wiCore.BrightYellow, Bg: wiCore.Black},
+			defaultFormat: wicore.CellFormat{Fg: wicore.BrightYellow, Bg: wicore.Black},
 		},
 		document: makeDocument(),
 	}

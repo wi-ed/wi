@@ -8,7 +8,7 @@ package main
 
 import (
 	"github.com/maruel/wi/editor"
-	"github.com/maruel/wi/wiCore"
+	"github.com/maruel/wi/wicore"
 	"github.com/nsf/termbox-go"
 )
 
@@ -51,57 +51,57 @@ func (t TermBox) SeedEvents() <-chan editor.TerminalEvent {
 	return c
 }
 
-// termboxKeyToKeyPress returns the wiCore.KeyPress compatible event.
-func termboxKeyToKeyPress(key termbox.Event) wiCore.KeyPress {
-	out := wiCore.KeyPress{}
+// termboxKeyToKeyPress returns the wicore.KeyPress compatible event.
+func termboxKeyToKeyPress(key termbox.Event) wicore.KeyPress {
+	out := wicore.KeyPress{}
 	if key.Mod&termbox.ModAlt != 0 {
 		out.Alt = true
 	}
 	switch termbox.Key(key.Key) {
 	case termbox.KeyF1:
-		out.Key = wiCore.KeyF1
+		out.Key = wicore.KeyF1
 	case termbox.KeyF2:
-		out.Key = wiCore.KeyF2
+		out.Key = wicore.KeyF2
 	case termbox.KeyF3:
-		out.Key = wiCore.KeyF3
+		out.Key = wicore.KeyF3
 	case termbox.KeyF4:
-		out.Key = wiCore.KeyF4
+		out.Key = wicore.KeyF4
 	case termbox.KeyF5:
-		out.Key = wiCore.KeyF5
+		out.Key = wicore.KeyF5
 	case termbox.KeyF6:
-		out.Key = wiCore.KeyF6
+		out.Key = wicore.KeyF6
 	case termbox.KeyF7:
-		out.Key = wiCore.KeyF7
+		out.Key = wicore.KeyF7
 	case termbox.KeyF8:
-		out.Key = wiCore.KeyF8
+		out.Key = wicore.KeyF8
 	case termbox.KeyF9:
-		out.Key = wiCore.KeyF9
+		out.Key = wicore.KeyF9
 	case termbox.KeyF10:
-		out.Key = wiCore.KeyF10
+		out.Key = wicore.KeyF10
 	case termbox.KeyF11:
-		out.Key = wiCore.KeyF11
+		out.Key = wicore.KeyF11
 	case termbox.KeyF12:
-		out.Key = wiCore.KeyF12
+		out.Key = wicore.KeyF12
 	case termbox.KeyInsert:
-		out.Key = wiCore.KeyInsert
+		out.Key = wicore.KeyInsert
 	case termbox.KeyDelete:
-		out.Key = wiCore.KeyDelete
+		out.Key = wicore.KeyDelete
 	case termbox.KeyHome:
-		out.Key = wiCore.KeyHome
+		out.Key = wicore.KeyHome
 	case termbox.KeyEnd:
-		out.Key = wiCore.KeyEnd
+		out.Key = wicore.KeyEnd
 	case termbox.KeyPgup:
-		out.Key = wiCore.KeyPageUp
+		out.Key = wicore.KeyPageUp
 	case termbox.KeyPgdn:
-		out.Key = wiCore.KeyPageDown
+		out.Key = wicore.KeyPageDown
 	case termbox.KeyArrowUp:
-		out.Key = wiCore.KeyArrowUp
+		out.Key = wicore.KeyArrowUp
 	case termbox.KeyArrowDown:
-		out.Key = wiCore.KeyArrowDown
+		out.Key = wicore.KeyArrowDown
 	case termbox.KeyArrowLeft:
-		out.Key = wiCore.KeyArrowLeft
+		out.Key = wicore.KeyArrowLeft
 	case termbox.KeyArrowRight:
-		out.Key = wiCore.KeyArrowRight
+		out.Key = wicore.KeyArrowRight
 
 	case termbox.KeyCtrlSpace: // KeyCtrlTilde, KeyCtrl2
 		// This value is 0, which cannot be distinguished from non-keypress.
@@ -135,9 +135,9 @@ func termboxKeyToKeyPress(key termbox.Event) wiCore.KeyPress {
 		out.Ctrl = true
 		out.Ch = 'g'
 	case termbox.KeyBackspace: // KeyCtrlH
-		out.Key = wiCore.KeyBackspace
+		out.Key = wicore.KeyBackspace
 	case termbox.KeyTab: // KeyCtrlI
-		out.Key = wiCore.KeyTab
+		out.Key = wicore.KeyTab
 	case termbox.KeyCtrlJ:
 		out.Ctrl = true
 		out.Ch = 'j'
@@ -148,7 +148,7 @@ func termboxKeyToKeyPress(key termbox.Event) wiCore.KeyPress {
 		out.Ctrl = true
 		out.Ch = 'l'
 	case termbox.KeyEnter: // KeyCtrlM
-		out.Key = wiCore.KeyEnter
+		out.Key = wicore.KeyEnter
 	case termbox.KeyCtrlN:
 		out.Ctrl = true
 		out.Ch = 'n'
@@ -189,7 +189,7 @@ func termboxKeyToKeyPress(key termbox.Event) wiCore.KeyPress {
 		out.Ctrl = true
 		out.Ch = 'z'
 	case termbox.KeyEsc: // KeyCtrlLsqBracket, KeyCtrl3
-		out.Key = wiCore.KeyEscape
+		out.Key = wicore.KeyEscape
 	case termbox.KeyCtrl4: // KeyCtrlBackslash
 		out.Ctrl = true
 		out.Ch = '4'
@@ -211,39 +211,39 @@ func termboxKeyToKeyPress(key termbox.Event) wiCore.KeyPress {
 }
 
 // Converts a RGB color into the nearest termbox color.
-func rgbToTermBox(c wiCore.RGB) termbox.Attribute {
-	switch wiCore.NearestEGAColor(c) {
-	case wiCore.Black:
+func rgbToTermBox(c wicore.RGB) termbox.Attribute {
+	switch wicore.NearestEGAColor(c) {
+	case wicore.Black:
 		return termbox.ColorBlack
-	case wiCore.Blue:
+	case wicore.Blue:
 		return termbox.ColorBlue
-	case wiCore.Green:
+	case wicore.Green:
 		return termbox.ColorGreen
-	case wiCore.Cyan:
+	case wicore.Cyan:
 		return termbox.ColorCyan
-	case wiCore.Red:
+	case wicore.Red:
 		return termbox.ColorRed
-	case wiCore.Magenta:
+	case wicore.Magenta:
 		return termbox.ColorMagenta
-	case wiCore.Brown:
+	case wicore.Brown:
 		return termbox.ColorYellow
-	case wiCore.LightGray:
+	case wicore.LightGray:
 		return termbox.ColorWhite
-	case wiCore.DarkGray:
+	case wicore.DarkGray:
 		return termbox.ColorBlack | termbox.AttrBold
-	case wiCore.BrightBlue:
+	case wicore.BrightBlue:
 		return termbox.ColorBlue | termbox.AttrBold
-	case wiCore.BrightGreen:
+	case wicore.BrightGreen:
 		return termbox.ColorGreen | termbox.AttrBold
-	case wiCore.BrightCyan:
+	case wicore.BrightCyan:
 		return termbox.ColorCyan | termbox.AttrBold
-	case wiCore.BrightRed:
+	case wicore.BrightRed:
 		return termbox.ColorRed | termbox.AttrBold
-	case wiCore.BrightMagenta:
+	case wicore.BrightMagenta:
 		return termbox.ColorMagenta | termbox.AttrBold
-	case wiCore.BrightYellow:
+	case wicore.BrightYellow:
 		return termbox.ColorYellow | termbox.AttrBold
-	case wiCore.White:
+	case wicore.White:
 		return termbox.ColorWhite | termbox.AttrBold
 	default:
 		return termbox.ColorDefault
@@ -251,7 +251,7 @@ func rgbToTermBox(c wiCore.RGB) termbox.Attribute {
 }
 
 // Blit converts the editor.Buffer format into termbox format.
-func (t TermBox) Blit(b *wiCore.Buffer) {
+func (t TermBox) Blit(b *wicore.Buffer) {
 	width, height := termbox.Size()
 	cells := termbox.CellBuffer()
 	if width > b.Width {
