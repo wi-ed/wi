@@ -105,8 +105,8 @@ func RegisterKeyBindingCommands(dispatcher wiCore.Commands) {
 // example vim flavor vs emacs flavor. I'm not sure it's worth supporting this
 // without a restart.
 func RegisterDefaultKeyBindings(cd wiCore.CommandDispatcher) {
-	wiCore.PostCommand(cd, "key_bind", "global", "all", "F1", "help")
-	wiCore.PostCommand(cd, "key_bind", "global", "command", ":", "show_command_window")
+	wiCore.PostCommand(cd, nil, "key_bind", "global", "all", "F1", "help")
+	wiCore.PostCommand(cd, nil, "key_bind", "global", "command", ":", "show_command_window")
 	// TODO(maruel): Temporary.
-	wiCore.PostCommand(cd, "key_bind", "global", "all", "Ctrl-c", "quit")
+	wiCore.PostCommand(cd, nil, "key_bind", "global", "all", "Ctrl-c", "quit")
 }

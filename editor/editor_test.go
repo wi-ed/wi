@@ -40,11 +40,11 @@ func TestMainImmediateQuit(t *testing.T) {
 	ut.AssertEqual(t, nil, err)
 	defer editor.Close()
 
-	wiCore.PostCommand(editor, "editor_bootstrap_ui")
-	wiCore.PostCommand(editor, "new")
+	wiCore.PostCommand(editor, nil, "editor_bootstrap_ui")
+	wiCore.PostCommand(editor, nil, "new")
 	// Supporting this command requires using "go test -tags debug"
-	// wiCore.PostCommand(editor, "log_all")
-	wiCore.PostCommand(editor, "editor_quit")
+	// wiCore.PostCommand(editor, nil, "log_all")
+	wiCore.PostCommand(editor, nil, "editor_quit")
 	ut.AssertEqual(t, 0, editor.EventLoop())
 
 	expected := wiCore.NewBuffer(80, 25)
@@ -66,9 +66,9 @@ func TestMainInvalidThenQuit(t *testing.T) {
 	ut.AssertEqual(t, nil, err)
 	defer editor.Close()
 
-	wiCore.PostCommand(editor, "editor_bootstrap_ui")
-	wiCore.PostCommand(editor, "invalid")
-	wiCore.PostCommand(editor, "editor_quit")
+	wiCore.PostCommand(editor, nil, "editor_bootstrap_ui")
+	wiCore.PostCommand(editor, nil, "invalid")
+	wiCore.PostCommand(editor, nil, "editor_quit")
 	ut.AssertEqual(t, 0, editor.EventLoop())
 
 	expected := wiCore.NewBuffer(80, 25)

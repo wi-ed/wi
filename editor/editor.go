@@ -28,7 +28,10 @@ type commandItem struct {
 }
 
 // commandQueueItem is a set of commandItem pending to be executed.
-type commandQueueItem []commandItem
+type commandQueueItem struct {
+	items    []commandItem
+	callback func()
+}
 
 // Editor is the inprocess wiCore.Editor interface. It adds the process life-time
 // management functions to the public interface wiCore.Editor.
@@ -75,12 +78,12 @@ func (e *editor) Version() string {
 	return version
 }
 
-func (e *editor) PostCommands(cmds [][]string) wiCore.CommandID {
+func (e *editor) PostCommands(cmds [][]string, callback func()) wiCore.CommandID {
 	log.Printf("PostCommands(%s)", cmds)
-	tmp := make(commandQueueItem, len(cmds))
+	tmp := commandQueueItem{make([]commandItem, len(cmds)), callback}
 	for i, cmd := range cmds {
-		tmp[i].cmdName = cmd[0]
-		tmp[i].args = cmd[1:]
+		tmp.items[i].cmdName = cmd[0]
+		tmp.items[i].args = cmd[1:]
 	}
 	e.commandsQueue <- tmp
 	return wiCore.CommandID{0, int(atomic.AddInt64(&e.lastCommandID, 1))}
@@ -88,7 +91,7 @@ func (e *editor) PostCommands(cmds [][]string) wiCore.CommandID {
 
 func (e *editor) postKey(key wiCore.KeyPress) {
 	log.Printf("PostKey(%s)", key)
-	e.commandsQueue <- commandQueueItem{commandItem{key: key}}
+	e.commandsQueue <- commandQueueItem{[]commandItem{{key: key}}, nil}
 }
 
 func (e *editor) ExecuteCommand(w wiCore.Window, cmdName string, args ...string) {
@@ -180,7 +183,7 @@ func (e *editor) EventLoop() int {
 	for {
 		select {
 		case cmds := <-e.commandsQueue:
-			for _, cmd := range cmds {
+			for _, cmd := range cmds.items {
 				if cmd.key.IsValid() {
 					keyName := cmd.key.String()
 					if cmd.key.IsMeta() {
@@ -212,7 +215,9 @@ func (e *editor) EventLoop() int {
 					e.ExecuteCommand(e.ActiveWindow(), cmd.cmdName, cmd.args...)
 				}
 			}
-
+			if cmds.callback != nil {
+				cmds.callback()
+			}
 		case event := <-e.terminalEvents:
 			switch event.Type {
 			case EventKey:
@@ -373,7 +378,7 @@ func cmdEditorQuit(c *privilegedCommandImpl, e *editor, w *window, args ...strin
 	e.quitFlag = true
 	// editor_redraw wakes up the command event loop so it detects it's time to
 	// quit.
-	wiCore.PostCommand(e, "editor_redraw")
+	wiCore.PostCommand(e, nil, "editor_redraw")
 }
 
 func cmdEditorRedraw(c *privilegedCommandImpl, e *editor, w *window, args ...string) {

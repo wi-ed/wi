@@ -118,7 +118,7 @@ func statusRootViewFactory(args ...string) wiCore.View {
 			[][]string{
 				{"window_new", id, "left", "status_name"},
 				{"window_new", id, "right", "status_position"},
-			})
+			}, nil)
 	}
 	return v
 }
@@ -147,7 +147,7 @@ func infobarAlertViewFactory(args ...string) wiCore.View {
 		go func() {
 			// Dismiss after 5 seconds.
 			<-time.After(5 * time.Second)
-			wiCore.PostCommand(w, "window_close", w.ID())
+			wiCore.PostCommand(w, nil, "window_close", w.ID())
 		}()
 	}
 	return v

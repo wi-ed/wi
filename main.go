@@ -88,18 +88,18 @@ func mainImpl() int {
 		_ = e.Close()
 	}()
 
-	wiCore.PostCommand(e, "editor_bootstrap_ui")
+	wiCore.PostCommand(e, nil, "editor_bootstrap_ui")
 	if *command {
 		for _, i := range flag.Args() {
-			wiCore.PostCommand(e, i)
+			wiCore.PostCommand(e, nil, i)
 		}
 	} else if flag.NArg() > 0 {
 		for _, i := range flag.Args() {
-			wiCore.PostCommand(e, "open", i)
+			wiCore.PostCommand(e, nil, "open", i)
 		}
 	} else {
 		// If nothing, opens a blank editor.
-		wiCore.PostCommand(e, "new")
+		wiCore.PostCommand(e, nil, "new")
 	}
 	return e.EventLoop()
 }

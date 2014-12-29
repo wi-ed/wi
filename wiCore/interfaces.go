@@ -138,10 +138,9 @@ func (c CommandCategory) String() string {
 type KeyboardMode int
 
 const (
-	_ KeyboardMode = iota
 	// CommandMode is the mode where typing letters results in commands, not
 	// content editing.
-	CommandMode
+	CommandMode KeyboardMode = iota + 1
 	// EditMode is the mode where typing letters results in content, not commands.
 	EditMode
 	// AllMode is to bind keys independent of the current mode. It is useful for
@@ -165,7 +164,9 @@ type CommandDispatcher interface {
 	// PostCommands appends several Command calls at the end of the queue. Using
 	// this function guarantees that all the commands will be executed in order
 	// without commands interfering.
-	PostCommands(cmds [][]string) CommandID
+	//
+	// `callback` is called synchronously after the command is executed.
+	PostCommands(cmds [][]string, callback func()) CommandID
 }
 
 // ViewFactory returns a new View.
@@ -380,10 +381,12 @@ type KeyBindings interface {
 
 // EventType is the type of the event being flowed through the Window hierarchy
 // and plugins. EventListener receive these.
+//
 // TODO(maruel): Dedupe from editor/terminal.go, testing.
 type EventType string
 
 // TODO(maruel): Dedupe from editor/terminal.go, testing.
+//
 // TODO(maruel): Use int or string? int is faster, string is likely more
 // "extendable".
 const (
@@ -406,12 +409,14 @@ type EventListener interface {
 // Utility functions.
 
 // PostCommand appends a Command at the end of the queue.
-// It is a shortcut to cd.PostCommands([][]string{[]string{cmdName, args...}})
-func PostCommand(cd CommandDispatcher, cmdName string, args ...string) CommandID {
+// It is a shortcut to cd.PostCommands([][]string{[]string{cmdName, args...}},
+// callback). Sadly, using `...string` means that callback cannot be the last
+// parameter.
+func PostCommand(cd CommandDispatcher, callback func(), cmdName string, args ...string) CommandID {
 	line := make([]string, len(args)+1)
 	line[0] = cmdName
 	copy(line[1:], args)
-	return cd.PostCommands([][]string{line})
+	return cd.PostCommands([][]string{line}, callback)
 }
 
 // GetCommand traverses the Window hierarchy tree to find a View that has
