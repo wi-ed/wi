@@ -67,6 +67,10 @@ func (d *document) IsDirty() bool {
 
 // Commands.
 
+func cmdDocumentBuild(c *wiCore.CommandImpl, cd wiCore.CommandDispatcherFull, w wiCore.Window, args ...string) {
+	cd.ExecuteCommand(w, "alert", "Implement 'document_build' for your document")
+}
+
 func cmdDocumentNew(c *wiCore.CommandImpl, cd wiCore.CommandDispatcherFull, w wiCore.Window, args ...string) {
 	cmd := make([]string, 3+len(args))
 	//cmd[0] = w.ID()
@@ -83,10 +87,26 @@ func cmdDocumentOpen(c *wiCore.CommandImpl, cd wiCore.CommandDispatcherFull, w w
 	log.Printf("Faking opening a file: %s", args)
 }
 
+func cmdDocumentRun(c *wiCore.CommandImpl, cd wiCore.CommandDispatcherFull, w wiCore.Window, args ...string) {
+	cd.ExecuteCommand(w, "alert", "Implement 'document_run' for your document")
+}
+
 // RegisterDocumentCommands registers the top-level native commands to manage
 // documents.
 func RegisterDocumentCommands(dispatcher wiCore.Commands) {
 	cmds := []wiCore.Command{
+		&wiCore.CommandImpl{
+			"document_build",
+			0,
+			cmdDocumentBuild,
+			wiCore.WindowCategory,
+			wiCore.LangMap{
+				wiCore.LangEn: "Build a file",
+			},
+			wiCore.LangMap{
+				wiCore.LangEn: "Build a file.",
+			},
+		},
 		&wiCore.CommandImpl{
 			"document_new",
 			0,
@@ -109,6 +129,18 @@ func RegisterDocumentCommands(dispatcher wiCore.Commands) {
 			},
 			wiCore.LangMap{
 				wiCore.LangEn: "Opens a file in a new buffer.",
+			},
+		},
+		&wiCore.CommandImpl{
+			"document_run",
+			0,
+			cmdDocumentRun,
+			wiCore.WindowCategory,
+			wiCore.LangMap{
+				wiCore.LangEn: "Run a file",
+			},
+			wiCore.LangMap{
+				wiCore.LangEn: "Run a file.",
 			},
 		},
 

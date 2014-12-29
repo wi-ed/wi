@@ -19,12 +19,12 @@ var doubleBorder = []rune{'\u2550', '\u2551', '\u2554', '\u2557', '\u255a', '\u2
 type drawnBorder int
 
 const (
-	drawnBorderNone   drawnBorder = 0
-	drawnBorderLeft               = 1 << 0
-	drawnBorderRight              = 1 << 1
-	drawnBorderTop                = 1 << 2
-	drawnBorderBottom             = 1 << 3
-	drawnBorderAll                = drawnBorderLeft | drawnBorderRight | drawnBorderTop | drawnBorderBottom
+	drawnBorderNone drawnBorder = 0
+	drawnBorderLeft             = 1 << iota
+	drawnBorderRight
+	drawnBorderTop
+	drawnBorderBottom
+	drawnBorderAll = drawnBorderLeft | drawnBorderRight | drawnBorderTop | drawnBorderBottom
 )
 
 // window implements wiCore.Window. It keeps its own buffer of its display.

@@ -10,10 +10,6 @@ import (
 	"github.com/maruel/wi/wiCore"
 )
 
-func cmdShell(c *wiCore.CommandImpl, cd wiCore.CommandDispatcherFull, w wiCore.Window, args ...string) {
-	log.Printf("Faking opening a new shell: %s", args)
-}
-
 func cmdDoc(c *wiCore.CommandImpl, cd wiCore.CommandDispatcherFull, w wiCore.Window, args ...string) {
 	// TODO(maruel): Grab the current word under selection if no args is
 	// provided. Pass this token to shell.
@@ -26,6 +22,10 @@ func cmdDoc(c *wiCore.CommandImpl, cd wiCore.CommandDispatcherFull, w wiCore.Win
 func cmdHelp(c *wiCore.CommandImpl, cd wiCore.CommandDispatcherFull, w wiCore.Window, args ...string) {
 	// TODO(maruel): Creates a new Window with a ViewHelp.
 	log.Printf("Faking help: %s", args)
+}
+
+func cmdShell(c *wiCore.CommandImpl, cd wiCore.CommandDispatcherFull, w wiCore.Window, args ...string) {
+	log.Printf("Faking opening a new shell: %s", args)
 }
 
 // RegisterTodoCommands registers the top-level native commands that are yet to
