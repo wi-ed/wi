@@ -21,11 +21,14 @@ type ReadWriteSeekCloser interface {
 	io.ReadWriteSeeker
 }
 
-// document is a live editable docuent.
+// document is a live editable document.
+//
 // TODO(maruel): This will probably have to be moved into wiCore, since
 // documents could be useful to plugins (?)
+//
 // TODO(maruel): editor needs to have the list of opened document. They may
 // have multiple views associated to a single document.
+//
 // TODO(maruel): Strictly speaking, a Window could be in the wi parent process,
 // a View in a plugin process and a Document in a separate plugin process (e.g.
 // output from a live command, whatever). This means wiCore.Document would need
@@ -116,7 +119,10 @@ func RegisterDocumentCommands(dispatcher wiCore.Commands) {
 				wiCore.LangEn: "Create a new buffer",
 			},
 			wiCore.LangMap{
-				wiCore.LangEn: "Create a new buffer.",
+				// TODO(maruel): Add a command to create a new buffer without a new
+				// window. Wrapper command does the connection to create doc, open new
+				// window, then load buffer into window.
+				wiCore.LangEn: "Create a new buffer. It also creates a new window to hold the document.",
 			},
 		},
 		&wiCore.CommandImpl{

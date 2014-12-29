@@ -221,12 +221,17 @@ func (b *Buffer) Fill(cell Cell) {
 // TODO(maruel): This must add coloring too.
 //
 // TODO(maruel): Improve performance for the common case (no special character).
+//
+// TODO(maruel): Handles special unicode whitespaces. Since the editor is meant
+// for mono-space font, all except U+0020 and \t should be escaped.
+// https://en.wikipedia.org/wiki/Whitespace_character
 func FormatText(s string) string {
 	out := ""
 	for _, c := range s {
 		if c == 0 {
 			out += "NUL"
 		} else if c == 9 {
+			// TODO(maruel): Need positional information AND desired tabwidth.
 			out += string(c)
 		} else if c <= 32 {
 			out += "^" + string(c+'A'-1)

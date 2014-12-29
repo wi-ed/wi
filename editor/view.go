@@ -116,17 +116,25 @@ func statusRootViewFactory(args ...string) wiCore.View {
 		id := w.ID()
 		w.PostCommands(
 			[][]string{
-				{"window_new", id, "left", "status_name"},
+				{"window_new", id, "left", "status_active_window_name"},
 				{"window_new", id, "right", "status_position"},
+				{"window_new", id, "fill", "status_mode"},
 			}, nil)
 	}
 	return v
 }
 
-func statusNameViewFactory(args ...string) wiCore.View {
-	// View name.
+func statusActiveWindowNameViewFactory(args ...string) wiCore.View {
+	// Active Window View name.
 	// TODO(maruel): Register events of Window activation, make itself Invalidate().
 	v := makeStaticDisabledView("Status Name", 15, 1)
+	v.defaultFormat = wiCore.CellFormat{}
+	return v
+}
+
+func statusModeViewFactory(args ...string) wiCore.View {
+	// Mostly for testing purpose, will contain the current mode "Insert" or "Command".
+	v := makeStaticDisabledView("Status Mode", 10, 1)
 	v.defaultFormat = wiCore.CellFormat{}
 	return v
 }
@@ -158,7 +166,8 @@ func RegisterDefaultViewFactories(e Editor) {
 	e.RegisterViewFactory("command", commandViewFactory)
 	e.RegisterViewFactory("infobar_alert", infobarAlertViewFactory)
 	e.RegisterViewFactory("new_document", documentViewFactory)
-	e.RegisterViewFactory("status_name", statusNameViewFactory)
+	e.RegisterViewFactory("status_active_window_name", statusActiveWindowNameViewFactory)
+	e.RegisterViewFactory("status_mode", statusModeViewFactory)
 	e.RegisterViewFactory("status_position", statusPositionViewFactory)
 	e.RegisterViewFactory("status_root", statusRootViewFactory)
 }
