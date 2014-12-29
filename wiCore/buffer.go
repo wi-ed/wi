@@ -216,12 +216,33 @@ func (b *Buffer) Fill(cell Cell) {
 	}
 }
 
+// Formats special characters like code points below 32.
+//
+// TODO(maruel): This must add coloring too.
+//
+// TODO(maruel): Improve performance for the common case (no special character).
+func FormatText(s string) string {
+	out := ""
+	for _, c := range s {
+		if c == 0 {
+			out += "NUL"
+		} else if c == 9 {
+			out += string(c)
+		} else if c <= 32 {
+			out += "^" + string(c+'A'-1)
+		} else {
+			out += string(c)
+		}
+	}
+	return out
+}
+
 // ElideText elide a string as necessary.
 func ElideText(s string, width int) string {
 	if width <= 0 {
 		return ""
 	}
-	length := utf8.RuneCount([]byte(s))
+	length := utf8.RuneCountInString(s)
 	if length <= width {
 		return s
 	}
