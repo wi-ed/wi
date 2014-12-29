@@ -134,20 +134,6 @@ func (c CommandCategory) String() string {
 	}
 }
 
-// KeyboardMode defines the keyboard mapping (input mode) to use.
-type KeyboardMode int
-
-const (
-	// CommandMode is the mode where typing letters results in commands, not
-	// content editing.
-	CommandMode KeyboardMode = iota + 1
-	// EditMode is the mode where typing letters results in content, not commands.
-	EditMode
-	// AllMode is to bind keys independent of the current mode. It is useful for
-	// function keys, Ctrl-<letter>, arrow keys, etc.
-	AllMode
-)
-
 // CommandID describes a command in the queue.
 type CommandID struct {
 	ProcessID    int
@@ -365,20 +351,6 @@ type Commands interface {
 	Get(cmdName string) Command
 }
 
-// KeyBindings stores the mapping between keyboard entry and commands. This
-// includes what can be considered "macros" as much as casual things like arrow
-// keys.
-type KeyBindings interface {
-	// Set registers a keyboard mapping. In practice keyboard mappings
-	// should normally be registered on startup. Returns false if a key mapping
-	// was already registered and was lost. Set cmdName to "" to remove a key
-	// binding.
-	Set(mode KeyboardMode, key KeyPress, cmdName string) bool
-
-	// Get returns a command if registered, nil otherwise.
-	Get(mode KeyboardMode, key KeyPress) string
-}
-
 // EventType is the type of the event being flowed through the Window hierarchy
 // and plugins. EventListener receive these.
 //
@@ -436,22 +408,6 @@ func GetCommand(cd CommandDispatcherFull, w Window, cmdName string) Command {
 		w = w.Parent()
 		if w == nil {
 			return nil
-		}
-	}
-}
-
-// GetKeyBindingCommand traverses the Editor's Window tree to find a View that
-// has the key binding in its Keyboard mapping.
-func GetKeyBindingCommand(e Editor, mode KeyboardMode, key KeyPress) string {
-	active := e.ActiveWindow()
-	for {
-		cmdName := active.View().KeyBindings().Get(mode, key)
-		if cmdName != "" {
-			return cmdName
-		}
-		active = active.Parent()
-		if active == nil {
-			return ""
 		}
 	}
 }
