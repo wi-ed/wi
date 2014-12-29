@@ -77,7 +77,7 @@ func cmdKeyBind(c *wicore.CommandImpl, cd wicore.CommandDispatcherFull, w wicore
 		return
 	}
 	// TODO(maruel): Refuse invalid keyName.
-	key := wicore.KeyPressFromString(keyName)
+	key := wicore.StringToKeyPress(keyName)
 	w.View().KeyBindings().Set(mode, key, cmdName)
 }
 

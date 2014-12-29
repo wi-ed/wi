@@ -113,7 +113,7 @@ func (k Key) String() string {
 	}
 }
 
-func KeyFromString(key string) Key {
+func StringToKey(key string) Key {
 	switch key {
 	case "F1":
 		return KeyF1
@@ -222,7 +222,7 @@ func (k KeyPress) IsValid() bool {
 }
 
 // Parses a string and returns a KeyPress.
-func KeyPressFromString(keyName string) KeyPress {
+func StringToKeyPress(keyName string) KeyPress {
 	out := KeyPress{}
 	if strings.HasPrefix(keyName, "Ctrl-") {
 		keyName = keyName[5:]
@@ -240,7 +240,7 @@ func KeyPressFromString(keyName string) KeyPress {
 		if keyName == "Space" {
 			out.Ch = ' '
 		} else {
-			out.Key = KeyFromString(keyName)
+			out.Key = StringToKey(keyName)
 		}
 	}
 	return out

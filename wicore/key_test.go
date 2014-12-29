@@ -12,7 +12,7 @@ import (
 
 func TestKey(t *testing.T) {
 	for i := KeyNone; i < keyLast; i++ {
-		ut.AssertEqual(t, i, KeyFromString(i.String()))
+		ut.AssertEqual(t, i, StringToKey(i.String()))
 	}
 }
 
@@ -27,10 +27,10 @@ func TestKeyPress(t *testing.T) {
 	for i, v := range data {
 		ut.AssertEqualIndex(t, i, true, v.IsValid())
 		v.Ctrl = true
-		ut.AssertEqualIndex(t, i, v, KeyPressFromString(v.String()))
+		ut.AssertEqualIndex(t, i, v, StringToKeyPress(v.String()))
 		v.Alt = true
-		ut.AssertEqualIndex(t, i, v, KeyPressFromString(v.String()))
+		ut.AssertEqualIndex(t, i, v, StringToKeyPress(v.String()))
 		v.Ctrl = false
-		ut.AssertEqualIndex(t, i, v, KeyPressFromString(v.String()))
+		ut.AssertEqualIndex(t, i, v, StringToKeyPress(v.String()))
 	}
 }
