@@ -5,11 +5,9 @@
 package editor
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"log"
-	"sync"
 	"sync/atomic"
 	"time"
 
@@ -46,115 +44,6 @@ type Editor interface {
 	// EventLoop runs the event loop until the command "quit" executes
 	// successfully.
 	EventLoop() int
-}
-
-type eventRegistry struct {
-	lock                sync.Mutex
-	nextID              wicore.EventID
-	documentCreated     map[wicore.EventID]func(doc wicore.Document)
-	documentCursorMoved map[wicore.EventID]func(doc wicore.Document)
-	terminalResized     map[wicore.EventID]func()
-	terminalKeyPressed  map[wicore.EventID]func(key wicore.KeyPress)
-	viewCreated         map[wicore.EventID]func(view wicore.View)
-	windowCreated       map[wicore.EventID]func(window wicore.Window)
-	windowResized       map[wicore.EventID]func(window wicore.Window)
-}
-
-func (e *eventRegistry) Unregister(eventID wicore.EventID) error {
-	e.lock.Lock()
-	defer e.lock.Unlock()
-	if _, ok := e.documentCreated[eventID]; ok {
-		delete(e.documentCreated, eventID)
-		return nil
-	}
-	if _, ok := e.documentCursorMoved[eventID]; ok {
-		delete(e.documentCursorMoved, eventID)
-		return nil
-	}
-	if _, ok := e.terminalResized[eventID]; ok {
-		delete(e.terminalResized, eventID)
-		return nil
-	}
-	if _, ok := e.terminalKeyPressed[eventID]; ok {
-		delete(e.terminalKeyPressed, eventID)
-		return nil
-	}
-	if _, ok := e.viewCreated[eventID]; ok {
-		delete(e.viewCreated, eventID)
-		return nil
-	}
-	if _, ok := e.windowCreated[eventID]; ok {
-		delete(e.windowCreated, eventID)
-		return nil
-	}
-	if _, ok := e.windowResized[eventID]; ok {
-		delete(e.windowResized, eventID)
-		return nil
-	}
-	return errors.New("trying to unregister an non existing event listener")
-}
-
-func (e *eventRegistry) RegisterDocumentCreated(callback func(doc wicore.Document)) wicore.EventID {
-	e.lock.Lock()
-	defer e.lock.Unlock()
-	i := e.nextID
-	e.nextID++
-	e.documentCreated[i] = callback
-	return i
-}
-
-func (e *eventRegistry) RegisterDocumentCursorMoved(callback func(doc wicore.Document)) wicore.EventID {
-	e.lock.Lock()
-	defer e.lock.Unlock()
-	i := e.nextID
-	e.nextID++
-	e.documentCursorMoved[i] = callback
-	return i
-}
-
-func (e *eventRegistry) RegisterTerminalResized(callback func()) wicore.EventID {
-	e.lock.Lock()
-	defer e.lock.Unlock()
-	i := e.nextID
-	e.nextID++
-	e.terminalResized[i] = callback
-	return i
-}
-
-func (e *eventRegistry) RegisterTerminalKeyPressed(callback func(key wicore.KeyPress)) wicore.EventID {
-	e.lock.Lock()
-	defer e.lock.Unlock()
-	i := e.nextID
-	e.nextID++
-	e.terminalKeyPressed[i] = callback
-	return i
-}
-
-func (e *eventRegistry) RegisterViewCreated(callback func(view wicore.View)) wicore.EventID {
-	e.lock.Lock()
-	defer e.lock.Unlock()
-	i := e.nextID
-	e.nextID++
-	e.viewCreated[i] = callback
-	return i
-}
-
-func (e *eventRegistry) RegisterWindowCreated(callback func(window wicore.Window)) wicore.EventID {
-	e.lock.Lock()
-	defer e.lock.Unlock()
-	i := e.nextID
-	e.nextID++
-	e.windowCreated[i] = callback
-	return i
-}
-
-func (e *eventRegistry) RegisterWindowResized(callback func(window wicore.Window)) wicore.EventID {
-	e.lock.Lock()
-	defer e.lock.Unlock()
-	i := e.nextID
-	e.nextID++
-	e.windowResized[i] = callback
-	return i
 }
 
 // editor is the global structure that holds everything together. It implements
