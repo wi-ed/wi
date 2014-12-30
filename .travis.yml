@@ -10,7 +10,7 @@ go:
 - 1.4
 
 before_install:
-  - python git-hooks-go/install_prerequisites.py --update
+  - python git-hooks-go/install_prerequisites.py
 
 script:
   - ./presubmit.py
