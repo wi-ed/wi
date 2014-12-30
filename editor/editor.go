@@ -5,6 +5,7 @@
 package editor
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -59,38 +60,38 @@ type eventRegistry struct {
 	windowResized       map[wicore.EventID]func(window wicore.Window)
 }
 
-func (e *eventRegistry) Unregister(eventID wicore.EventID) {
+func (e *eventRegistry) Unregister(eventID wicore.EventID) error {
 	e.lock.Lock()
 	defer e.lock.Unlock()
 	if _, ok := e.documentCreated[eventID]; ok {
 		delete(e.documentCreated, eventID)
-		return
+		return nil
 	}
 	if _, ok := e.documentCursorMoved[eventID]; ok {
 		delete(e.documentCursorMoved, eventID)
-		return
+		return nil
 	}
 	if _, ok := e.terminalResized[eventID]; ok {
 		delete(e.terminalResized, eventID)
-		return
+		return nil
 	}
 	if _, ok := e.terminalKeyPressed[eventID]; ok {
 		delete(e.terminalKeyPressed, eventID)
-		return
+		return nil
 	}
 	if _, ok := e.viewCreated[eventID]; ok {
 		delete(e.viewCreated, eventID)
-		return
+		return nil
 	}
 	if _, ok := e.windowCreated[eventID]; ok {
 		delete(e.windowCreated, eventID)
-		return
+		return nil
 	}
 	if _, ok := e.windowResized[eventID]; ok {
 		delete(e.windowResized, eventID)
-		return
+		return nil
 	}
-	panic("trying to unregister an non existing event listener")
+	return errors.New("trying to unregister an non existing event listener")
 }
 
 func (e *eventRegistry) RegisterDocumentCreated(callback func(doc wicore.Document)) wicore.EventID {

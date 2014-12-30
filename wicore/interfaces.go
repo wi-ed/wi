@@ -104,7 +104,9 @@ type EventID int
 
 // EventRegistry permits to register callbacks that are called on events.
 type EventRegistry interface {
-	Unregister(eventID EventID)
+	// Unregister unregiisters a callback. Returns an error if the event was not
+	// registered.
+	Unregister(eventID EventID) error
 	RegisterDocumentCreated(callback func(doc Document)) EventID
 	RegisterDocumentCursorMoved(callback func(doc Document)) EventID
 	RegisterTerminalResized(callback func()) EventID
