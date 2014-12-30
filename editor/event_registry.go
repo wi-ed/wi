@@ -8,6 +8,7 @@ import (
 	"errors"
 	"sync"
 
+	"github.com/maruel/wi/pkg/key"
 	"github.com/maruel/wi/wicore"
 )
 
@@ -17,7 +18,7 @@ type eventRegistry struct {
 	documentCreated     map[wicore.EventID]func(doc wicore.Document)
 	documentCursorMoved map[wicore.EventID]func(doc wicore.Document)
 	terminalResized     map[wicore.EventID]func()
-	terminalKeyPressed  map[wicore.EventID]func(key wicore.KeyPress)
+	terminalKeyPressed  map[wicore.EventID]func(key key.Press)
 	viewCreated         map[wicore.EventID]func(view wicore.View)
 	windowCreated       map[wicore.EventID]func(window wicore.Window)
 	windowResized       map[wicore.EventID]func(window wicore.Window)
@@ -132,7 +133,7 @@ func (e *eventRegistry) onTerminalResized() {
 	}
 }
 
-func (e *eventRegistry) RegisterTerminalKeyPressed(callback func(key wicore.KeyPress)) wicore.EventID {
+func (e *eventRegistry) RegisterTerminalKeyPressed(callback func(key key.Press)) wicore.EventID {
 	e.lock.Lock()
 	defer e.lock.Unlock()
 	i := e.nextID
@@ -141,18 +142,18 @@ func (e *eventRegistry) RegisterTerminalKeyPressed(callback func(key wicore.KeyP
 	return i
 }
 
-func (e *eventRegistry) onTerminalKeyPressed(key wicore.KeyPress) {
-	items := func() []func(key wicore.KeyPress) {
+func (e *eventRegistry) onTerminalKeyPressed(k key.Press) {
+	items := func() []func(key.Press) {
 		e.lock.Lock()
 		defer e.lock.Unlock()
-		items := make([]func(key wicore.KeyPress), 0, len(e.terminalKeyPressed))
+		items := make([]func(key.Press), 0, len(e.terminalKeyPressed))
 		for _, c := range e.terminalKeyPressed {
 			items = append(items, c)
 		}
 		return items
 	}()
 	for _, item := range items {
-		item(key)
+		item(k)
 	}
 }
 

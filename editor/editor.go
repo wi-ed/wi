@@ -11,6 +11,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/maruel/wi/pkg/key"
 	"github.com/maruel/wi/wicore"
 )
 
@@ -21,9 +22,9 @@ const (
 
 // commandItem is a command pending to be executed.
 type commandItem struct {
-	cmdName string          // Set on command execution
-	args    []string        // Set on command execution
-	key     wicore.KeyPress // Set on key press
+	cmdName string    // Set on command execution
+	args    []string  // Set on command execution
+	key     key.Press // Set on key press
 }
 
 // commandQueueItem is a set of commandItem pending to be executed.
@@ -89,7 +90,7 @@ func (e *editor) PostCommands(cmds [][]string, callback func()) wicore.CommandID
 	return wicore.CommandID{0, int(atomic.AddInt64(&e.lastCommandID, 1))}
 }
 
-func (e *editor) postKey(key wicore.KeyPress) {
+func (e *editor) postKey(key key.Press) {
 	log.Printf("PostKey(%s)", key)
 	e.commandsQueue <- commandQueueItem{[]commandItem{{key: key}}, nil}
 }
@@ -311,7 +312,7 @@ func MakeEditor(terminal Terminal, noPlugin bool) (Editor, error) {
 			documentCreated:     make(map[wicore.EventID]func(doc wicore.Document)),
 			documentCursorMoved: make(map[wicore.EventID]func(doc wicore.Document)),
 			terminalResized:     make(map[wicore.EventID]func()),
-			terminalKeyPressed:  make(map[wicore.EventID]func(key wicore.KeyPress)),
+			terminalKeyPressed:  make(map[wicore.EventID]func(key key.Press)),
 			viewCreated:         make(map[wicore.EventID]func(view wicore.View)),
 			windowCreated:       make(map[wicore.EventID]func(window wicore.Window)),
 			windowResized:       make(map[wicore.EventID]func(window wicore.Window)),

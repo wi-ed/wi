@@ -5,6 +5,7 @@
 package editor
 
 import (
+	"github.com/maruel/wi/pkg/key"
 	"github.com/maruel/wi/wicore"
 )
 
@@ -36,7 +37,7 @@ const (
 // TerminalEvent represents an event that occured on the terminal.
 type TerminalEvent struct {
 	Type EventType // Type determines which other member will be valid for this event.
-	Key  wicore.KeyPress
+	Key  key.Press
 	Size Size
 }
 

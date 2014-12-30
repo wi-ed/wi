@@ -4,14 +4,17 @@
 
 package editor
 
-import "github.com/maruel/wi/wicore"
+import (
+	"github.com/maruel/wi/pkg/key"
+	"github.com/maruel/wi/wicore"
+)
 
 type keyBindings struct {
-	commandMappings map[wicore.KeyPress]string
-	editMappings    map[wicore.KeyPress]string
+	commandMappings map[key.Press]string
+	editMappings    map[key.Press]string
 }
 
-func (k *keyBindings) Set(mode wicore.KeyboardMode, key wicore.KeyPress, cmdName string) bool {
+func (k *keyBindings) Set(mode wicore.KeyboardMode, key key.Press, cmdName string) bool {
 	if !key.IsValid() {
 		return false
 	}
@@ -27,7 +30,7 @@ func (k *keyBindings) Set(mode wicore.KeyboardMode, key wicore.KeyPress, cmdName
 	return !ok
 }
 
-func (k *keyBindings) Get(mode wicore.KeyboardMode, key wicore.KeyPress) string {
+func (k *keyBindings) Get(mode wicore.KeyboardMode, key key.Press) string {
 	if !key.IsValid() {
 		return ""
 	}
@@ -45,7 +48,7 @@ func (k *keyBindings) Get(mode wicore.KeyboardMode, key wicore.KeyPress) string 
 }
 
 func makeKeyBindings() wicore.KeyBindings {
-	return &keyBindings{make(map[wicore.KeyPress]string), make(map[wicore.KeyPress]string)}
+	return &keyBindings{make(map[key.Press]string), make(map[key.Press]string)}
 }
 
 // Commands.
@@ -77,8 +80,8 @@ func cmdKeyBind(c *wicore.CommandImpl, cd wicore.CommandDispatcherFull, w wicore
 		return
 	}
 	// TODO(maruel): Refuse invalid keyName.
-	key := wicore.StringToKeyPress(keyName)
-	w.View().KeyBindings().Set(mode, key, cmdName)
+	k := key.StringToPress(keyName)
+	w.View().KeyBindings().Set(mode, k, cmdName)
 }
 
 // RegisterKeyBindingCommands registers the keyboard mapping related commands.

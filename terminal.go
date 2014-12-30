@@ -8,6 +8,7 @@ package main
 
 import (
 	"github.com/maruel/wi/editor"
+	"github.com/maruel/wi/pkg/key"
 	"github.com/maruel/wi/wicore"
 	"github.com/nsf/termbox-go"
 )
@@ -51,66 +52,66 @@ func (t TermBox) SeedEvents() <-chan editor.TerminalEvent {
 	return c
 }
 
-// termboxKeyToKeyPress returns the wicore.KeyPress compatible event.
-func termboxKeyToKeyPress(key termbox.Event) wicore.KeyPress {
-	out := wicore.KeyPress{}
-	if key.Mod&termbox.ModAlt != 0 {
+// termboxKeyToKeyPress returns the key.Press compatible event.
+func termboxKeyToKeyPress(k termbox.Event) key.Press {
+	out := key.Press{}
+	if k.Mod&termbox.ModAlt != 0 {
 		out.Alt = true
 	}
-	switch termbox.Key(key.Key) {
+	switch termbox.Key(k.Key) {
 	case termbox.KeyF1:
-		out.Key = wicore.KeyF1
+		out.Key = key.F1
 	case termbox.KeyF2:
-		out.Key = wicore.KeyF2
+		out.Key = key.F2
 	case termbox.KeyF3:
-		out.Key = wicore.KeyF3
+		out.Key = key.F3
 	case termbox.KeyF4:
-		out.Key = wicore.KeyF4
+		out.Key = key.F4
 	case termbox.KeyF5:
-		out.Key = wicore.KeyF5
+		out.Key = key.F5
 	case termbox.KeyF6:
-		out.Key = wicore.KeyF6
+		out.Key = key.F6
 	case termbox.KeyF7:
-		out.Key = wicore.KeyF7
+		out.Key = key.F7
 	case termbox.KeyF8:
-		out.Key = wicore.KeyF8
+		out.Key = key.F8
 	case termbox.KeyF9:
-		out.Key = wicore.KeyF9
+		out.Key = key.F9
 	case termbox.KeyF10:
-		out.Key = wicore.KeyF10
+		out.Key = key.F10
 	case termbox.KeyF11:
-		out.Key = wicore.KeyF11
+		out.Key = key.F11
 	case termbox.KeyF12:
-		out.Key = wicore.KeyF12
+		out.Key = key.F12
 	case termbox.KeyInsert:
-		out.Key = wicore.KeyInsert
+		out.Key = key.Insert
 	case termbox.KeyDelete:
-		out.Key = wicore.KeyDelete
+		out.Key = key.Delete
 	case termbox.KeyHome:
-		out.Key = wicore.KeyHome
+		out.Key = key.Home
 	case termbox.KeyEnd:
-		out.Key = wicore.KeyEnd
+		out.Key = key.End
 	case termbox.KeyPgup:
-		out.Key = wicore.KeyPageUp
+		out.Key = key.PageUp
 	case termbox.KeyPgdn:
-		out.Key = wicore.KeyPageDown
+		out.Key = key.PageDown
 	case termbox.KeyArrowUp:
-		out.Key = wicore.KeyArrowUp
+		out.Key = key.Up
 	case termbox.KeyArrowDown:
-		out.Key = wicore.KeyArrowDown
+		out.Key = key.Down
 	case termbox.KeyArrowLeft:
-		out.Key = wicore.KeyArrowLeft
+		out.Key = key.Left
 	case termbox.KeyArrowRight:
-		out.Key = wicore.KeyArrowRight
+		out.Key = key.Right
 
 	case termbox.KeyCtrlSpace: // KeyCtrlTilde, KeyCtrl2
 		// This value is 0, which cannot be distinguished from non-keypress.
-		if key.Ch == 0 {
+		if k.Ch == 0 {
 			out.Ctrl = true
-			out.Ch = ' '
+			out.Key = key.Space
 		} else {
 			// Normal keypress code path.
-			out.Ch = key.Ch
+			out.Ch = k.Ch
 		}
 
 	case termbox.KeyCtrlA:
@@ -135,9 +136,9 @@ func termboxKeyToKeyPress(key termbox.Event) wicore.KeyPress {
 		out.Ctrl = true
 		out.Ch = 'g'
 	case termbox.KeyBackspace: // KeyCtrlH
-		out.Key = wicore.KeyBackspace
+		out.Key = key.Backspace
 	case termbox.KeyTab: // KeyCtrlI
-		out.Key = wicore.KeyTab
+		out.Key = key.Tab
 	case termbox.KeyCtrlJ:
 		out.Ctrl = true
 		out.Ch = 'j'
@@ -148,7 +149,7 @@ func termboxKeyToKeyPress(key termbox.Event) wicore.KeyPress {
 		out.Ctrl = true
 		out.Ch = 'l'
 	case termbox.KeyEnter: // KeyCtrlM
-		out.Key = wicore.KeyEnter
+		out.Key = key.Enter
 	case termbox.KeyCtrlN:
 		out.Ctrl = true
 		out.Ch = 'n'
@@ -189,7 +190,7 @@ func termboxKeyToKeyPress(key termbox.Event) wicore.KeyPress {
 		out.Ctrl = true
 		out.Ch = 'z'
 	case termbox.KeyEsc: // KeyCtrlLsqBracket, KeyCtrl3
-		out.Key = wicore.KeyEscape
+		out.Key = key.Escape
 	case termbox.KeyCtrl4: // KeyCtrlBackslash
 		out.Ctrl = true
 		out.Ch = '4'
@@ -203,7 +204,7 @@ func termboxKeyToKeyPress(key termbox.Event) wicore.KeyPress {
 		out.Ctrl = true
 		out.Ch = '7'
 	case termbox.KeySpace:
-		out.Ch = ' '
+		out.Key = key.Space
 	default:
 		panic("Remove me")
 	}

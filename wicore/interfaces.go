@@ -11,6 +11,8 @@ package wicore
 
 import (
 	"fmt"
+
+	"github.com/maruel/wi/pkg/key"
 )
 
 // UI
@@ -80,7 +82,7 @@ type EventRegistry interface {
 	RegisterDocumentCreated(callback func(doc Document)) EventID
 	RegisterDocumentCursorMoved(callback func(doc Document)) EventID
 	RegisterTerminalResized(callback func()) EventID
-	RegisterTerminalKeyPressed(callback func(key KeyPress)) EventID
+	RegisterTerminalKeyPressed(callback func(key key.Press)) EventID
 	RegisterViewCreated(callback func(view View)) EventID
 	RegisterWindowCreated(callback func(window Window)) EventID
 	RegisterWindowResized(callback func(window Window)) EventID
