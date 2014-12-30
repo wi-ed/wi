@@ -41,7 +41,7 @@ func cmdCommandLog(c *privilegedCommandImpl, e *editor, w *window, args ...strin
 func keyLogRecurse(w *window, cd wicore.CommandDispatcherFull, mode wicore.KeyboardMode) {
 	// TODO(maruel): Create a proper enumerator.
 	keys := w.view.KeyBindings().(*keyBindings)
-	var mapping *map[string]string
+	var mapping *map[wicore.KeyPress]string
 	if mode == wicore.CommandMode {
 		mapping = &keys.commandMappings
 	} else if mode == wicore.EditMode {
@@ -51,11 +51,11 @@ func keyLogRecurse(w *window, cd wicore.CommandDispatcherFull, mode wicore.Keybo
 	}
 	names := make([]string, 0, len(*mapping))
 	for k := range *mapping {
-		names = append(names, k)
+		names = append(names, k.String())
 	}
 	sort.Strings(names)
 	for _, name := range names {
-		log.Printf("  %s  %s: %s", w.ID(), name, (*mapping)[name])
+		log.Printf("  %s  %s: %s", w.ID(), name, (*mapping)[wicore.StringToKeyPress(name)])
 	}
 	for _, child := range w.childrenWindows {
 		keyLogRecurse(child, cd, mode)
