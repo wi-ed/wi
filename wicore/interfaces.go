@@ -5,6 +5,8 @@
 // This file defines all the interfaces to be used by the wi editor and to be
 // accessable by plugins.
 
+//go:generate stringer -output=interfaces_string.go -type=BorderType,DockingType
+
 package wicore
 
 import (
@@ -33,25 +35,6 @@ const (
 	DockingTop
 	DockingBottom
 )
-
-func (d DockingType) String() string {
-	switch d {
-	case DockingFill:
-		return "DockingFill"
-	case DockingFloating:
-		return "DockingFloating"
-	case DockingLeft:
-		return "DockingLeft"
-	case DockingRight:
-		return "DockingRight"
-	case DockingTop:
-		return "DockingTop"
-	case DockingBottom:
-		return "DockingBottom"
-	default:
-		return "Unknown DockingType"
-	}
-}
 
 // StringToDockingType converts a string back to a DockingType.
 func StringToDockingType(s string) DockingType {
@@ -85,19 +68,6 @@ const (
 	// different.
 	BorderDouble
 )
-
-func (b BorderType) String() string {
-	switch b {
-	case BorderNone:
-		return "BorderNone"
-	case BorderSingle:
-		return "BorderSingle"
-	case BorderDouble:
-		return "BorderDouble"
-	default:
-		return "Unknown BorderType"
-	}
-}
 
 // EventID is to be used to cancel an event listener.
 type EventID int

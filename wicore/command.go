@@ -2,6 +2,8 @@
 // Use of this source code is governed under the Apache License, Version 2.0
 // that can be found in the LICENSE file.
 
+//go:generate stringer -output=command_string.go -type=CommandCategory
+
 package wicore
 
 import (
@@ -28,21 +30,6 @@ const (
 
 	// TODO(maruel): Add other categories.
 )
-
-func (c CommandCategory) String() string {
-	switch c {
-	case UnknownCategory:
-		return "UnknownCategory"
-	case WindowCategory:
-		return "WindowCategory"
-	case CommandsCategory:
-		return "CommandsCategory"
-	case DebugCategory:
-		return "DebugCategory"
-	default:
-		return "Unknown CommandCategory"
-	}
-}
 
 // CommandID describes a command in the queue.
 type CommandID struct {
