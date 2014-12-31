@@ -75,18 +75,20 @@ const (
 type EventID int
 
 // EventRegistry permits to register callbacks that are called on events.
+//
+// When the callback returns false, the next registered events are not called.
 type EventRegistry interface {
 	// Unregister unregiisters a callback. Returns an error if the event was not
 	// registered.
 	Unregister(eventID EventID) error
-	RegisterCommands(callback func(cmds EnqueuedCommands)) EventID
-	RegisterDocumentCreated(callback func(doc Document)) EventID
-	RegisterDocumentCursorMoved(callback func(doc Document)) EventID
-	RegisterTerminalResized(callback func()) EventID
-	RegisterTerminalKeyPressed(callback func(key key.Press)) EventID
-	RegisterViewCreated(callback func(view View)) EventID
-	RegisterWindowCreated(callback func(window Window)) EventID
-	RegisterWindowResized(callback func(window Window)) EventID
+	RegisterCommands(callback func(cmds EnqueuedCommands) bool) EventID
+	RegisterDocumentCreated(callback func(doc Document) bool) EventID
+	RegisterDocumentCursorMoved(callback func(doc Document) bool) EventID
+	RegisterTerminalResized(callback func() bool) EventID
+	RegisterTerminalKeyPressed(callback func(key key.Press) bool) EventID
+	RegisterViewCreated(callback func(view View) bool) EventID
+	RegisterWindowCreated(callback func(window Window) bool) EventID
+	RegisterWindowResized(callback func(window Window) bool) EventID
 }
 
 // Editor is the output device and the main process context. It shows the root

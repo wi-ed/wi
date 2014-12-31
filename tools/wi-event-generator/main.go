@@ -44,7 +44,7 @@ import (
 {{range .Events}}
 type event{{.Name}} struct{
 	id wicore.EventID
-	callback func({{.Args}})
+	callback func({{.Args}}) {{.Result}}
 }
 {{end}}
 // eventRegistry is automatically generated via wi-event-generator from the
@@ -84,7 +84,7 @@ func (er *eventRegistry) Unregister(eventID wicore.EventID) error {
 	return errors.New("trying to unregister an non existing event listener")
 }{{range .Events}}
 
-func (er *eventRegistry) Register{{.Name}}(callback func({{.Args}})) wicore.EventID {
+func (er *eventRegistry) Register{{.Name}}(callback func({{.Args}}) {{.Result}}) wicore.EventID {
   er.lock.Lock()
   defer er.lock.Unlock()
   i := er.nextID
@@ -95,17 +95,19 @@ func (er *eventRegistry) Register{{.Name}}(callback func({{.Args}})) wicore.Even
 
 func (er *eventRegistry) on{{.Name}}({{.Args}}) {
 	er.deferred <- func() {
-		items := func() []func({{.Args}}) {
+		items := func() []func({{.Args}}) {{.Result}} {
 			er.lock.Lock()
 			defer er.lock.Unlock()
-			items := make([]func({{.Args}}), 0, len(er.{{.Lower}}))
+			items := make([]func({{.Args}}) {{.Result}}, 0, len(er.{{.Lower}}))
 			for _, item := range er.{{.Lower}} {
 				items = append(items, item.callback)
 			}
 			return items
 		}()
 		for _, item := range items {
-			item({{.ArgsNames}})
+			if !item({{.ArgsNames}}) {
+				break
+			}
 		}
 	}
 }{{end}}
@@ -118,6 +120,7 @@ type Event struct {
 	BitValue  string
 	Args      string
 	ArgsNames string
+	Result    string
 }
 
 type data struct {
@@ -136,7 +139,12 @@ func getEvents(bitmask uint) []Event {
 		// That is *very* cheezy. The right way would be to use go/parser to
 		// extract the argument names. For now, it's "good enough".
 		argsStr := m.Type.String()[10:]
-		argsStr = argsStr[:strings.LastIndex(argsStr, ")")-1]
+		argsStr = argsStr[:strings.LastIndex(argsStr, ")")]
+		result := ""
+		if i := strings.LastIndex(argsStr, ")"); i != len(argsStr)-1 {
+			result = argsStr[i+2:]
+			argsStr = argsStr[:i]
+		}
 		argsItems := strings.Split(argsStr, ", ")
 		args := make([]string, 0, len(argsItems))
 		argsNames := make([]string, 0, len(argsItems))
@@ -157,7 +165,9 @@ func getEvents(bitmask uint) []Event {
 			Index:     len(events),
 			BitValue:  fmt.Sprintf("wicore.EventID(0x%x)", (len(events)+1)<<bitmask),
 			Args:      strings.Join(args, ", "),
-			ArgsNames: strings.Join(argsNames, ", ")})
+			ArgsNames: strings.Join(argsNames, ", "),
+			Result:    result,
+		})
 	}
 	return events
 }

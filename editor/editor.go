@@ -81,7 +81,7 @@ func (e *editor) PostCommands(cmds [][]string, callback func()) wicore.CommandID
 	return wicore.CommandID{0, id}
 }
 
-func (e *editor) onTerminalKeyPressed(key key.Press) {
+func (e *editor) onTerminalKeyPressed(key key.Press) bool {
 	log.Printf("onTerminalKeyPressed(%s)", key)
 	if key.IsValid() {
 		keyName := key.String()
@@ -107,6 +107,7 @@ func (e *editor) onTerminalKeyPressed(key key.Press) {
 			}
 		}
 	}
+	return true
 }
 
 func (e *editor) ExecuteCommand(w wicore.Window, cmdName string, args ...string) {
@@ -122,13 +123,14 @@ func (e *editor) ExecuteCommand(w wicore.Window, cmdName string, args ...string)
 	}
 }
 
-func (e *editor) onCommands(cmds wicore.EnqueuedCommands) {
+func (e *editor) onCommands(cmds wicore.EnqueuedCommands) bool {
 	for _, cmd := range cmds.Commands {
 		e.ExecuteCommand(e.ActiveWindow(), cmd[0], cmd[1:]...)
 	}
 	if cmds.Callback != nil {
 		cmds.Callback()
 	}
+	return true
 }
 
 func (e *editor) CurrentLanguage() wicore.LanguageMode {
@@ -191,11 +193,12 @@ func (e *editor) RegisterViewFactory(name string, viewFactory wicore.ViewFactory
 	return !present
 }
 
-func (e *editor) onTerminalResized() {
+func (e *editor) onTerminalResized() bool {
 	// Resize the Windows. This also invalidates it, which will also force a
 	// redraw if the size changed.
 	w, h := e.terminal.Size()
 	e.rootWindow.setRect(wicore.Rect{0, 0, w, h})
+	return true
 }
 
 func (e *editor) terminalLoop(terminal Terminal) {
