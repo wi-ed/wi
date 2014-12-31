@@ -96,6 +96,12 @@ type EventRegistry interface {
 type Editor interface {
 	CommandDispatcherFull
 
+	// KeyboardMode is global to the editor. It matches vim behavior. For example
+	// in a 2-window setup while in insert mode, using Ctrl-O, Ctrl-W, Down will
+	// move to the next window but will stay in insert mode.
+	//
+	// Technically, each View could have their own KeyboardMode but in practice
+	// it just creates a cognitive overhead without much benefit.
 	KeyboardMode() KeyboardMode
 
 	// Version returns the version number of this build of wi.

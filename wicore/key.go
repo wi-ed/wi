@@ -9,11 +9,17 @@ import (
 )
 
 // KeyboardMode defines the keyboard mapping (input mode) to use.
+//
+// Unlike vim, there's no Ex mode. It's unnecessary because the command window
+// is a Window on its own, instead of a additional input mode on the current
+// Window.
 type KeyboardMode int
 
 const (
 	// CommandMode is the mode where typing letters results in commands, not
-	// content editing.
+	// content editing. It's named Normal mode in vim.
+	//
+	// TODO(maruel): Rename for consistency?
 	CommandMode KeyboardMode = iota + 1
 	// EditMode is the mode where typing letters results in content, not commands.
 	EditMode
