@@ -47,24 +47,40 @@ type event{{.Name}} struct{
 	callback func({{.Args}})
 }
 {{end}}
+// eventRegistry is automatically generated via wi-event-generator from the
+// interface wicore.EventRegistry.
 type eventRegistry struct {
   lock   sync.Mutex
   nextID wicore.EventID
+	deferred chan func()
 {{range .Events}}
 	{{.Lower}} []event{{.Name}}{{end}}
 }
 
+func makeEventRegistry() eventRegistry {
+	// Reduce the odds of allocation within RegistryXXX() by using relatively
+	// large buffers.
+	return eventRegistry{
+		deferred: make(chan func()),{{range .Events}}
+		{{.Lower}}: make([]event{{.Name}}, 0, 64),{{end}}
+	}
+}
+
 func (er *eventRegistry) Unregister(eventID wicore.EventID) error {
   er.lock.Lock()
-  defer er.lock.Unlock(){{range .Events}}
-	for index, value := range er.{{.Lower}} {
-		if value.id == eventID {
-			copy(er.{{.Lower}}[index:], er.{{.Lower}}[index+1:])
-			// TODO(maruel): It's a memory leak.
-			er.{{.Lower}} = er.{{.Lower}}[0 : len(er.{{.Lower}})-1]
-			return nil
-		}
-  }{{end}}
+  defer er.lock.Unlock()
+	// TODO(maruel): The buffers are never reallocated, so it's effectively a
+	// memory leak.
+	switch(eventID & {{.BitMask}}) { {{range .Events}}
+	case {{.BitValue}}:
+		for index, value := range er.{{.Lower}} {
+			if value.id == eventID {
+				copy(er.{{.Lower}}[index:], er.{{.Lower}}[index+1:])
+				er.{{.Lower}} = er.{{.Lower}}[0 : len(er.{{.Lower}})-1]
+				return nil
+			}
+		}{{end}}
+  }
 	return errors.New("trying to unregister an non existing event listener")
 }{{range .Events}}
 
@@ -73,11 +89,8 @@ func (er *eventRegistry) Register{{.Name}}(callback func({{.Args}})) wicore.Even
   defer er.lock.Unlock()
   i := er.nextID
   er.nextID++
-	if er.{{.Lower}} == nil {
-		er.{{.Lower}} = make([]event{{.Name}}, 0, 10)
-	}
   er.{{.Lower}} = append(er.{{.Lower}}, event{{.Name}}{i, callback})
-  return i
+  return i | {{.BitValue}}
 }
 
 func (er *eventRegistry) on{{.Name}}({{.Args}}) {
@@ -99,17 +112,20 @@ func (er *eventRegistry) on{{.Name}}({{.Args}}) {
 type Event struct {
 	Name      string
 	Lower     string
+	Index     int
+	BitValue  string
 	Args      string
 	ArgsNames string
 }
 
 type data struct {
-	Events []Event
+	BitMask string
+	Events  []Event
 }
 
-func getEvents() []Event {
+func getEvents(bitmask uint) []Event {
 	t := reflect.TypeOf((*wicore.EventRegistry)(nil)).Elem()
-	events := make([]Event, 0, t.NumMethod()-1)
+	events := make([]Event, 0, t.NumMethod())
 	for i := 0; i < t.NumMethod(); i++ {
 		m := t.Method(i)
 		if !strings.HasPrefix(m.Name, "Register") {
@@ -131,14 +147,24 @@ func getEvents() []Event {
 		}
 		name := m.Name[8:]
 		lower := strings.ToLower(name[0:1]) + name[1:]
-		events = append(events, Event{name, lower, strings.Join(args, ", "), strings.Join(argsNames, ", ")})
+		// TODO(maruel): It creates an artificial limit of 2^23 event listener and
+		// 2^8 event types on 32 bits systems.
+		events = append(events, Event{
+			Name:      name,
+			Lower:     lower,
+			Index:     len(events),
+			BitValue:  fmt.Sprintf("wicore.EventID(0x%x)", (len(events)+1)<<bitmask),
+			Args:      strings.Join(args, ", "),
+			ArgsNames: strings.Join(argsNames, ", ")})
 	}
 	return events
 }
 
 func generate() ([]byte, error) {
+	bitmask := uint(24)
 	d := data{
-		Events: getEvents(),
+		BitMask: fmt.Sprintf("wicore.EventID(0x%x)", ((1<<32)-1)-((1<<bitmask)-1)),
+		Events:  getEvents(bitmask),
 	}
 	out := bytes.Buffer{}
 	if err := tmpl.Execute(&out, d); err != nil {

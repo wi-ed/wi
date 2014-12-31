@@ -312,7 +312,7 @@ func MakeEditor(terminal Terminal, noPlugin bool) (Editor, error) {
 
 	rootWindow := makeWindow(nil, rootView, wicore.DockingFill)
 	e := &editor{
-		eventRegistry:  eventRegistry{},
+		eventRegistry:  makeEventRegistry(),
 		terminal:       terminal,
 		rootWindow:     rootWindow,
 		lastActive:     []wicore.Window{rootWindow},
