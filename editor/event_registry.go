@@ -10,6 +10,11 @@ import (
 	"github.com/maruel/wi/wicore"
 )
 
+type eventCommands struct {
+	id       wicore.EventID
+	callback func(a wicore.EnqueuedCommands)
+}
+
 type eventDocumentCreated struct {
 	id       wicore.EventID
 	callback func(a wicore.Document)
@@ -52,6 +57,7 @@ type eventRegistry struct {
 	nextID   wicore.EventID
 	deferred chan func()
 
+	commands            []eventCommands
 	documentCreated     []eventDocumentCreated
 	documentCursorMoved []eventDocumentCursorMoved
 	terminalKeyPressed  []eventTerminalKeyPressed
@@ -66,6 +72,7 @@ func makeEventRegistry() eventRegistry {
 	// large buffers.
 	return eventRegistry{
 		deferred:            make(chan func(), 2048),
+		commands:            make([]eventCommands, 0, 64),
 		documentCreated:     make([]eventDocumentCreated, 0, 64),
 		documentCursorMoved: make([]eventDocumentCursorMoved, 0, 64),
 		terminalKeyPressed:  make([]eventTerminalKeyPressed, 0, 64),
@@ -83,6 +90,14 @@ func (er *eventRegistry) Unregister(eventID wicore.EventID) error {
 	// memory leak.
 	switch eventID & wicore.EventID(0xff000000) {
 	case wicore.EventID(0x1000000):
+		for index, value := range er.commands {
+			if value.id == eventID {
+				copy(er.commands[index:], er.commands[index+1:])
+				er.commands = er.commands[0 : len(er.commands)-1]
+				return nil
+			}
+		}
+	case wicore.EventID(0x2000000):
 		for index, value := range er.documentCreated {
 			if value.id == eventID {
 				copy(er.documentCreated[index:], er.documentCreated[index+1:])
@@ -90,7 +105,7 @@ func (er *eventRegistry) Unregister(eventID wicore.EventID) error {
 				return nil
 			}
 		}
-	case wicore.EventID(0x2000000):
+	case wicore.EventID(0x3000000):
 		for index, value := range er.documentCursorMoved {
 			if value.id == eventID {
 				copy(er.documentCursorMoved[index:], er.documentCursorMoved[index+1:])
@@ -98,7 +113,7 @@ func (er *eventRegistry) Unregister(eventID wicore.EventID) error {
 				return nil
 			}
 		}
-	case wicore.EventID(0x3000000):
+	case wicore.EventID(0x4000000):
 		for index, value := range er.terminalKeyPressed {
 			if value.id == eventID {
 				copy(er.terminalKeyPressed[index:], er.terminalKeyPressed[index+1:])
@@ -106,7 +121,7 @@ func (er *eventRegistry) Unregister(eventID wicore.EventID) error {
 				return nil
 			}
 		}
-	case wicore.EventID(0x4000000):
+	case wicore.EventID(0x5000000):
 		for index, value := range er.terminalResized {
 			if value.id == eventID {
 				copy(er.terminalResized[index:], er.terminalResized[index+1:])
@@ -114,7 +129,7 @@ func (er *eventRegistry) Unregister(eventID wicore.EventID) error {
 				return nil
 			}
 		}
-	case wicore.EventID(0x5000000):
+	case wicore.EventID(0x6000000):
 		for index, value := range er.viewCreated {
 			if value.id == eventID {
 				copy(er.viewCreated[index:], er.viewCreated[index+1:])
@@ -122,7 +137,7 @@ func (er *eventRegistry) Unregister(eventID wicore.EventID) error {
 				return nil
 			}
 		}
-	case wicore.EventID(0x6000000):
+	case wicore.EventID(0x7000000):
 		for index, value := range er.windowCreated {
 			if value.id == eventID {
 				copy(er.windowCreated[index:], er.windowCreated[index+1:])
@@ -130,7 +145,7 @@ func (er *eventRegistry) Unregister(eventID wicore.EventID) error {
 				return nil
 			}
 		}
-	case wicore.EventID(0x7000000):
+	case wicore.EventID(0x8000000):
 		for index, value := range er.windowResized {
 			if value.id == eventID {
 				copy(er.windowResized[index:], er.windowResized[index+1:])
@@ -142,13 +157,39 @@ func (er *eventRegistry) Unregister(eventID wicore.EventID) error {
 	return errors.New("trying to unregister an non existing event listener")
 }
 
+func (er *eventRegistry) RegisterCommands(callback func(a wicore.EnqueuedCommands)) wicore.EventID {
+	er.lock.Lock()
+	defer er.lock.Unlock()
+	i := er.nextID
+	er.nextID++
+	er.commands = append(er.commands, eventCommands{i, callback})
+	return i | wicore.EventID(0x1000000)
+}
+
+func (er *eventRegistry) onCommands(a wicore.EnqueuedCommands) {
+	er.deferred <- func() {
+		items := func() []func(a wicore.EnqueuedCommands) {
+			er.lock.Lock()
+			defer er.lock.Unlock()
+			items := make([]func(a wicore.EnqueuedCommands), 0, len(er.commands))
+			for _, item := range er.commands {
+				items = append(items, item.callback)
+			}
+			return items
+		}()
+		for _, item := range items {
+			item(a)
+		}
+	}
+}
+
 func (er *eventRegistry) RegisterDocumentCreated(callback func(a wicore.Document)) wicore.EventID {
 	er.lock.Lock()
 	defer er.lock.Unlock()
 	i := er.nextID
 	er.nextID++
 	er.documentCreated = append(er.documentCreated, eventDocumentCreated{i, callback})
-	return i | wicore.EventID(0x1000000)
+	return i | wicore.EventID(0x2000000)
 }
 
 func (er *eventRegistry) onDocumentCreated(a wicore.Document) {
@@ -174,7 +215,7 @@ func (er *eventRegistry) RegisterDocumentCursorMoved(callback func(a wicore.Docu
 	i := er.nextID
 	er.nextID++
 	er.documentCursorMoved = append(er.documentCursorMoved, eventDocumentCursorMoved{i, callback})
-	return i | wicore.EventID(0x2000000)
+	return i | wicore.EventID(0x3000000)
 }
 
 func (er *eventRegistry) onDocumentCursorMoved(a wicore.Document) {
@@ -200,7 +241,7 @@ func (er *eventRegistry) RegisterTerminalKeyPressed(callback func(a key.Press)) 
 	i := er.nextID
 	er.nextID++
 	er.terminalKeyPressed = append(er.terminalKeyPressed, eventTerminalKeyPressed{i, callback})
-	return i | wicore.EventID(0x3000000)
+	return i | wicore.EventID(0x4000000)
 }
 
 func (er *eventRegistry) onTerminalKeyPressed(a key.Press) {
@@ -226,7 +267,7 @@ func (er *eventRegistry) RegisterTerminalResized(callback func()) wicore.EventID
 	i := er.nextID
 	er.nextID++
 	er.terminalResized = append(er.terminalResized, eventTerminalResized{i, callback})
-	return i | wicore.EventID(0x4000000)
+	return i | wicore.EventID(0x5000000)
 }
 
 func (er *eventRegistry) onTerminalResized() {
@@ -252,7 +293,7 @@ func (er *eventRegistry) RegisterViewCreated(callback func(a wicore.View)) wicor
 	i := er.nextID
 	er.nextID++
 	er.viewCreated = append(er.viewCreated, eventViewCreated{i, callback})
-	return i | wicore.EventID(0x5000000)
+	return i | wicore.EventID(0x6000000)
 }
 
 func (er *eventRegistry) onViewCreated(a wicore.View) {
@@ -278,7 +319,7 @@ func (er *eventRegistry) RegisterWindowCreated(callback func(a wicore.Window)) w
 	i := er.nextID
 	er.nextID++
 	er.windowCreated = append(er.windowCreated, eventWindowCreated{i, callback})
-	return i | wicore.EventID(0x6000000)
+	return i | wicore.EventID(0x7000000)
 }
 
 func (er *eventRegistry) onWindowCreated(a wicore.Window) {
@@ -304,7 +345,7 @@ func (er *eventRegistry) RegisterWindowResized(callback func(a wicore.Window)) w
 	i := er.nextID
 	er.nextID++
 	er.windowResized = append(er.windowResized, eventWindowResized{i, callback})
-	return i | wicore.EventID(0x7000000)
+	return i | wicore.EventID(0x8000000)
 }
 
 func (er *eventRegistry) onWindowResized(a wicore.Window) {

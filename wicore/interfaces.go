@@ -79,6 +79,7 @@ type EventRegistry interface {
 	// Unregister unregiisters a callback. Returns an error if the event was not
 	// registered.
 	Unregister(eventID EventID) error
+	RegisterCommands(callback func(cmds EnqueuedCommands)) EventID
 	RegisterDocumentCreated(callback func(doc Document)) EventID
 	RegisterDocumentCursorMoved(callback func(doc Document)) EventID
 	RegisterTerminalResized(callback func()) EventID

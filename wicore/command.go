@@ -33,7 +33,7 @@ const (
 
 // CommandID describes a command in the queue.
 type CommandID struct {
-	ProcessID    int
+	ProcessID    int // 0 is the main editor process, other values are for plugins.
 	CommandIndex int
 }
 
@@ -103,6 +103,13 @@ type Commands interface {
 
 	// Get returns a command if registered, nil otherwise.
 	Get(cmdName string) Command
+}
+
+// EnqueuedCommand is used internally to dispatch commands through
+// EventRegistry.
+type EnqueuedCommands struct {
+	Commands [][]string
+	Callback func()
 }
 
 // CommandImplHandler is the CommandHandler to use when coupled with CommandImpl.
