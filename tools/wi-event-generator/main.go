@@ -61,7 +61,7 @@ func makeEventRegistry() eventRegistry {
 	// Reduce the odds of allocation within RegistryXXX() by using relatively
 	// large buffers.
 	return eventRegistry{
-		deferred: make(chan func()),{{range .Events}}
+		deferred: make(chan func(), 2048),{{range .Events}}
 		{{.Lower}}: make([]event{{.Name}}, 0, 64),{{end}}
 	}
 }
@@ -94,18 +94,20 @@ func (er *eventRegistry) Register{{.Name}}(callback func({{.Args}})) wicore.Even
 }
 
 func (er *eventRegistry) on{{.Name}}({{.Args}}) {
-  items := func() []func({{.Args}}) {
-    er.lock.Lock()
-    defer er.lock.Unlock()
-    items := make([]func({{.Args}}), 0, len(er.{{.Lower}}))
-    for _, item := range er.{{.Lower}} {
-      items = append(items, item.callback)
-    }
-    return items
-  }()
-  for _, item := range items {
-    item({{.ArgsNames}})
-  }
+	er.deferred <- func() {
+		items := func() []func({{.Args}}) {
+			er.lock.Lock()
+			defer er.lock.Unlock()
+			items := make([]func({{.Args}}), 0, len(er.{{.Lower}}))
+			for _, item := range er.{{.Lower}} {
+				items = append(items, item.callback)
+			}
+			return items
+		}()
+		for _, item := range items {
+			item({{.ArgsNames}})
+		}
+	}
 }{{end}}
 `))
 

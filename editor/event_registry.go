@@ -65,7 +65,7 @@ func makeEventRegistry() eventRegistry {
 	// Reduce the odds of allocation within RegistryXXX() by using relatively
 	// large buffers.
 	return eventRegistry{
-		deferred:            make(chan func()),
+		deferred:            make(chan func(), 2048),
 		documentCreated:     make([]eventDocumentCreated, 0, 64),
 		documentCursorMoved: make([]eventDocumentCursorMoved, 0, 64),
 		terminalKeyPressed:  make([]eventTerminalKeyPressed, 0, 64),
@@ -152,17 +152,19 @@ func (er *eventRegistry) RegisterDocumentCreated(callback func(a wicore.Document
 }
 
 func (er *eventRegistry) onDocumentCreated(a wicore.Document) {
-	items := func() []func(a wicore.Document) {
-		er.lock.Lock()
-		defer er.lock.Unlock()
-		items := make([]func(a wicore.Document), 0, len(er.documentCreated))
-		for _, item := range er.documentCreated {
-			items = append(items, item.callback)
+	er.deferred <- func() {
+		items := func() []func(a wicore.Document) {
+			er.lock.Lock()
+			defer er.lock.Unlock()
+			items := make([]func(a wicore.Document), 0, len(er.documentCreated))
+			for _, item := range er.documentCreated {
+				items = append(items, item.callback)
+			}
+			return items
+		}()
+		for _, item := range items {
+			item(a)
 		}
-		return items
-	}()
-	for _, item := range items {
-		item(a)
 	}
 }
 
@@ -176,17 +178,19 @@ func (er *eventRegistry) RegisterDocumentCursorMoved(callback func(a wicore.Docu
 }
 
 func (er *eventRegistry) onDocumentCursorMoved(a wicore.Document) {
-	items := func() []func(a wicore.Document) {
-		er.lock.Lock()
-		defer er.lock.Unlock()
-		items := make([]func(a wicore.Document), 0, len(er.documentCursorMoved))
-		for _, item := range er.documentCursorMoved {
-			items = append(items, item.callback)
+	er.deferred <- func() {
+		items := func() []func(a wicore.Document) {
+			er.lock.Lock()
+			defer er.lock.Unlock()
+			items := make([]func(a wicore.Document), 0, len(er.documentCursorMoved))
+			for _, item := range er.documentCursorMoved {
+				items = append(items, item.callback)
+			}
+			return items
+		}()
+		for _, item := range items {
+			item(a)
 		}
-		return items
-	}()
-	for _, item := range items {
-		item(a)
 	}
 }
 
@@ -200,17 +204,19 @@ func (er *eventRegistry) RegisterTerminalKeyPressed(callback func(a key.Press)) 
 }
 
 func (er *eventRegistry) onTerminalKeyPressed(a key.Press) {
-	items := func() []func(a key.Press) {
-		er.lock.Lock()
-		defer er.lock.Unlock()
-		items := make([]func(a key.Press), 0, len(er.terminalKeyPressed))
-		for _, item := range er.terminalKeyPressed {
-			items = append(items, item.callback)
+	er.deferred <- func() {
+		items := func() []func(a key.Press) {
+			er.lock.Lock()
+			defer er.lock.Unlock()
+			items := make([]func(a key.Press), 0, len(er.terminalKeyPressed))
+			for _, item := range er.terminalKeyPressed {
+				items = append(items, item.callback)
+			}
+			return items
+		}()
+		for _, item := range items {
+			item(a)
 		}
-		return items
-	}()
-	for _, item := range items {
-		item(a)
 	}
 }
 
@@ -224,17 +230,19 @@ func (er *eventRegistry) RegisterTerminalResized(callback func()) wicore.EventID
 }
 
 func (er *eventRegistry) onTerminalResized() {
-	items := func() []func() {
-		er.lock.Lock()
-		defer er.lock.Unlock()
-		items := make([]func(), 0, len(er.terminalResized))
-		for _, item := range er.terminalResized {
-			items = append(items, item.callback)
+	er.deferred <- func() {
+		items := func() []func() {
+			er.lock.Lock()
+			defer er.lock.Unlock()
+			items := make([]func(), 0, len(er.terminalResized))
+			for _, item := range er.terminalResized {
+				items = append(items, item.callback)
+			}
+			return items
+		}()
+		for _, item := range items {
+			item()
 		}
-		return items
-	}()
-	for _, item := range items {
-		item()
 	}
 }
 
@@ -248,17 +256,19 @@ func (er *eventRegistry) RegisterViewCreated(callback func(a wicore.View)) wicor
 }
 
 func (er *eventRegistry) onViewCreated(a wicore.View) {
-	items := func() []func(a wicore.View) {
-		er.lock.Lock()
-		defer er.lock.Unlock()
-		items := make([]func(a wicore.View), 0, len(er.viewCreated))
-		for _, item := range er.viewCreated {
-			items = append(items, item.callback)
+	er.deferred <- func() {
+		items := func() []func(a wicore.View) {
+			er.lock.Lock()
+			defer er.lock.Unlock()
+			items := make([]func(a wicore.View), 0, len(er.viewCreated))
+			for _, item := range er.viewCreated {
+				items = append(items, item.callback)
+			}
+			return items
+		}()
+		for _, item := range items {
+			item(a)
 		}
-		return items
-	}()
-	for _, item := range items {
-		item(a)
 	}
 }
 
@@ -272,17 +282,19 @@ func (er *eventRegistry) RegisterWindowCreated(callback func(a wicore.Window)) w
 }
 
 func (er *eventRegistry) onWindowCreated(a wicore.Window) {
-	items := func() []func(a wicore.Window) {
-		er.lock.Lock()
-		defer er.lock.Unlock()
-		items := make([]func(a wicore.Window), 0, len(er.windowCreated))
-		for _, item := range er.windowCreated {
-			items = append(items, item.callback)
+	er.deferred <- func() {
+		items := func() []func(a wicore.Window) {
+			er.lock.Lock()
+			defer er.lock.Unlock()
+			items := make([]func(a wicore.Window), 0, len(er.windowCreated))
+			for _, item := range er.windowCreated {
+				items = append(items, item.callback)
+			}
+			return items
+		}()
+		for _, item := range items {
+			item(a)
 		}
-		return items
-	}()
-	for _, item := range items {
-		item(a)
 	}
 }
 
@@ -296,16 +308,18 @@ func (er *eventRegistry) RegisterWindowResized(callback func(a wicore.Window)) w
 }
 
 func (er *eventRegistry) onWindowResized(a wicore.Window) {
-	items := func() []func(a wicore.Window) {
-		er.lock.Lock()
-		defer er.lock.Unlock()
-		items := make([]func(a wicore.Window), 0, len(er.windowResized))
-		for _, item := range er.windowResized {
-			items = append(items, item.callback)
+	er.deferred <- func() {
+		items := func() []func(a wicore.Window) {
+			er.lock.Lock()
+			defer er.lock.Unlock()
+			items := make([]func(a wicore.Window), 0, len(er.windowResized))
+			for _, item := range er.windowResized {
+				items = append(items, item.callback)
+			}
+			return items
+		}()
+		for _, item := range items {
+			item(a)
 		}
-		return items
-	}()
-	for _, item := range items {
-		item(a)
 	}
 }
