@@ -18,9 +18,9 @@ type view struct {
 	keyBindings   wicore.KeyBindings
 	title         string
 	isDisabled    bool
-	naturalX      int
+	naturalX      int // Desired size.
 	naturalY      int
-	actualX       int
+	actualX       int // Actual size in UI.
 	actualY       int
 	window        wicore.Window
 	onAttach      func(v *view, w wicore.Window)

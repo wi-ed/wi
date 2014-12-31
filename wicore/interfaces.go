@@ -95,7 +95,6 @@ type EventRegistry interface {
 // window which covers the whole screen estate.
 type Editor interface {
 	CommandDispatcherFull
-	EventRegistry
 
 	KeyboardMode() KeyboardMode
 

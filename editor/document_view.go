@@ -4,7 +4,10 @@
 
 package editor
 
-import "github.com/maruel/wi/wicore"
+import (
+	"github.com/maruel/wi/pkg/key"
+	"github.com/maruel/wi/wicore"
+)
 
 // ColorMode is the coloring mode in effect.
 //
@@ -16,8 +19,10 @@ type ColorMode int
 
 // documentView is the View of a Document. There can be multiple views of the
 // same document, each with their own cursor position.
+//
 // TODO(maruel): In some cases, the cursor position could be shared. A good
 // example is vimdiff in 4-way mode.
+//
 // TODO(maruel): The part that is serializable has to be in its own structure
 // for easier deserialization.
 type documentView struct {
@@ -42,12 +47,49 @@ func (v *documentView) Buffer() *wicore.Buffer {
 	return v.buffer
 }
 
+func cmdDocumentCursorLeft(c *wicore.CommandImpl, cd wicore.CommandDispatcherFull, w wicore.Window, args ...string) {
+	d, ok := w.View().(*documentView)
+	if !ok {
+		panic("Oops")
+	}
+	if d.cursorColumn--; d.cursorColumn == -1 {
+		// Maybe make the wrap behavior optional.
+		if d.cursorLine--; d.cursorLine == -1 {
+			d.cursorLine = 0
+			// TODO(maruel): Beep.
+		}
+	}
+	// TODO(maruel): Err, need to implement: cd.onDocumentCursorMoved(d)
+}
+
 func documentViewFactory(args ...string) wicore.View {
+	dispatcher := makeCommands()
+	cmds := []wicore.Command{
+		&wicore.CommandImpl{
+			"document_cursor_left",
+			-1,
+			cmdDocumentCursorLeft,
+			wicore.WindowCategory,
+			wicore.LangMap{
+				wicore.LangEn: "Moves cursor left",
+			},
+			wicore.LangMap{
+				wicore.LangEn: "Moves cursor left.",
+			},
+		},
+	}
+	for _, cmd := range cmds {
+		dispatcher.Register(cmd)
+	}
+
+	bindings := makeKeyBindings()
+	bindings.Set(wicore.AllMode, key.Press{Key: key.Left}, "document_cursor_left")
+
 	// TODO(maruel): Sort out "use max space".
 	return &documentView{
 		view: view{
-			commands:      makeCommands(),
-			keyBindings:   makeKeyBindings(),
+			commands:      dispatcher,
+			keyBindings:   bindings,
 			title:         "<Empty document>", // TODO(maruel): Title == document.filePath ?
 			naturalX:      100,
 			naturalY:      100,

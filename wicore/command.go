@@ -55,6 +55,7 @@ type CommandDispatcher interface {
 // CommandDispatcherFull is a superset of CommandDispatcher for internal use.
 type CommandDispatcherFull interface {
 	CommandDispatcher
+	EventRegistry
 
 	// ExecuteCommand executes a command now. This is only meant to run a command
 	// reentrantly; e.g. running a command triggers another one. This usually
