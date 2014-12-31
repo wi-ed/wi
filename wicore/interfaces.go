@@ -11,6 +11,7 @@ package wicore
 
 import (
 	"fmt"
+	"io"
 
 	"github.com/maruel/wi/pkg/key"
 )
@@ -83,7 +84,7 @@ type EventRegistry interface {
 	Unregister(eventID EventID) error
 	RegisterCommands(callback func(cmds EnqueuedCommands) bool) EventID
 	RegisterDocumentCreated(callback func(doc Document) bool) EventID
-	RegisterDocumentCursorMoved(callback func(doc Document) bool) EventID
+	RegisterDocumentCursorMoved(callback func(doc Document, col, row int) bool) EventID
 	RegisterTerminalResized(callback func() bool) EventID
 	RegisterTerminalKeyPressed(callback func(key key.Press) bool) EventID
 	RegisterViewCreated(callback func(view View) bool) EventID
@@ -173,6 +174,8 @@ type Window interface {
 // a command box. View define the key binding and commands supported so it
 // responds to user input.
 type View interface {
+	io.Closer
+
 	// Commands returns the commands registered for this specific view. For
 	// example a text window will have commands specific to the file type
 	// enabled.
@@ -212,7 +215,7 @@ type View interface {
 }
 
 // ViewFactory returns a new View.
-type ViewFactory func(args ...string) View
+type ViewFactory func(e EventRegistry, args ...string) View
 
 // Document represents an open document. It can be accessed by zero, one or
 // multiple View. For example the document may not be visible at all as a 'back

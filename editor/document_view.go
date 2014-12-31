@@ -62,7 +62,7 @@ func cmdDocumentCursorLeft(c *wicore.CommandImpl, cd wicore.CommandDispatcherFul
 	// TODO(maruel): Err, need to implement: cd.onDocumentCursorMoved(d)
 }
 
-func documentViewFactory(args ...string) wicore.View {
+func documentViewFactory(e wicore.EventRegistry, args ...string) wicore.View {
 	dispatcher := makeCommands()
 	cmds := []wicore.Command{
 		&wicore.CommandImpl{

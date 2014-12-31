@@ -22,7 +22,7 @@ func (v *commandView) Buffer() *wicore.Buffer {
 // The command dialog box.
 // TODO(maruel): Position it 5 lines below the cursor in the parent Window's
 // View. Do this via onAttach.
-func commandViewFactory(args ...string) wicore.View {
+func commandViewFactory(e wicore.EventRegistry, args ...string) wicore.View {
 	keys := makeKeyBindings()
 	// Fill up the key bindings. This includes basic cursor movement, help, etc.
 	//keys.Set(wicore.CommandMode, "Enter", "ExecuteCommmad")

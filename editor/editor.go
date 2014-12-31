@@ -285,10 +285,22 @@ func (e *editor) loadPlugins() {
 //
 // Editor is closed by this function.
 func MakeEditor(terminal Terminal, noPlugin bool) (Editor, error) {
+	e := &editor{
+		eventRegistry: makeEventRegistry(),
+		terminal:      terminal,
+		rootWindow:    nil,                         // It is set below due to circular reference.
+		lastActive:    make([]wicore.Window, 1, 8), // It is set below.
+		documents:     []wicore.Document{},
+		viewFactories: make(map[string]wicore.ViewFactory),
+		viewReady:     make(chan bool),
+		languageMode:  wicore.LangEn,
+		keyboardMode:  wicore.EditMode,
+	}
+
 	// The root view is important, it defines all the global commands. It is
 	// pre-filled with the default native commands and keyboard mapping, and it's
 	// up to the plugins to add more global commands on startup.
-	rootView := makeStaticDisabledView("Root", -1, -1)
+	rootView := makeStaticDisabledView(e, "Root", -1, -1)
 
 	// These commands are generic commands, they do not require specific access.
 	RegisterDebugCommands(rootView.Commands())
@@ -299,19 +311,9 @@ func MakeEditor(terminal Terminal, noPlugin bool) (Editor, error) {
 	RegisterDocumentCommands(rootView.Commands())
 	RegisterEditorCommands(rootView.Commands())
 
-	rootWindow := makeWindow(nil, rootView, wicore.DockingFill)
-	e := &editor{
-		eventRegistry: makeEventRegistry(),
-		terminal:      terminal,
-		rootWindow:    rootWindow,
-		lastActive:    []wicore.Window{rootWindow},
-		documents:     []wicore.Document{},
-		viewFactories: make(map[string]wicore.ViewFactory),
-		viewReady:     make(chan bool),
-		languageMode:  wicore.LangEn,
-		keyboardMode:  wicore.EditMode,
-	}
-	rootWindow.cd = e
+	e.rootWindow = makeWindow(nil, rootView, wicore.DockingFill)
+	e.rootWindow.cd = e
+	e.lastActive[0] = e.rootWindow
 
 	e.eventRegistry.RegisterTerminalKeyPressed(e.onTerminalKeyPressed)
 	e.eventRegistry.RegisterTerminalResized(e.onTerminalResized)

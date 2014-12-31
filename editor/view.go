@@ -5,6 +5,7 @@
 package editor
 
 import (
+	"fmt"
 	"log"
 	"time"
 	"unicode/utf8"
@@ -16,6 +17,7 @@ import (
 type view struct {
 	commands      wicore.Commands
 	keyBindings   wicore.KeyBindings
+	eventRegistry wicore.EventRegistry
 	title         string
 	isDisabled    bool
 	naturalX      int // Desired size.
@@ -26,9 +28,21 @@ type view struct {
 	onAttach      func(v *view, w wicore.Window)
 	defaultFormat wicore.CellFormat
 	buffer        *wicore.Buffer
+	eventIDs      []wicore.EventID
 }
 
 // wicore.View interface.
+
+func (v *view) Close() error {
+	var err error
+	for _, eventID := range v.eventIDs {
+		err2 := v.eventRegistry.Unregister(eventID)
+		if err2 != nil {
+			err = err2
+		}
+	}
+	return err
+}
 
 func (v *view) Commands() wicore.Commands {
 	return v.commands
@@ -90,27 +104,29 @@ func (v *staticDisabledView) Buffer() *wicore.Buffer {
 }
 
 // Empty non-editable window.
-func makeStaticDisabledView(title string, naturalX, naturalY int) *staticDisabledView {
+func makeStaticDisabledView(e wicore.EventRegistry, title string, naturalX, naturalY int) *staticDisabledView {
 	return &staticDisabledView{
 		view{
 			commands:      makeCommands(),
 			keyBindings:   makeKeyBindings(),
+			eventRegistry: e,
 			title:         title,
 			isDisabled:    true,
 			naturalX:      naturalX,
 			naturalY:      naturalY,
 			defaultFormat: wicore.CellFormat{Fg: wicore.Red, Bg: wicore.Black},
+			eventIDs:      []wicore.EventID{},
 		},
 	}
 }
 
 // The status line is a hierarchy of Window, one for each element, each showing
 // a single item.
-func statusRootViewFactory(args ...string) wicore.View {
+func statusRootViewFactory(e wicore.EventRegistry, args ...string) wicore.View {
 	// TODO(maruel): OnResize(), query the root Window size, if y<=5 or x<=15,
 	// set the root status Window to y=0, so that it becomes effectively
 	// invisible when the editor window is too small.
-	v := makeStaticDisabledView("Status Root", 1, 1)
+	v := makeStaticDisabledView(e, "Status Root", 1, 1)
 	v.defaultFormat.Bg = wicore.LightGray
 	v.onAttach = func(v *view, w wicore.Window) {
 		id := w.ID()
@@ -124,33 +140,38 @@ func statusRootViewFactory(args ...string) wicore.View {
 	return v
 }
 
-func statusActiveWindowNameViewFactory(args ...string) wicore.View {
+func statusActiveWindowNameViewFactory(e wicore.EventRegistry, args ...string) wicore.View {
 	// Active Window View name.
 	// TODO(maruel): Register events of Window activation, make itself Invalidate().
-	v := makeStaticDisabledView("Status Name", 15, 1)
+	v := makeStaticDisabledView(e, "Status Name", 15, 1)
 	v.defaultFormat = wicore.CellFormat{}
 	return v
 }
 
-func statusModeViewFactory(args ...string) wicore.View {
+func statusModeViewFactory(e wicore.EventRegistry, args ...string) wicore.View {
 	// Mostly for testing purpose, will contain the current mode "Insert" or "Command".
-	v := makeStaticDisabledView("Status Mode", 10, 1)
+	v := makeStaticDisabledView(e, "Status Mode", 10, 1)
 	v.defaultFormat = wicore.CellFormat{}
 	return v
 }
 
-func statusPositionViewFactory(args ...string) wicore.View {
+func statusPositionViewFactory(e wicore.EventRegistry, args ...string) wicore.View {
 	// Position, % of file.
 	// TODO(maruel): Register events of movement, make itself Invalidate().
-	v := makeStaticDisabledView("Status Position", 15, 1)
+	v := makeStaticDisabledView(e, "Status Position", 15, 1)
 	v.defaultFormat = wicore.CellFormat{}
+	id := e.RegisterDocumentCursorMoved(func(doc wicore.Document, col, row int) bool {
+		v.title = fmt.Sprintf("%d,%d", col, row)
+		return true
+	})
+	v.eventIDs = append(v.eventIDs, id)
 	return v
 }
 
-func infobarAlertViewFactory(args ...string) wicore.View {
+func infobarAlertViewFactory(e wicore.EventRegistry, args ...string) wicore.View {
 	out := "Alert: " + args[0]
 	l := utf8.RuneCountInString(out)
-	v := makeStaticDisabledView(out, l, 1)
+	v := makeStaticDisabledView(e, out, l, 1)
 	v.onAttach = func(v *view, w wicore.Window) {
 		go func() {
 			// Dismiss after 5 seconds.

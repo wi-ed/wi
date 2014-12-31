@@ -22,7 +22,7 @@ type eventDocumentCreated struct {
 
 type eventDocumentCursorMoved struct {
 	id       wicore.EventID
-	callback func(a wicore.Document) bool
+	callback func(a wicore.Document, b int, c int) bool
 }
 
 type eventTerminalKeyPressed struct {
@@ -213,7 +213,7 @@ func (er *eventRegistry) onDocumentCreated(a wicore.Document) {
 	}
 }
 
-func (er *eventRegistry) RegisterDocumentCursorMoved(callback func(a wicore.Document) bool) wicore.EventID {
+func (er *eventRegistry) RegisterDocumentCursorMoved(callback func(a wicore.Document, b int, c int) bool) wicore.EventID {
 	er.lock.Lock()
 	defer er.lock.Unlock()
 	i := er.nextID
@@ -222,19 +222,19 @@ func (er *eventRegistry) RegisterDocumentCursorMoved(callback func(a wicore.Docu
 	return i | wicore.EventID(0x3000000)
 }
 
-func (er *eventRegistry) onDocumentCursorMoved(a wicore.Document) {
+func (er *eventRegistry) onDocumentCursorMoved(a wicore.Document, b int, c int) {
 	er.deferred <- func() {
-		items := func() []func(a wicore.Document) bool {
+		items := func() []func(a wicore.Document, b int, c int) bool {
 			er.lock.Lock()
 			defer er.lock.Unlock()
-			items := make([]func(a wicore.Document) bool, 0, len(er.documentCursorMoved))
+			items := make([]func(a wicore.Document, b int, c int) bool, 0, len(er.documentCursorMoved))
 			for _, item := range er.documentCursorMoved {
 				items = append(items, item.callback)
 			}
 			return items
 		}()
 		for _, item := range items {
-			if !item(a) {
+			if !item(a, b, c) {
 				break
 			}
 		}

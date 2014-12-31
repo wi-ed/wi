@@ -537,7 +537,7 @@ func cmdWindowNew(c *privilegedCommandImpl, e *editor, w *window, args ...string
 		}
 		return
 	}
-	view := viewFactory(args[3:]...)
+	view := viewFactory(e, args[3:]...)
 
 	child := makeWindow(parent, view, docking)
 	if docking == wicore.DockingFloating {
