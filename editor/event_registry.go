@@ -10,69 +10,135 @@ import (
 	"github.com/maruel/wi/wicore"
 )
 
+type eventDocumentCreated struct {
+	id       wicore.EventID
+	callback func(a wicore.Document)
+}
+
+type eventDocumentCursorMoved struct {
+	id       wicore.EventID
+	callback func(a wicore.Document)
+}
+
+type eventTerminalKeyPressed struct {
+	id       wicore.EventID
+	callback func(a key.Press)
+}
+
+type eventTerminalResized struct {
+	id       wicore.EventID
+	callback func()
+}
+
+type eventViewCreated struct {
+	id       wicore.EventID
+	callback func(a wicore.View)
+}
+
+type eventWindowCreated struct {
+	id       wicore.EventID
+	callback func(a wicore.Window)
+}
+
+type eventWindowResized struct {
+	id       wicore.EventID
+	callback func(a wicore.Window)
+}
+
 type eventRegistry struct {
 	lock   sync.Mutex
 	nextID wicore.EventID
 
-	documentCreated     map[wicore.EventID]func(a wicore.Document)
-	documentCursorMoved map[wicore.EventID]func(a wicore.Document)
-	terminalKeyPressed  map[wicore.EventID]func(a key.Press)
-	terminalResized     map[wicore.EventID]func()
-	viewCreated         map[wicore.EventID]func(a wicore.View)
-	windowCreated       map[wicore.EventID]func(a wicore.Window)
-	windowResized       map[wicore.EventID]func(a wicore.Window)
+	documentCreated     []eventDocumentCreated
+	documentCursorMoved []eventDocumentCursorMoved
+	terminalKeyPressed  []eventTerminalKeyPressed
+	terminalResized     []eventTerminalResized
+	viewCreated         []eventViewCreated
+	windowCreated       []eventWindowCreated
+	windowResized       []eventWindowResized
 }
 
-func (e *eventRegistry) Unregister(eventID wicore.EventID) error {
-	e.lock.Lock()
-	defer e.lock.Unlock()
-	if _, ok := e.documentCreated[eventID]; ok {
-		delete(e.documentCreated, eventID)
-		return nil
+func (er *eventRegistry) Unregister(eventID wicore.EventID) error {
+	er.lock.Lock()
+	defer er.lock.Unlock()
+	for index, value := range er.documentCreated {
+		if value.id == eventID {
+			copy(er.documentCreated[index:], er.documentCreated[index+1:])
+			// TODO(maruel): It's a memory leak.
+			er.documentCreated = er.documentCreated[0 : len(er.documentCreated)-1]
+			return nil
+		}
 	}
-	if _, ok := e.documentCursorMoved[eventID]; ok {
-		delete(e.documentCursorMoved, eventID)
-		return nil
+	for index, value := range er.documentCursorMoved {
+		if value.id == eventID {
+			copy(er.documentCursorMoved[index:], er.documentCursorMoved[index+1:])
+			// TODO(maruel): It's a memory leak.
+			er.documentCursorMoved = er.documentCursorMoved[0 : len(er.documentCursorMoved)-1]
+			return nil
+		}
 	}
-	if _, ok := e.terminalKeyPressed[eventID]; ok {
-		delete(e.terminalKeyPressed, eventID)
-		return nil
+	for index, value := range er.terminalKeyPressed {
+		if value.id == eventID {
+			copy(er.terminalKeyPressed[index:], er.terminalKeyPressed[index+1:])
+			// TODO(maruel): It's a memory leak.
+			er.terminalKeyPressed = er.terminalKeyPressed[0 : len(er.terminalKeyPressed)-1]
+			return nil
+		}
 	}
-	if _, ok := e.terminalResized[eventID]; ok {
-		delete(e.terminalResized, eventID)
-		return nil
+	for index, value := range er.terminalResized {
+		if value.id == eventID {
+			copy(er.terminalResized[index:], er.terminalResized[index+1:])
+			// TODO(maruel): It's a memory leak.
+			er.terminalResized = er.terminalResized[0 : len(er.terminalResized)-1]
+			return nil
+		}
 	}
-	if _, ok := e.viewCreated[eventID]; ok {
-		delete(e.viewCreated, eventID)
-		return nil
+	for index, value := range er.viewCreated {
+		if value.id == eventID {
+			copy(er.viewCreated[index:], er.viewCreated[index+1:])
+			// TODO(maruel): It's a memory leak.
+			er.viewCreated = er.viewCreated[0 : len(er.viewCreated)-1]
+			return nil
+		}
 	}
-	if _, ok := e.windowCreated[eventID]; ok {
-		delete(e.windowCreated, eventID)
-		return nil
+	for index, value := range er.windowCreated {
+		if value.id == eventID {
+			copy(er.windowCreated[index:], er.windowCreated[index+1:])
+			// TODO(maruel): It's a memory leak.
+			er.windowCreated = er.windowCreated[0 : len(er.windowCreated)-1]
+			return nil
+		}
 	}
-	if _, ok := e.windowResized[eventID]; ok {
-		delete(e.windowResized, eventID)
-		return nil
+	for index, value := range er.windowResized {
+		if value.id == eventID {
+			copy(er.windowResized[index:], er.windowResized[index+1:])
+			// TODO(maruel): It's a memory leak.
+			er.windowResized = er.windowResized[0 : len(er.windowResized)-1]
+			return nil
+		}
 	}
 	return errors.New("trying to unregister an non existing event listener")
 }
 
-func (e *eventRegistry) RegisterDocumentCreated(callback func(a wicore.Document)) wicore.EventID {
-	e.lock.Lock()
-	defer e.lock.Unlock()
-	i := e.nextID
-	e.nextID++
-	e.documentCreated[i] = callback
+func (er *eventRegistry) RegisterDocumentCreated(callback func(a wicore.Document)) wicore.EventID {
+	er.lock.Lock()
+	defer er.lock.Unlock()
+	i := er.nextID
+	er.nextID++
+	if er.documentCreated == nil {
+		er.documentCreated = make([]eventDocumentCreated, 0, 10)
+	}
+	er.documentCreated = append(er.documentCreated, eventDocumentCreated{i, callback})
 	return i
 }
 
-func (e *eventRegistry) onDocumentCreated(a wicore.Document) {
+func (er *eventRegistry) onDocumentCreated(a wicore.Document) {
 	items := func() []func(a wicore.Document) {
-		e.lock.Lock()
-		defer e.lock.Unlock()
-		items := make([]func(a wicore.Document), 0, len(e.documentCreated))
-		for _, c := range e.documentCreated {
-			items = append(items, c)
+		er.lock.Lock()
+		defer er.lock.Unlock()
+		items := make([]func(a wicore.Document), 0, len(er.documentCreated))
+		for _, item := range er.documentCreated {
+			items = append(items, item.callback)
 		}
 		return items
 	}()
@@ -81,22 +147,25 @@ func (e *eventRegistry) onDocumentCreated(a wicore.Document) {
 	}
 }
 
-func (e *eventRegistry) RegisterDocumentCursorMoved(callback func(a wicore.Document)) wicore.EventID {
-	e.lock.Lock()
-	defer e.lock.Unlock()
-	i := e.nextID
-	e.nextID++
-	e.documentCursorMoved[i] = callback
+func (er *eventRegistry) RegisterDocumentCursorMoved(callback func(a wicore.Document)) wicore.EventID {
+	er.lock.Lock()
+	defer er.lock.Unlock()
+	i := er.nextID
+	er.nextID++
+	if er.documentCursorMoved == nil {
+		er.documentCursorMoved = make([]eventDocumentCursorMoved, 0, 10)
+	}
+	er.documentCursorMoved = append(er.documentCursorMoved, eventDocumentCursorMoved{i, callback})
 	return i
 }
 
-func (e *eventRegistry) onDocumentCursorMoved(a wicore.Document) {
+func (er *eventRegistry) onDocumentCursorMoved(a wicore.Document) {
 	items := func() []func(a wicore.Document) {
-		e.lock.Lock()
-		defer e.lock.Unlock()
-		items := make([]func(a wicore.Document), 0, len(e.documentCursorMoved))
-		for _, c := range e.documentCursorMoved {
-			items = append(items, c)
+		er.lock.Lock()
+		defer er.lock.Unlock()
+		items := make([]func(a wicore.Document), 0, len(er.documentCursorMoved))
+		for _, item := range er.documentCursorMoved {
+			items = append(items, item.callback)
 		}
 		return items
 	}()
@@ -105,22 +174,25 @@ func (e *eventRegistry) onDocumentCursorMoved(a wicore.Document) {
 	}
 }
 
-func (e *eventRegistry) RegisterTerminalKeyPressed(callback func(a key.Press)) wicore.EventID {
-	e.lock.Lock()
-	defer e.lock.Unlock()
-	i := e.nextID
-	e.nextID++
-	e.terminalKeyPressed[i] = callback
+func (er *eventRegistry) RegisterTerminalKeyPressed(callback func(a key.Press)) wicore.EventID {
+	er.lock.Lock()
+	defer er.lock.Unlock()
+	i := er.nextID
+	er.nextID++
+	if er.terminalKeyPressed == nil {
+		er.terminalKeyPressed = make([]eventTerminalKeyPressed, 0, 10)
+	}
+	er.terminalKeyPressed = append(er.terminalKeyPressed, eventTerminalKeyPressed{i, callback})
 	return i
 }
 
-func (e *eventRegistry) onTerminalKeyPressed(a key.Press) {
+func (er *eventRegistry) onTerminalKeyPressed(a key.Press) {
 	items := func() []func(a key.Press) {
-		e.lock.Lock()
-		defer e.lock.Unlock()
-		items := make([]func(a key.Press), 0, len(e.terminalKeyPressed))
-		for _, c := range e.terminalKeyPressed {
-			items = append(items, c)
+		er.lock.Lock()
+		defer er.lock.Unlock()
+		items := make([]func(a key.Press), 0, len(er.terminalKeyPressed))
+		for _, item := range er.terminalKeyPressed {
+			items = append(items, item.callback)
 		}
 		return items
 	}()
@@ -129,22 +201,25 @@ func (e *eventRegistry) onTerminalKeyPressed(a key.Press) {
 	}
 }
 
-func (e *eventRegistry) RegisterTerminalResized(callback func()) wicore.EventID {
-	e.lock.Lock()
-	defer e.lock.Unlock()
-	i := e.nextID
-	e.nextID++
-	e.terminalResized[i] = callback
+func (er *eventRegistry) RegisterTerminalResized(callback func()) wicore.EventID {
+	er.lock.Lock()
+	defer er.lock.Unlock()
+	i := er.nextID
+	er.nextID++
+	if er.terminalResized == nil {
+		er.terminalResized = make([]eventTerminalResized, 0, 10)
+	}
+	er.terminalResized = append(er.terminalResized, eventTerminalResized{i, callback})
 	return i
 }
 
-func (e *eventRegistry) onTerminalResized() {
+func (er *eventRegistry) onTerminalResized() {
 	items := func() []func() {
-		e.lock.Lock()
-		defer e.lock.Unlock()
-		items := make([]func(), 0, len(e.terminalResized))
-		for _, c := range e.terminalResized {
-			items = append(items, c)
+		er.lock.Lock()
+		defer er.lock.Unlock()
+		items := make([]func(), 0, len(er.terminalResized))
+		for _, item := range er.terminalResized {
+			items = append(items, item.callback)
 		}
 		return items
 	}()
@@ -153,22 +228,25 @@ func (e *eventRegistry) onTerminalResized() {
 	}
 }
 
-func (e *eventRegistry) RegisterViewCreated(callback func(a wicore.View)) wicore.EventID {
-	e.lock.Lock()
-	defer e.lock.Unlock()
-	i := e.nextID
-	e.nextID++
-	e.viewCreated[i] = callback
+func (er *eventRegistry) RegisterViewCreated(callback func(a wicore.View)) wicore.EventID {
+	er.lock.Lock()
+	defer er.lock.Unlock()
+	i := er.nextID
+	er.nextID++
+	if er.viewCreated == nil {
+		er.viewCreated = make([]eventViewCreated, 0, 10)
+	}
+	er.viewCreated = append(er.viewCreated, eventViewCreated{i, callback})
 	return i
 }
 
-func (e *eventRegistry) onViewCreated(a wicore.View) {
+func (er *eventRegistry) onViewCreated(a wicore.View) {
 	items := func() []func(a wicore.View) {
-		e.lock.Lock()
-		defer e.lock.Unlock()
-		items := make([]func(a wicore.View), 0, len(e.viewCreated))
-		for _, c := range e.viewCreated {
-			items = append(items, c)
+		er.lock.Lock()
+		defer er.lock.Unlock()
+		items := make([]func(a wicore.View), 0, len(er.viewCreated))
+		for _, item := range er.viewCreated {
+			items = append(items, item.callback)
 		}
 		return items
 	}()
@@ -177,22 +255,25 @@ func (e *eventRegistry) onViewCreated(a wicore.View) {
 	}
 }
 
-func (e *eventRegistry) RegisterWindowCreated(callback func(a wicore.Window)) wicore.EventID {
-	e.lock.Lock()
-	defer e.lock.Unlock()
-	i := e.nextID
-	e.nextID++
-	e.windowCreated[i] = callback
+func (er *eventRegistry) RegisterWindowCreated(callback func(a wicore.Window)) wicore.EventID {
+	er.lock.Lock()
+	defer er.lock.Unlock()
+	i := er.nextID
+	er.nextID++
+	if er.windowCreated == nil {
+		er.windowCreated = make([]eventWindowCreated, 0, 10)
+	}
+	er.windowCreated = append(er.windowCreated, eventWindowCreated{i, callback})
 	return i
 }
 
-func (e *eventRegistry) onWindowCreated(a wicore.Window) {
+func (er *eventRegistry) onWindowCreated(a wicore.Window) {
 	items := func() []func(a wicore.Window) {
-		e.lock.Lock()
-		defer e.lock.Unlock()
-		items := make([]func(a wicore.Window), 0, len(e.windowCreated))
-		for _, c := range e.windowCreated {
-			items = append(items, c)
+		er.lock.Lock()
+		defer er.lock.Unlock()
+		items := make([]func(a wicore.Window), 0, len(er.windowCreated))
+		for _, item := range er.windowCreated {
+			items = append(items, item.callback)
 		}
 		return items
 	}()
@@ -201,22 +282,25 @@ func (e *eventRegistry) onWindowCreated(a wicore.Window) {
 	}
 }
 
-func (e *eventRegistry) RegisterWindowResized(callback func(a wicore.Window)) wicore.EventID {
-	e.lock.Lock()
-	defer e.lock.Unlock()
-	i := e.nextID
-	e.nextID++
-	e.windowResized[i] = callback
+func (er *eventRegistry) RegisterWindowResized(callback func(a wicore.Window)) wicore.EventID {
+	er.lock.Lock()
+	defer er.lock.Unlock()
+	i := er.nextID
+	er.nextID++
+	if er.windowResized == nil {
+		er.windowResized = make([]eventWindowResized, 0, 10)
+	}
+	er.windowResized = append(er.windowResized, eventWindowResized{i, callback})
 	return i
 }
 
-func (e *eventRegistry) onWindowResized(a wicore.Window) {
+func (er *eventRegistry) onWindowResized(a wicore.Window) {
 	items := func() []func(a wicore.Window) {
-		e.lock.Lock()
-		defer e.lock.Unlock()
-		items := make([]func(a wicore.Window), 0, len(e.windowResized))
-		for _, c := range e.windowResized {
-			items = append(items, c)
+		er.lock.Lock()
+		defer er.lock.Unlock()
+		items := make([]func(a wicore.Window), 0, len(er.windowResized))
+		for _, item := range er.windowResized {
+			items = append(items, item.callback)
 		}
 		return items
 	}()

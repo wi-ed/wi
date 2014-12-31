@@ -41,41 +41,52 @@ import (
   "github.com/maruel/wi/pkg/key"
   "github.com/maruel/wi/wicore"
 )
-
+{{range .Events}}
+type event{{.Name}} struct{
+	id wicore.EventID
+	callback func({{.Args}})
+}
+{{end}}
 type eventRegistry struct {
   lock   sync.Mutex
   nextID wicore.EventID
-
 {{range .Events}}
-	{{.Lower}} map[wicore.EventID]func({{.Args}}){{end}}
+	{{.Lower}} []event{{.Name}}{{end}}
 }
 
-func (e *eventRegistry) Unregister(eventID wicore.EventID) error {
-  e.lock.Lock()
-  defer e.lock.Unlock(){{range .Events}}
-  if _, ok := e.{{.Lower}}[eventID]; ok {
-    delete(e.{{.Lower}}, eventID)
-    return nil
+func (er *eventRegistry) Unregister(eventID wicore.EventID) error {
+  er.lock.Lock()
+  defer er.lock.Unlock(){{range .Events}}
+	for index, value := range er.{{.Lower}} {
+		if value.id == eventID {
+			copy(er.{{.Lower}}[index:], er.{{.Lower}}[index+1:])
+			// TODO(maruel): It's a memory leak.
+			er.{{.Lower}} = er.{{.Lower}}[0 : len(er.{{.Lower}})-1]
+			return nil
+		}
   }{{end}}
 	return errors.New("trying to unregister an non existing event listener")
 }{{range .Events}}
 
-func (e *eventRegistry) Register{{.Name}}(callback func({{.Args}})) wicore.EventID {
-  e.lock.Lock()
-  defer e.lock.Unlock()
-  i := e.nextID
-  e.nextID++
-  e.{{.Lower}}[i] = callback
+func (er *eventRegistry) Register{{.Name}}(callback func({{.Args}})) wicore.EventID {
+  er.lock.Lock()
+  defer er.lock.Unlock()
+  i := er.nextID
+  er.nextID++
+	if er.{{.Lower}} == nil {
+		er.{{.Lower}} = make([]event{{.Name}}, 0, 10)
+	}
+  er.{{.Lower}} = append(er.{{.Lower}}, event{{.Name}}{i, callback})
   return i
 }
 
-func (e *eventRegistry) on{{.Name}}({{.Args}}) {
+func (er *eventRegistry) on{{.Name}}({{.Args}}) {
   items := func() []func({{.Args}}) {
-    e.lock.Lock()
-    defer e.lock.Unlock()
-    items := make([]func({{.Args}}), 0, len(e.{{.Lower}}))
-    for _, c := range e.{{.Lower}} {
-      items = append(items, c)
+    er.lock.Lock()
+    defer er.lock.Unlock()
+    items := make([]func({{.Args}}), 0, len(er.{{.Lower}}))
+    for _, item := range er.{{.Lower}} {
+      items = append(items, item.callback)
     }
     return items
   }()
@@ -144,7 +155,6 @@ func mainImpl() int {
 	}
 	src, err = formatSource(src)
 	err2 := ioutil.WriteFile("event_registry.go", src, 0644)
-	//_, err2 := os.Stdout.Write(src)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%s\n", err)
 		return 1
