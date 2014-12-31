@@ -2,6 +2,10 @@
 // Use of this source code is governed under the Apache License, Version 2.0
 // that can be found in the LICENSE file.
 
+// This command generates the struct eventRegistry based on
+// wicore.EventRegistry.
+//go:generate go run ../tools/wi-event-generator/main.go
+
 package editor
 
 import (
