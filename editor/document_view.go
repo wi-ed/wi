@@ -59,7 +59,7 @@ func cmdDocumentCursorLeft(c *wicore.CommandImpl, cd wicore.CommandDispatcherFul
 			// TODO(maruel): Beep.
 		}
 	}
-	// TODO(maruel): Err, need to implement: cd.onDocumentCursorMoved(d)
+	cd.TriggerDocumentCursorMoved(d.document, d.cursorColumn, d.cursorLine)
 }
 
 func documentViewFactory(e wicore.EventRegistry, args ...string) wicore.View {
@@ -86,7 +86,7 @@ func documentViewFactory(e wicore.EventRegistry, args ...string) wicore.View {
 	bindings.Set(wicore.AllMode, key.Press{Key: key.Left}, "document_cursor_left")
 
 	// TODO(maruel): Sort out "use max space".
-	return &documentView{
+	d := &documentView{
 		view: view{
 			commands:      dispatcher,
 			keyBindings:   bindings,
@@ -97,4 +97,6 @@ func documentViewFactory(e wicore.EventRegistry, args ...string) wicore.View {
 		},
 		document: makeDocument(),
 	}
+	e.TriggerDocumentCursorMoved(d.document, d.cursorColumn, d.cursorLine)
+	return d
 }
