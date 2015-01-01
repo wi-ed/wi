@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/maruel/wi/pkg/lang"
 	"github.com/maruel/wi/wicore"
 )
 
@@ -35,7 +36,7 @@ type window struct {
 	id              int // window ID relative to the parent.
 	lastChildID     int // last ID used for a children window.
 	parent          *window
-	cd              wicore.CommandDispatcherFull
+	e               wicore.Editor
 	childrenWindows []*window
 	windowBuffer    *wicore.Buffer // includes the border
 	rect            wicore.Rect    // Window Rect as described in wicore.Window.Rect().
@@ -294,7 +295,7 @@ func (w *window) resizeChildren() {
 		w.viewRect = remaining
 		w.view.SetSize(w.viewRect.Width, w.viewRect.Height)
 	}
-	wicore.PostCommand(w.cd, nil, "editor_redraw")
+	wicore.PostCommand(w.e, nil, "editor_redraw")
 }
 
 func (w *window) buffer() *wicore.Buffer {
@@ -403,10 +404,10 @@ func (w *window) cell(r rune) wicore.Cell {
 
 func makeWindow(parent *window, view wicore.View, docking wicore.DockingType) *window {
 	log.Printf("makeWindow(%s, %s, %s)", parent, view.Title(), docking)
-	var cd wicore.CommandDispatcherFull
+	var e wicore.Editor
 	id := 0
 	if parent != nil {
-		cd = parent.cd
+		e = parent.e
 		parent.lastChildID++
 		id = parent.lastChildID
 	}
@@ -418,7 +419,7 @@ func makeWindow(parent *window, view wicore.View, docking wicore.DockingType) *w
 	return &window{
 		id:      id,
 		parent:  parent,
-		cd:      cd,
+		e:       e,
 		view:    view,
 		docking: docking,
 		border:  border,
@@ -465,7 +466,7 @@ func cmdWindowActivate(c *privilegedCommandImpl, e *editor, w *window, args ...s
 
 	child := e.idToWindow(windowName)
 	if child == nil {
-		e.ExecuteCommand(w, "alert", fmt.Sprintf(wicore.GetStr(e.CurrentLanguage(), isNotValidWindow), windowName))
+		e.ExecuteCommand(w, "alert", fmt.Sprintf(isNotValidWindow.Get(e.CurrentLanguage()), windowName))
 		return
 	}
 	e.activateWindow(child)
@@ -476,7 +477,7 @@ func cmdWindowClose(c *privilegedCommandImpl, e *editor, w *window, args ...stri
 
 	child := e.idToWindow(windowName)
 	if child == nil {
-		e.ExecuteCommand(w, "alert", fmt.Sprintf(wicore.GetStr(e.CurrentLanguage(), isNotValidWindow), windowName))
+		e.ExecuteCommand(w, "alert", fmt.Sprintf(isNotValidWindow.Get(e.CurrentLanguage()), windowName))
 		return
 	}
 	for i, v := range child.parent.childrenWindows {
@@ -499,7 +500,7 @@ func cmdWindowNew(c *privilegedCommandImpl, e *editor, w *window, args ...string
 	parent := e.idToWindow(windowName)
 	if parent == nil {
 		if viewFactoryName != "infobar_alert" {
-			e.ExecuteCommand(w, "alert", fmt.Sprintf(wicore.GetStr(e.CurrentLanguage(), isNotValidWindow), windowName))
+			e.ExecuteCommand(w, "alert", fmt.Sprintf(isNotValidWindow.Get(e.CurrentLanguage()), windowName))
 		}
 		return
 	}
@@ -507,7 +508,7 @@ func cmdWindowNew(c *privilegedCommandImpl, e *editor, w *window, args ...string
 	docking := wicore.StringToDockingType(dockingName)
 	if docking == wicore.DockingUnknown {
 		if viewFactoryName != "infobar_alert" {
-			e.ExecuteCommand(w, "alert", fmt.Sprintf(wicore.GetStr(e.CurrentLanguage(), invalidDocking), dockingName))
+			e.ExecuteCommand(w, "alert", fmt.Sprintf(invalidDocking.Get(e.CurrentLanguage()), dockingName))
 		}
 		return
 	}
@@ -519,7 +520,7 @@ func cmdWindowNew(c *privilegedCommandImpl, e *editor, w *window, args ...string
 	for _, child := range parent.childrenWindows {
 		if child.Docking() == docking {
 			if viewFactoryName != "infobar_alert" {
-				e.ExecuteCommand(w, "alert", fmt.Sprintf(wicore.GetStr(e.CurrentLanguage(), cantAddTwoWindowWithSameDocking), docking))
+				e.ExecuteCommand(w, "alert", fmt.Sprintf(cantAddTwoWindowWithSameDocking.Get(e.CurrentLanguage()), docking))
 			}
 			return
 		}
@@ -529,7 +530,7 @@ func cmdWindowNew(c *privilegedCommandImpl, e *editor, w *window, args ...string
 	viewFactory, ok := e.viewFactories[viewFactoryName]
 	if !ok {
 		if viewFactoryName != "infobar_alert" {
-			e.ExecuteCommand(w, "alert", fmt.Sprintf(wicore.GetStr(e.CurrentLanguage(), invalidViewFactory), viewFactoryName))
+			e.ExecuteCommand(w, "alert", fmt.Sprintf(invalidViewFactory.Get(e.CurrentLanguage()), viewFactoryName))
 		}
 		return
 	}
@@ -563,19 +564,19 @@ func cmdWindowSetDocking(c *privilegedCommandImpl, e *editor, w *window, args ..
 
 	child := e.idToWindow(windowName)
 	if child == nil {
-		e.ExecuteCommand(w, "alert", fmt.Sprintf(wicore.GetStr(e.CurrentLanguage(), isNotValidWindow), windowName))
+		e.ExecuteCommand(w, "alert", fmt.Sprintf(isNotValidWindow.Get(e.CurrentLanguage()), windowName))
 		return
 	}
 	docking := wicore.StringToDockingType(dockingName)
 	if docking == wicore.DockingUnknown {
-		e.ExecuteCommand(w, "alert", fmt.Sprintf(wicore.GetStr(e.CurrentLanguage(), invalidDocking), dockingName))
+		e.ExecuteCommand(w, "alert", fmt.Sprintf(invalidDocking.Get(e.CurrentLanguage()), dockingName))
 		return
 	}
 	if w.docking != docking {
 		// TODO(maruel): Check no other parent's child window have the same dock.
 		w.docking = docking
 		w.parent.resizeChildren()
-		wicore.PostCommand(w.cd, nil, "editor_redraw")
+		wicore.PostCommand(w.e, nil, "editor_redraw")
 	}
 }
 
@@ -584,7 +585,7 @@ func cmdWindowSetRect(c *privilegedCommandImpl, e *editor, w *window, args ...st
 
 	child := e.idToWindow(windowName)
 	if child == nil {
-		e.ExecuteCommand(w, "alert", fmt.Sprintf(wicore.GetStr(e.CurrentLanguage(), isNotValidWindow), windowName))
+		e.ExecuteCommand(w, "alert", fmt.Sprintf(isNotValidWindow.Get(e.CurrentLanguage()), windowName))
 		return
 	}
 	r := wicore.Rect{}
@@ -594,7 +595,7 @@ func cmdWindowSetRect(c *privilegedCommandImpl, e *editor, w *window, args ...st
 	r.Width, err3 = strconv.Atoi(args[3])
 	r.Height, err4 = strconv.Atoi(args[4])
 	if err1 != nil || err2 != nil || err3 != nil || err4 != nil {
-		e.ExecuteCommand(w, "alert", fmt.Sprintf(wicore.GetStr(e.CurrentLanguage(), invalidRect), args[1], args[2], args[3], args[4]))
+		e.ExecuteCommand(w, "alert", fmt.Sprintf(invalidRect.Get(e.CurrentLanguage()), args[1], args[2], args[3], args[4]))
 		return
 	}
 	child.setRect(r)
@@ -609,11 +610,11 @@ func RegisterWindowCommands(dispatcher wicore.Commands) {
 			1,
 			cmdWindowActivate,
 			wicore.WindowCategory,
-			wicore.LangMap{
-				wicore.LangEn: "Activate a window",
+			lang.Map{
+				lang.En: "Activate a window",
 			},
-			wicore.LangMap{
-				wicore.LangEn: "Active a window. This means the Window will have keyboard focus.",
+			lang.Map{
+				lang.En: "Active a window. This means the Window will have keyboard focus.",
 			},
 		},
 		&privilegedCommandImpl{
@@ -621,11 +622,11 @@ func RegisterWindowCommands(dispatcher wicore.Commands) {
 			1,
 			cmdWindowClose,
 			wicore.WindowCategory,
-			wicore.LangMap{
-				wicore.LangEn: "Closes a window",
+			lang.Map{
+				lang.En: "Closes a window",
 			},
-			wicore.LangMap{
-				wicore.LangEn: "Closes a window. Note that any window can be closed and all the child window will be destroyed at the same time.",
+			lang.Map{
+				lang.En: "Closes a window. Note that any window can be closed and all the child window will be destroyed at the same time.",
 			},
 		},
 		&privilegedCommandImpl{
@@ -633,11 +634,11 @@ func RegisterWindowCommands(dispatcher wicore.Commands) {
 			-1,
 			cmdWindowNew,
 			wicore.WindowCategory,
-			wicore.LangMap{
-				wicore.LangEn: "Creates a new window",
+			lang.Map{
+				lang.En: "Creates a new window",
 			},
-			wicore.LangMap{
-				wicore.LangEn: "Usage: window_new <parent> <docking> <view name> <view args...>\nCreates a new window. The new window is created as a child to the specified parent. It creates inside the window the view specified. The Window is activated. It is invalid to add a child Window with the same docking as one already present.",
+			lang.Map{
+				lang.En: "Usage: window_new <parent> <docking> <view name> <view args...>\nCreates a new window. The new window is created as a child to the specified parent. It creates inside the window the view specified. The Window is activated. It is invalid to add a child Window with the same docking as one already present.",
 			},
 		},
 		&privilegedCommandImpl{
@@ -645,11 +646,11 @@ func RegisterWindowCommands(dispatcher wicore.Commands) {
 			2,
 			cmdWindowSetDocking,
 			wicore.WindowCategory,
-			wicore.LangMap{
-				wicore.LangEn: "Change the docking of a window",
+			lang.Map{
+				lang.En: "Change the docking of a window",
 			},
-			wicore.LangMap{
-				wicore.LangEn: "Changes the docking of this Window relative to the parent window. This will forces an invalidation and a redraw.",
+			lang.Map{
+				lang.En: "Changes the docking of this Window relative to the parent window. This will forces an invalidation and a redraw.",
 			},
 		},
 		&privilegedCommandImpl{
@@ -657,11 +658,11 @@ func RegisterWindowCommands(dispatcher wicore.Commands) {
 			5,
 			cmdWindowSetRect,
 			wicore.WindowCategory,
-			wicore.LangMap{
-				wicore.LangEn: "Move a window",
+			lang.Map{
+				lang.En: "Move a window",
 			},
-			wicore.LangMap{
-				wicore.LangEn: "Usage: window_set_rect <window> <x> <y> <w> <h>\nMoves a Window relative to the parent window, unless it is floating, where it is relative to the view port.",
+			lang.Map{
+				lang.En: "Usage: window_set_rect <window> <x> <y> <w> <h>\nMoves a Window relative to the parent window, unless it is floating, where it is relative to the view port.",
 			},
 		},
 	}

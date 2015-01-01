@@ -4,12 +4,16 @@
 
 package wicore
 
+import (
+	"github.com/maruel/wi/pkg/lang"
+)
+
 // AliasFor describes that a command is an alias.
-var AliasFor = LangMap{
-	LangEn: "Alias for \"%s\".",
+var AliasFor = lang.Map{
+	lang.En: "Alias for \"%s\".",
 }
 
 // AliasNotFound describes an alias to another command did not resolve.
-var AliasNotFound = LangMap{
-	LangEn: "\"%s\" is an alias to command \"%s\" but this command is not registered.",
+var AliasNotFound = lang.Map{
+	lang.En: "\"%s\" is an alias to command \"%s\" but this command is not registered.",
 }

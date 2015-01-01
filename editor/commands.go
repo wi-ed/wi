@@ -4,7 +4,10 @@
 
 package editor
 
-import "github.com/maruel/wi/wicore"
+import (
+	"github.com/maruel/wi/pkg/lang"
+	"github.com/maruel/wi/wicore"
+)
 
 // commands is the map of registered commands.
 type commands struct {
@@ -42,45 +45,45 @@ type privilegedCommandImpl struct {
 	ExpectedArgs   int // If >= 0, the command will be aborted if the number of arguments is not exactly this value. Set to -1 to disable verification. On abort, an alert with the long description of the command is done.
 	HandlerValue   privilegedCommandImplHandler
 	CategoryValue  wicore.CommandCategory
-	ShortDescValue wicore.LangMap
-	LongDescValue  wicore.LangMap
+	ShortDescValue lang.Map
+	LongDescValue  lang.Map
 }
 
 func (c *privilegedCommandImpl) Name() string {
 	return c.NameValue
 }
 
-func (c *privilegedCommandImpl) Handle(cd wicore.CommandDispatcherFull, w wicore.Window, args ...string) {
+func (c *privilegedCommandImpl) Handle(e wicore.Editor, w wicore.Window, args ...string) {
 	if c.ExpectedArgs != -1 && len(args) != c.ExpectedArgs {
-		cd.ExecuteCommand(w, "alert", c.LongDesc(cd, w))
+		e.ExecuteCommand(w, "alert", c.LongDesc(e, w))
 	}
 	// Convert types to internal types.
-	e := cd.(*editor)
+	ed := e.(*editor)
 	wInternal := w.(*window)
-	c.HandlerValue(c, e, wInternal, args...)
+	c.HandlerValue(c, ed, wInternal, args...)
 }
 
-func (c *privilegedCommandImpl) Category(cd wicore.CommandDispatcherFull, w wicore.Window) wicore.CommandCategory {
+func (c *privilegedCommandImpl) Category(e wicore.Editor, w wicore.Window) wicore.CommandCategory {
 	return c.CategoryValue
 }
 
-func (c *privilegedCommandImpl) ShortDesc(cd wicore.CommandDispatcherFull, w wicore.Window) string {
-	return wicore.GetStr(cd.CurrentLanguage(), c.ShortDescValue)
+func (c *privilegedCommandImpl) ShortDesc(e wicore.Editor, w wicore.Window) string {
+	return c.ShortDescValue.Get(e.CurrentLanguage())
 }
 
-func (c *privilegedCommandImpl) LongDesc(cd wicore.CommandDispatcherFull, w wicore.Window) string {
-	return wicore.GetStr(cd.CurrentLanguage(), c.LongDescValue)
+func (c *privilegedCommandImpl) LongDesc(e wicore.Editor, w wicore.Window) string {
+	return c.LongDescValue.Get(e.CurrentLanguage())
 }
 
 // Commands
 
-func cmdCommandAlias(c *wicore.CommandImpl, cd wicore.CommandDispatcherFull, w wicore.Window, args ...string) {
+func cmdCommandAlias(c *wicore.CommandImpl, e wicore.Editor, w wicore.Window, args ...string) {
 	if args[0] == "window" {
 	} else if args[0] == "global" {
 		w = wicore.RootWindow(w)
 	} else {
-		cmd := wicore.GetCommand(cd, w, "command_alias")
-		cd.ExecuteCommand(w, "alert", cmd.LongDesc(cd, w))
+		cmd := wicore.GetCommand(e, w, "command_alias")
+		e.ExecuteCommand(w, "alert", cmd.LongDesc(e, w))
 		return
 	}
 	alias := &wicore.CommandAlias{args[1], args[2], nil}
@@ -95,12 +98,12 @@ func RegisterCommandCommands(dispatcher wicore.Commands) {
 			3,
 			cmdCommandAlias,
 			wicore.CommandsCategory,
-			wicore.LangMap{
-				wicore.LangEn: "Binds an alias to another command",
+			lang.Map{
+				lang.En: "Binds an alias to another command",
 			},
-			wicore.LangMap{
+			lang.Map{
 				// TODO(maruel): For complex aliasing, use macro?
-				wicore.LangEn: "Usage: command_alias [window|global] <alias> <name>\nBinds an alias to another command. The alias can either be local to the window or global",
+				lang.En: "Usage: command_alias [window|global] <alias> <name>\nBinds an alias to another command. The alias can either be local to the window or global",
 			},
 		},
 

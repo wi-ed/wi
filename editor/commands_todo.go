@@ -7,10 +7,11 @@ package editor
 import (
 	"log"
 
+	"github.com/maruel/wi/pkg/lang"
 	"github.com/maruel/wi/wicore"
 )
 
-func cmdDoc(c *wicore.CommandImpl, cd wicore.CommandDispatcherFull, w wicore.Window, args ...string) {
+func cmdDoc(c *wicore.CommandImpl, cd wicore.Editor, w wicore.Window, args ...string) {
 	// TODO(maruel): Grab the current word under selection if no args is
 	// provided. Pass this token to shell.
 	docArgs := make([]string, len(args)+1)
@@ -19,12 +20,12 @@ func cmdDoc(c *wicore.CommandImpl, cd wicore.CommandDispatcherFull, w wicore.Win
 	//dispatcher.Execute(w, "shell", docArgs...)
 }
 
-func cmdHelp(c *wicore.CommandImpl, cd wicore.CommandDispatcherFull, w wicore.Window, args ...string) {
+func cmdHelp(c *wicore.CommandImpl, cd wicore.Editor, w wicore.Window, args ...string) {
 	// TODO(maruel): Creates a new Window with a ViewHelp.
 	log.Printf("Faking help: %s", args)
 }
 
-func cmdShell(c *wicore.CommandImpl, cd wicore.CommandDispatcherFull, w wicore.Window, args ...string) {
+func cmdShell(c *wicore.CommandImpl, cd wicore.Editor, w wicore.Window, args ...string) {
 	log.Printf("Faking opening a new shell: %s", args)
 }
 
@@ -39,11 +40,11 @@ func RegisterTodoCommands(dispatcher wicore.Commands) {
 			-1,
 			cmdDoc,
 			wicore.WindowCategory,
-			wicore.LangMap{
-				wicore.LangEn: "Search godoc documentation",
+			lang.Map{
+				lang.En: "Search godoc documentation",
 			},
-			wicore.LangMap{
-				wicore.LangEn: "Uses the 'doc' tool to get documentation about the text under the cursor.",
+			lang.Map{
+				lang.En: "Uses the 'doc' tool to get documentation about the text under the cursor.",
 			},
 		},
 		&wicore.CommandImpl{
@@ -51,11 +52,11 @@ func RegisterTodoCommands(dispatcher wicore.Commands) {
 			-1,
 			cmdHelp,
 			wicore.WindowCategory,
-			wicore.LangMap{
-				wicore.LangEn: "Prints help",
+			lang.Map{
+				lang.En: "Prints help",
 			},
-			wicore.LangMap{
-				wicore.LangEn: "Prints general help or help for a particular command.",
+			lang.Map{
+				lang.En: "Prints general help or help for a particular command.",
 			},
 		},
 		&wicore.CommandImpl{
@@ -63,11 +64,11 @@ func RegisterTodoCommands(dispatcher wicore.Commands) {
 			-1,
 			cmdShell,
 			wicore.WindowCategory,
-			wicore.LangMap{
-				wicore.LangEn: "Opens a shell process",
+			lang.Map{
+				lang.En: "Opens a shell process",
 			},
-			wicore.LangMap{
-				wicore.LangEn: "Opens a shell process in a new buffer.",
+			lang.Map{
+				lang.En: "Opens a shell process in a new buffer.",
 			},
 		},
 	}

@@ -32,6 +32,18 @@ func keepLog(t *testing.T) func() {
 	}
 }
 
+func compareBuffers(t *testing.T, expected *wicore.Buffer, actual *wicore.Buffer) {
+	ut.AssertEqual(t, expected.Height, actual.Height)
+	ut.AssertEqual(t, expected.Width, actual.Width)
+	// First compares lines of text, then colors.
+	for l := 0; l < expected.Height; l++ {
+		e := expected.Line(l)
+		a := actual.Line(l)
+		ut.AssertEqualIndex(t, l, string(e.Runes()), string(a.Runes()))
+		ut.AssertEqualIndex(t, l, e.Formats(), a.Formats())
+	}
+}
+
 func TestMainImmediateQuit(t *testing.T) {
 	defer keepLog(t)()
 
@@ -51,11 +63,8 @@ func TestMainImmediateQuit(t *testing.T) {
 	expected.Fill(wicore.MakeCell(' ', wicore.BrightYellow, wicore.Black))
 	expected.DrawString("Dummy content", 0, 0, wicore.CellFormat{Fg: wicore.BrightYellow, Bg: wicore.Black})
 	expected.DrawString("Really", 0, 1, wicore.CellFormat{Fg: wicore.BrightYellow, Bg: wicore.Black})
-	expected.DrawString("Status Name    Status Mode                                       0,0            ", 0, 24, wicore.CellFormat{Fg: wicore.Red, Bg: wicore.LightGray})
-	ut.AssertEqual(t, len(expected.Cells), len(terminal.Buffer.Cells))
-	for i := 0; i < len(expected.Cells); i++ {
-		ut.AssertEqualIndex(t, i, expected.Cells[i], terminal.Buffer.Cells[i])
-	}
+	expected.DrawString("Status Name    EditMode                                          0,0            ", 0, 24, wicore.CellFormat{Fg: wicore.Red, Bg: wicore.LightGray})
+	compareBuffers(t, expected, terminal.Buffer)
 }
 
 func TestMainInvalidThenQuit(t *testing.T) {
@@ -74,9 +83,6 @@ func TestMainInvalidThenQuit(t *testing.T) {
 	expected := wicore.NewBuffer(80, 25)
 	expected.Fill(wicore.MakeCell(' ', wicore.Red, wicore.Black))
 	expected.DrawString("Root", 0, 0, wicore.CellFormat{Fg: wicore.Red, Bg: wicore.Black})
-	expected.DrawString("Status Name    Status Mode                                       Status Position   ", 0, 24, wicore.CellFormat{Fg: wicore.Red, Bg: wicore.LightGray})
-	ut.AssertEqual(t, len(expected.Cells), len(terminal.Buffer.Cells))
-	for i := 0; i < len(expected.Cells); i++ {
-		ut.AssertEqualIndex(t, i, expected.Cells[i], terminal.Buffer.Cells[i])
-	}
+	expected.DrawString("Status Name    EditMode                                          Status Position   ", 0, 24, wicore.CellFormat{Fg: wicore.Red, Bg: wicore.LightGray})
+	compareBuffers(t, expected, terminal.Buffer)
 }

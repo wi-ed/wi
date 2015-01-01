@@ -15,6 +15,7 @@ import (
 	"io"
 
 	"github.com/maruel/wi/pkg/key"
+	"github.com/maruel/wi/pkg/lang"
 )
 
 // UI
@@ -102,6 +103,7 @@ type EventsDefinition interface {
 	TriggerCommands(cmds EnqueuedCommands)
 	TriggerDocumentCreated(doc Document)
 	TriggerDocumentCursorMoved(doc Document, col, row int)
+	TriggerEditorKeyboardModeChanged(mode KeyboardMode)
 	TriggerTerminalResized()
 	TriggerTerminalKeyPressed(key key.Press)
 	TriggerViewCreated(view View)
@@ -112,7 +114,23 @@ type EventsDefinition interface {
 // Editor is the output device and the main process context. It shows the root
 // window which covers the whole screen estate.
 type Editor interface {
-	CommandDispatcherFull
+	EventRegistry
+
+	// ExecuteCommand executes a command now. This is only meant to run a command
+	// reentrantly; e.g. running a command triggers another one. This usually
+	// happens for key binding, command aliases, when a command triggers an error.
+	//
+	// TODO(maruel): Remove?
+	ExecuteCommand(w Window, cmdName string, args ...string)
+
+	// ActiveWindow returns the current active Window.
+	ActiveWindow() Window
+
+	// RegisterViewFactory makes a new view available by name.
+	RegisterViewFactory(name string, viewFactory ViewFactory) bool
+
+	// CurrentLanguage() returns the current UI language.
+	CurrentLanguage() lang.Language
 
 	// KeyboardMode is global to the editor. It matches vim behavior. For example
 	// in a 2-window setup while in insert mode, using Ctrl-O, Ctrl-W, Down will
@@ -231,7 +249,7 @@ type View interface {
 }
 
 // ViewFactory returns a new View.
-type ViewFactory func(e EventRegistry, args ...string) View
+type ViewFactory func(e Editor, args ...string) View
 
 // Document represents an open document. It can be accessed by zero, one or
 // multiple View. For example the document may not be visible at all as a 'back

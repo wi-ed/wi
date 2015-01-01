@@ -2,7 +2,7 @@
 // Use of this source code is governed under the Apache License, Version 2.0
 // that can be found in the LICENSE file.
 
-package wicore
+package lang
 
 import (
 	"testing"
@@ -11,11 +11,11 @@ import (
 )
 
 func TestGetStr(t *testing.T) {
-	a := LangMap{
-		LangEn: "Foo",
-		LangFr: "Bar",
+	a := Map{
+		En: "Foo",
+		Fr: "Bar",
 	}
-	ut.AssertEqual(t, "Bar", GetStr(LangFr, a))
-	ut.AssertEqual(t, "Foo", GetStr(LangEs, a))
-	ut.AssertEqual(t, "Foo", GetStr(LangEn, a))
+	ut.AssertEqual(t, "Bar", a.Get(Fr))
+	ut.AssertEqual(t, "Foo", a.Get(Es))
+	ut.AssertEqual(t, "Foo", a.Get(En))
 }

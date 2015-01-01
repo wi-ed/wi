@@ -10,6 +10,7 @@ import (
 	"strings"
 	"unicode"
 
+	"github.com/maruel/wi/pkg/lang"
 	"github.com/maruel/wi/wicore"
 )
 
@@ -70,11 +71,11 @@ func (d *document) IsDirty() bool {
 
 // Commands.
 
-func cmdDocumentBuild(c *wicore.CommandImpl, cd wicore.CommandDispatcherFull, w wicore.Window, args ...string) {
+func cmdDocumentBuild(c *wicore.CommandImpl, cd wicore.Editor, w wicore.Window, args ...string) {
 	cd.ExecuteCommand(w, "alert", "Implement 'document_build' for your document")
 }
 
-func cmdDocumentNew(c *wicore.CommandImpl, cd wicore.CommandDispatcherFull, w wicore.Window, args ...string) {
+func cmdDocumentNew(c *wicore.CommandImpl, cd wicore.Editor, w wicore.Window, args ...string) {
 	cmd := make([]string, 3+len(args))
 	//cmd[0] = w.ID()
 	cmd[0] = wicore.RootWindow(w).ID()
@@ -84,13 +85,13 @@ func cmdDocumentNew(c *wicore.CommandImpl, cd wicore.CommandDispatcherFull, w wi
 	cd.ExecuteCommand(w, "window_new", cmd...)
 }
 
-func cmdDocumentOpen(c *wicore.CommandImpl, cd wicore.CommandDispatcherFull, w wicore.Window, args ...string) {
+func cmdDocumentOpen(c *wicore.CommandImpl, cd wicore.Editor, w wicore.Window, args ...string) {
 	// The Window and View are created synchronously. The View is populated
 	// asynchronously.
 	log.Printf("Faking opening a file: %s", args)
 }
 
-func cmdDocumentRun(c *wicore.CommandImpl, cd wicore.CommandDispatcherFull, w wicore.Window, args ...string) {
+func cmdDocumentRun(c *wicore.CommandImpl, cd wicore.Editor, w wicore.Window, args ...string) {
 	cd.ExecuteCommand(w, "alert", "Implement 'document_run' for your document")
 }
 
@@ -103,11 +104,11 @@ func RegisterDocumentCommands(dispatcher wicore.Commands) {
 			0,
 			cmdDocumentBuild,
 			wicore.WindowCategory,
-			wicore.LangMap{
-				wicore.LangEn: "Build a file",
+			lang.Map{
+				lang.En: "Build a file",
 			},
-			wicore.LangMap{
-				wicore.LangEn: "Build a file.",
+			lang.Map{
+				lang.En: "Build a file.",
 			},
 		},
 		&wicore.CommandImpl{
@@ -115,14 +116,14 @@ func RegisterDocumentCommands(dispatcher wicore.Commands) {
 			0,
 			cmdDocumentNew,
 			wicore.WindowCategory,
-			wicore.LangMap{
-				wicore.LangEn: "Create a new buffer",
+			lang.Map{
+				lang.En: "Create a new buffer",
 			},
-			wicore.LangMap{
+			lang.Map{
 				// TODO(maruel): Add a command to create a new buffer without a new
 				// window. Wrapper command does the connection to create doc, open new
 				// window, then load buffer into window.
-				wicore.LangEn: "Create a new buffer. It also creates a new window to hold the document.",
+				lang.En: "Create a new buffer. It also creates a new window to hold the document.",
 			},
 		},
 		&wicore.CommandImpl{
@@ -130,11 +131,11 @@ func RegisterDocumentCommands(dispatcher wicore.Commands) {
 			1,
 			cmdDocumentOpen,
 			wicore.WindowCategory,
-			wicore.LangMap{
-				wicore.LangEn: "Opens a file in a new buffer",
+			lang.Map{
+				lang.En: "Opens a file in a new buffer",
 			},
-			wicore.LangMap{
-				wicore.LangEn: "Opens a file in a new buffer.",
+			lang.Map{
+				lang.En: "Opens a file in a new buffer.",
 			},
 		},
 		&wicore.CommandImpl{
@@ -142,11 +143,11 @@ func RegisterDocumentCommands(dispatcher wicore.Commands) {
 			0,
 			cmdDocumentRun,
 			wicore.WindowCategory,
-			wicore.LangMap{
-				wicore.LangEn: "Run a file",
+			lang.Map{
+				lang.En: "Run a file",
 			},
-			wicore.LangMap{
-				wicore.LangEn: "Run a file.",
+			lang.Map{
+				lang.En: "Run a file.",
 			},
 		},
 

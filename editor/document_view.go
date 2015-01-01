@@ -6,6 +6,7 @@ package editor
 
 import (
 	"github.com/maruel/wi/pkg/key"
+	"github.com/maruel/wi/pkg/lang"
 	"github.com/maruel/wi/wicore"
 )
 
@@ -47,7 +48,7 @@ func (v *documentView) Buffer() *wicore.Buffer {
 	return v.buffer
 }
 
-func cmdDocumentCursorLeft(c *wicore.CommandImpl, cd wicore.CommandDispatcherFull, w wicore.Window, args ...string) {
+func cmdDocumentCursorLeft(c *wicore.CommandImpl, cd wicore.Editor, w wicore.Window, args ...string) {
 	d, ok := w.View().(*documentView)
 	if !ok {
 		panic("Oops")
@@ -62,7 +63,7 @@ func cmdDocumentCursorLeft(c *wicore.CommandImpl, cd wicore.CommandDispatcherFul
 	cd.TriggerDocumentCursorMoved(d.document, d.cursorColumn, d.cursorLine)
 }
 
-func documentViewFactory(e wicore.EventRegistry, args ...string) wicore.View {
+func documentViewFactory(e wicore.Editor, args ...string) wicore.View {
 	dispatcher := makeCommands()
 	cmds := []wicore.Command{
 		&wicore.CommandImpl{
@@ -70,11 +71,11 @@ func documentViewFactory(e wicore.EventRegistry, args ...string) wicore.View {
 			-1,
 			cmdDocumentCursorLeft,
 			wicore.WindowCategory,
-			wicore.LangMap{
-				wicore.LangEn: "Moves cursor left",
+			lang.Map{
+				lang.En: "Moves cursor left",
 			},
-			wicore.LangMap{
-				wicore.LangEn: "Moves cursor left.",
+			lang.Map{
+				lang.En: "Moves cursor left.",
 			},
 		},
 	}

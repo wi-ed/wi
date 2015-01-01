@@ -9,6 +9,8 @@ package wicore
 import (
 	"fmt"
 	"strings"
+
+	"github.com/maruel/wi/pkg/lang"
 )
 
 // CommandCategory is used to put commands into sections for help purposes.
@@ -31,26 +33,8 @@ const (
 	// TODO(maruel): Add other categories.
 )
 
-// CommandDispatcherFull is a superset of CommandDispatcher for internal use.
-type CommandDispatcherFull interface {
-	EventRegistry
-
-	// ExecuteCommand executes a command now. This is only meant to run a command
-	// reentrantly; e.g. running a command triggers another one. This usually
-	// happens for key binding, command aliases, when a command triggers an error.
-	ExecuteCommand(w Window, cmdName string, args ...string)
-
-	// ActiveWindow returns the current active Window.
-	ActiveWindow() Window
-
-	// RegisterViewFactory makes a nwe view available by name.
-	RegisterViewFactory(name string, viewFactory ViewFactory) bool
-
-	CurrentLanguage() LanguageMode
-}
-
 // CommandHandler executes the command cmd on the Window w.
-type CommandHandler func(cd CommandDispatcherFull, w Window, args ...string)
+type CommandHandler func(e Editor, w Window, args ...string)
 
 // Command describes a registered command that can be triggered directly at the
 // command prompt, via a keybinding or a plugin.
@@ -58,18 +42,18 @@ type Command interface {
 	// Name is the name of the command.
 	Name() string
 	// Handle executes the command.
-	Handle(cd CommandDispatcherFull, w Window, args ...string)
+	Handle(e Editor, w Window, args ...string)
 	// Category returns the category the command should be bucketed in, for help
 	// documentation purpose.
-	Category(cd CommandDispatcherFull, w Window) CommandCategory
+	Category(e Editor, w Window) CommandCategory
 	// ShortDesc returns a short description of the command in the language
 	// requested. It defaults to English if the description was not translated in
 	// this language.
-	ShortDesc(cd CommandDispatcherFull, w Window) string
+	ShortDesc(e Editor, w Window) string
 	// LongDesc returns a long explanation of the command in the language
 	// requested. It defaults to English if the description was not translated in
 	// this language.
-	LongDesc(cd CommandDispatcherFull, w Window) string
+	LongDesc(e Editor, w Window) string
 }
 
 // Commands stores the known commands. This is where plugins can add new
@@ -92,7 +76,7 @@ type EnqueuedCommands struct {
 }
 
 // CommandImplHandler is the CommandHandler to use when coupled with CommandImpl.
-type CommandImplHandler func(c *CommandImpl, cd CommandDispatcherFull, w Window, args ...string)
+type CommandImplHandler func(c *CommandImpl, e Editor, w Window, args ...string)
 
 // CommandImpl is the boilerplate Command implementation.
 type CommandImpl struct {
@@ -100,8 +84,8 @@ type CommandImpl struct {
 	ExpectedArgs   int // If >= 0, the command will be aborted if the number of arguments is not exactly this value. Set to -1 to disable verification. On abort, an alert with the long description of the command is done.
 	HandlerValue   CommandImplHandler
 	CategoryValue  CommandCategory
-	ShortDescValue LangMap
-	LongDescValue  LangMap
+	ShortDescValue lang.Map
+	LongDescValue  lang.Map
 }
 
 // Name implements Command.
@@ -110,26 +94,26 @@ func (c *CommandImpl) Name() string {
 }
 
 // Handle implements Command.
-func (c *CommandImpl) Handle(cd CommandDispatcherFull, w Window, args ...string) {
+func (c *CommandImpl) Handle(e Editor, w Window, args ...string) {
 	if c.ExpectedArgs != -1 && len(args) != c.ExpectedArgs {
-		cd.ExecuteCommand(w, "alert", c.LongDesc(cd, w))
+		e.ExecuteCommand(w, "alert", c.LongDesc(e, w))
 	}
-	c.HandlerValue(c, cd, w, args...)
+	c.HandlerValue(c, e, w, args...)
 }
 
 // Category implements Command.
-func (c *CommandImpl) Category(cd CommandDispatcherFull, w Window) CommandCategory {
+func (c *CommandImpl) Category(e Editor, w Window) CommandCategory {
 	return c.CategoryValue
 }
 
 // ShortDesc implements Command.
-func (c *CommandImpl) ShortDesc(cd CommandDispatcherFull, w Window) string {
-	return GetStr(cd.CurrentLanguage(), c.ShortDescValue)
+func (c *CommandImpl) ShortDesc(e Editor, w Window) string {
+	return c.ShortDescValue.Get(e.CurrentLanguage())
 }
 
 // LongDesc implements Command.
-func (c *CommandImpl) LongDesc(cd CommandDispatcherFull, w Window) string {
-	return GetStr(cd.CurrentLanguage(), c.LongDescValue)
+func (c *CommandImpl) LongDesc(e Editor, w Window) string {
+	return c.LongDescValue.Get(e.CurrentLanguage())
 }
 
 // CommandAlias references another command by its name. It's important to not
@@ -147,37 +131,37 @@ func (c *CommandAlias) Name() string {
 }
 
 // Handle implements Command.
-func (c *CommandAlias) Handle(cd CommandDispatcherFull, w Window, args ...string) {
+func (c *CommandAlias) Handle(e Editor, w Window, args ...string) {
 	// The alias is executed inline. This is important for command queue
 	// ordering.
-	cmd := GetCommand(cd, w, c.CommandValue)
+	cmd := GetCommand(e, w, c.CommandValue)
 	if cmd != nil {
-		cmd.Handle(cd, w, args...)
+		cmd.Handle(e, w, args...)
 	} else {
 		// TODO(maruel): This makes assumption on "alert".
-		cmd = GetCommand(cd, w, "alert")
-		txt := fmt.Sprintf(GetStr(cd.CurrentLanguage(), AliasNotFound), c.NameValue, c.CommandValue)
-		cmd.Handle(cd, w, txt)
+		cmd = GetCommand(e, w, "alert")
+		txt := fmt.Sprintf(AliasNotFound.Get(e.CurrentLanguage()), c.NameValue, c.CommandValue)
+		cmd.Handle(e, w, txt)
 	}
 }
 
 // Category implements Command.
-func (c *CommandAlias) Category(cd CommandDispatcherFull, w Window) CommandCategory {
-	cmd := GetCommand(cd, w, c.CommandValue)
+func (c *CommandAlias) Category(e Editor, w Window) CommandCategory {
+	cmd := GetCommand(e, w, c.CommandValue)
 	if cmd != nil {
-		return c.Category(cd, w)
+		return c.Category(e, w)
 	}
 	return UnknownCategory
 }
 
 // ShortDesc implements Command.
-func (c *CommandAlias) ShortDesc(cd CommandDispatcherFull, w Window) string {
-	return fmt.Sprintf(GetStr(cd.CurrentLanguage(), AliasFor), c.merged())
+func (c *CommandAlias) ShortDesc(e Editor, w Window) string {
+	return fmt.Sprintf(AliasFor.Get(e.CurrentLanguage()), c.merged())
 }
 
 // LongDesc implements Command.
-func (c *CommandAlias) LongDesc(cd CommandDispatcherFull, w Window) string {
-	return fmt.Sprintf(GetStr(cd.CurrentLanguage(), AliasFor), c.merged())
+func (c *CommandAlias) LongDesc(e Editor, w Window) string {
+	return fmt.Sprintf(AliasFor.Get(e.CurrentLanguage()), c.merged())
 }
 
 func (c *CommandAlias) merged() string {
@@ -202,9 +186,9 @@ func PostCommand(e EventRegistry, callback func(), cmdName string, args ...strin
 // GetCommand traverses the Window hierarchy tree to find a View that has
 // the command cmd in its Commands mapping. If Window is nil, it starts with
 // the Editor's active Window.
-func GetCommand(cd CommandDispatcherFull, w Window, cmdName string) Command {
+func GetCommand(e Editor, w Window, cmdName string) Command {
 	if w == nil {
-		w = cd.ActiveWindow()
+		w = e.ActiveWindow()
 	}
 	for {
 		cmd := w.View().Commands().Get(cmdName)

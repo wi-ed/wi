@@ -141,6 +141,27 @@ func MakeCell(R rune, Fg, Bg RGB) Cell {
 	return Cell{R, CellFormat{Fg: Fg, Bg: Bg}}
 }
 
+// CellStride is a slice of cells.
+type CellStride []Cell
+
+// Runes returns runes as a slice.
+func (c CellStride) Runes() []rune {
+	out := make([]rune, len(c))
+	for i, cell := range c {
+		out[i] = cell.R
+	}
+	return out
+}
+
+// Formats returns cells format as a slice.
+func (c CellStride) Formats() []CellFormat {
+	out := make([]CellFormat, len(c))
+	for i, cell := range c {
+		out[i] = cell.F
+	}
+	return out
+}
+
 // Buffer represents a buffer of Cells.
 //
 // The Cells slice can be shared across multiple Buffer when using SubBuffer().
@@ -149,10 +170,10 @@ type Buffer struct {
 	Width  int
 	Height int
 	Stride int
-	Cells  []Cell
+	Cells  CellStride
 }
 
-var emptySlice = []Cell{}
+var emptySlice = CellStride{}
 
 func (b *Buffer) String() string {
 	return fmt.Sprintf("Buffer(%d, %d, %d)", b.Width, b.Height, b.Stride)
@@ -162,7 +183,7 @@ func (b *Buffer) String() string {
 //
 // If the requested line number if outside the buffer, an empty slice is
 // returned.
-func (b *Buffer) Line(Y int) []Cell {
+func (b *Buffer) Line(Y int) CellStride {
 	if Y >= b.Height {
 		return emptySlice
 	}
@@ -274,7 +295,7 @@ func (b *Buffer) SubBuffer(r Rect) *Buffer {
 		r.Height = b.Height - r.Y
 	}
 	if r.Width <= 0 || r.Height <= 0 {
-		return &Buffer{Cells: []Cell{}}
+		return &Buffer{Cells: CellStride{}}
 	}
 	base := r.Y*b.Stride + r.X
 	length := r.Height*b.Stride + r.Width - b.Width
@@ -296,6 +317,6 @@ func NewBuffer(width, height int) *Buffer {
 		width,
 		height,
 		width,
-		make([]Cell, width*height),
+		make(CellStride, width*height),
 	}
 }

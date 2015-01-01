@@ -21,6 +21,7 @@ type EventRegistry interface {
 	RegisterCommands(callback func(a EnqueuedCommands) bool) EventID
 	RegisterDocumentCreated(callback func(a Document) bool) EventID
 	RegisterDocumentCursorMoved(callback func(a Document, b int, c int) bool) EventID
+	RegisterEditorKeyboardModeChanged(callback func(a KeyboardMode) bool) EventID
 	RegisterTerminalKeyPressed(callback func(a key.Press) bool) EventID
 	RegisterTerminalResized(callback func() bool) EventID
 	RegisterViewCreated(callback func(a View) bool) EventID

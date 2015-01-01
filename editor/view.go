@@ -104,7 +104,7 @@ func (v *staticDisabledView) Buffer() *wicore.Buffer {
 }
 
 // Empty non-editable window.
-func makeStaticDisabledView(e wicore.EventRegistry, title string, naturalX, naturalY int) *staticDisabledView {
+func makeStaticDisabledView(e wicore.Editor, title string, naturalX, naturalY int) *staticDisabledView {
 	return &staticDisabledView{
 		view{
 			commands:      makeCommands(),
@@ -122,7 +122,7 @@ func makeStaticDisabledView(e wicore.EventRegistry, title string, naturalX, natu
 
 // The status line is a hierarchy of Window, one for each element, each showing
 // a single item.
-func statusRootViewFactory(e wicore.EventRegistry, args ...string) wicore.View {
+func statusRootViewFactory(e wicore.Editor, args ...string) wicore.View {
 	// TODO(maruel): OnResize(), query the root Window size, if y<=5 or x<=15,
 	// set the root status Window to y=0, so that it becomes effectively
 	// invisible when the editor window is too small.
@@ -143,7 +143,7 @@ func statusRootViewFactory(e wicore.EventRegistry, args ...string) wicore.View {
 	return v
 }
 
-func statusActiveWindowNameViewFactory(e wicore.EventRegistry, args ...string) wicore.View {
+func statusActiveWindowNameViewFactory(e wicore.Editor, args ...string) wicore.View {
 	// Active Window View name.
 	// TODO(maruel): Register events of Window activation, make itself Invalidate().
 	v := makeStaticDisabledView(e, "Status Name", 15, 1)
@@ -151,14 +151,19 @@ func statusActiveWindowNameViewFactory(e wicore.EventRegistry, args ...string) w
 	return v
 }
 
-func statusModeViewFactory(e wicore.EventRegistry, args ...string) wicore.View {
+func statusModeViewFactory(e wicore.Editor, args ...string) wicore.View {
 	// Mostly for testing purpose, will contain the current mode "Insert" or "Command".
-	v := makeStaticDisabledView(e, "Status Mode", 10, 1)
+	v := makeStaticDisabledView(e, e.KeyboardMode().String(), 10, 1)
 	v.defaultFormat = wicore.CellFormat{}
+	id := e.RegisterEditorKeyboardModeChanged(func(mode wicore.KeyboardMode) bool {
+		v.title = mode.String()
+		return true
+	})
+	v.eventIDs = append(v.eventIDs, id)
 	return v
 }
 
-func statusPositionViewFactory(e wicore.EventRegistry, args ...string) wicore.View {
+func statusPositionViewFactory(e wicore.Editor, args ...string) wicore.View {
 	// Position, % of file.
 	// TODO(maruel): Register events of movement, make itself Invalidate().
 	v := makeStaticDisabledView(e, "Status Position", 15, 1)
@@ -171,7 +176,7 @@ func statusPositionViewFactory(e wicore.EventRegistry, args ...string) wicore.Vi
 	return v
 }
 
-func infobarAlertViewFactory(e wicore.EventRegistry, args ...string) wicore.View {
+func infobarAlertViewFactory(e wicore.Editor, args ...string) wicore.View {
 	out := "Alert: " + args[0]
 	l := utf8.RuneCountInString(out)
 	v := makeStaticDisabledView(e, out, l, 1)

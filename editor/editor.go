@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/maruel/wi/pkg/key"
+	"github.com/maruel/wi/pkg/lang"
 	"github.com/maruel/wi/wicore"
 )
 
@@ -48,7 +49,7 @@ type editor struct {
 	documents     []wicore.Document             // All loaded documents.
 	viewFactories map[string]wicore.ViewFactory // All the ViewFactory's that can be used to create new View.
 	viewReady     chan bool                     // A View.Buffer() is ready to be drawn.
-	languageMode  wicore.LanguageMode           // Actual language used.
+	language      lang.Language                 // Actual language used.
 	keyboardMode  wicore.KeyboardMode           // Global keyboard mode is either CommandMode or EditMode.
 	plugins       Plugins                       // All loaded plugin processes.
 	quitFlag      bool                          // If true, a shutdown is in progress.
@@ -84,7 +85,7 @@ func (e *editor) onTerminalKeyPressed(key key.Press) bool {
 			if cmdName != "" {
 				e.ExecuteCommand(e.ActiveWindow(), cmdName)
 			} else {
-				e.ExecuteCommand(e.ActiveWindow(), "alert", fmt.Sprintf(wicore.GetStr(e.CurrentLanguage(), notMapped), keyName))
+				e.ExecuteCommand(e.ActiveWindow(), "alert", fmt.Sprintf(notMapped.Get(e.CurrentLanguage()), keyName))
 			}
 		} else {
 			if keyName != "" {
@@ -103,7 +104,7 @@ func (e *editor) ExecuteCommand(w wicore.Window, cmdName string, args ...string)
 	}
 	cmd := wicore.GetCommand(e, w, cmdName)
 	if cmd == nil {
-		e.ExecuteCommand(w, "alert", fmt.Sprintf(wicore.GetStr(e.CurrentLanguage(), notFound), cmdName))
+		e.ExecuteCommand(w, "alert", fmt.Sprintf(notFound.Get(e.CurrentLanguage()), cmdName))
 	} else {
 		cmd.Handle(e, w, args...)
 	}
@@ -119,8 +120,8 @@ func (e *editor) onCommands(cmds wicore.EnqueuedCommands) bool {
 	return true
 }
 
-func (e *editor) CurrentLanguage() wicore.LanguageMode {
-	return e.languageMode
+func (e *editor) CurrentLanguage() lang.Language {
+	return e.language
 }
 
 func (e *editor) KeyboardMode() wicore.KeyboardMode {
@@ -148,7 +149,7 @@ func (e *editor) ActiveWindow() wicore.Window {
 func (e *editor) activateWindow(w wicore.Window) {
 	log.Printf("ActivateWindow(%s)", w.View().Title())
 	if w.View().IsDisabled() {
-		e.ExecuteCommand(w, "alert", wicore.GetStr(e.CurrentLanguage(), activateDisabled))
+		e.ExecuteCommand(w, "alert", activateDisabled.Get(e.CurrentLanguage()))
 		return
 	}
 
@@ -279,7 +280,7 @@ func MakeEditor(terminal Terminal, noPlugin bool) (Editor, error) {
 		documents:     []wicore.Document{},
 		viewFactories: make(map[string]wicore.ViewFactory),
 		viewReady:     make(chan bool),
-		languageMode:  wicore.LangEn,
+		language:      lang.En,
 		keyboardMode:  wicore.EditMode,
 	}
 
@@ -298,7 +299,7 @@ func MakeEditor(terminal Terminal, noPlugin bool) (Editor, error) {
 	RegisterEditorCommands(rootView.Commands())
 
 	e.rootWindow = makeWindow(nil, rootView, wicore.DockingFill)
-	e.rootWindow.cd = e
+	e.rootWindow.e = e
 	e.lastActive[0] = e.rootWindow
 
 	e.eventRegistry.RegisterTerminalKeyPressed(e.onTerminalKeyPressed)
@@ -324,11 +325,11 @@ func MakeEditor(terminal Terminal, noPlugin bool) (Editor, error) {
 
 // Commands
 
-func cmdAlert(c *wicore.CommandImpl, cd wicore.CommandDispatcherFull, w wicore.Window, args ...string) {
+func cmdAlert(c *wicore.CommandImpl, cd wicore.Editor, w wicore.Window, args ...string) {
 	cd.ExecuteCommand(w, "window_new", "0", "bottom", "infobar_alert", args[0])
 }
 
-func cmdEditorBootstrapUI(c *wicore.CommandImpl, cd wicore.CommandDispatcherFull, w wicore.Window, args ...string) {
+func cmdEditorBootstrapUI(c *wicore.CommandImpl, cd wicore.Editor, w wicore.Window, args ...string) {
 	cd.ExecuteCommand(w, "window_new", "0", "bottom", "status_root")
 }
 
@@ -373,7 +374,7 @@ func cmdEditorRedraw(c *privilegedCommandImpl, e *editor, w *window, args ...str
 	}()
 }
 
-func cmdShowCommandWindow(c *wicore.CommandImpl, cd wicore.CommandDispatcherFull, w wicore.Window, args ...string) {
+func cmdShowCommandWindow(c *wicore.CommandImpl, cd wicore.Editor, w wicore.Window, args ...string) {
 	// Create the Window with the command view and attach it to the currently
 	// focused Window.
 	cd.ExecuteCommand(w, "window_new", w.ID(), "floating", "command")
@@ -387,11 +388,11 @@ func RegisterEditorCommands(dispatcher wicore.Commands) {
 			1,
 			cmdAlert,
 			wicore.WindowCategory,
-			wicore.LangMap{
-				wicore.LangEn: "Shows a modal message",
+			lang.Map{
+				lang.En: "Shows a modal message",
 			},
-			wicore.LangMap{
-				wicore.LangEn: "Prints a message in a modal dialog box.",
+			lang.Map{
+				lang.En: "Prints a message in a modal dialog box.",
 			},
 		},
 		&wicore.CommandImpl{
@@ -399,11 +400,11 @@ func RegisterEditorCommands(dispatcher wicore.Commands) {
 			0,
 			cmdEditorBootstrapUI,
 			wicore.WindowCategory,
-			wicore.LangMap{
-				wicore.LangEn: "Bootstraps the editor's UI",
+			lang.Map{
+				lang.En: "Bootstraps the editor's UI",
 			},
-			wicore.LangMap{
-				wicore.LangEn: "Bootstraps the editor's UI. This command is automatically run on startup and cannot be executed afterward. It adds the standard status bar. This command exists so it can be overriden by a plugin, so it can create its own status bar.",
+			lang.Map{
+				lang.En: "Bootstraps the editor's UI. This command is automatically run on startup and cannot be executed afterward. It adds the standard status bar. This command exists so it can be overriden by a plugin, so it can create its own status bar.",
 			},
 		},
 		&privilegedCommandImpl{
@@ -411,11 +412,11 @@ func RegisterEditorCommands(dispatcher wicore.Commands) {
 			-1,
 			cmdEditorQuit,
 			wicore.EditorCategory,
-			wicore.LangMap{
-				wicore.LangEn: "Quits",
+			lang.Map{
+				lang.En: "Quits",
 			},
-			wicore.LangMap{
-				wicore.LangEn: "Quits the editor. Use 'force' to bypasses writing the files to disk.",
+			lang.Map{
+				lang.En: "Quits the editor. Use 'force' to bypasses writing the files to disk.",
 			},
 		},
 		&privilegedCommandImpl{
@@ -423,11 +424,11 @@ func RegisterEditorCommands(dispatcher wicore.Commands) {
 			0,
 			cmdEditorRedraw,
 			wicore.EditorCategory,
-			wicore.LangMap{
-				wicore.LangEn: "Forcibly redraws the terminal",
+			lang.Map{
+				lang.En: "Forcibly redraws the terminal",
 			},
-			wicore.LangMap{
-				wicore.LangEn: "Forcibly redraws the terminal.",
+			lang.Map{
+				lang.En: "Forcibly redraws the terminal.",
 			},
 		},
 		&wicore.CommandImpl{
@@ -435,11 +436,11 @@ func RegisterEditorCommands(dispatcher wicore.Commands) {
 			0,
 			cmdShowCommandWindow,
 			wicore.CommandsCategory,
-			wicore.LangMap{
-				wicore.LangEn: "Shows the interactive command window",
+			lang.Map{
+				lang.En: "Shows the interactive command window",
 			},
-			wicore.LangMap{
-				wicore.LangEn: "This commands exists so it can be bound to a key to pop up the interactive command window.",
+			lang.Map{
+				lang.En: "This commands exists so it can be bound to a key to pop up the interactive command window.",
 			},
 		},
 		&wicore.CommandAlias{"q", "editor_quit", nil},

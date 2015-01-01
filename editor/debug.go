@@ -14,10 +14,11 @@ import (
 	"sort"
 
 	"github.com/maruel/wi/pkg/key"
+	"github.com/maruel/wi/pkg/lang"
 	"github.com/maruel/wi/wicore"
 )
 
-func commandLogRecurse(w *window, cd wicore.CommandDispatcherFull) {
+func commandLogRecurse(w *window, cd wicore.Editor) {
 	// TODO(maruel): Create a proper enumerator.
 	cmds := w.view.Commands().(*commands)
 	names := make([]string, 0, len(cmds.commands))
@@ -39,7 +40,7 @@ func cmdCommandLog(c *privilegedCommandImpl, e *editor, w *window, args ...strin
 	commandLogRecurse(e.rootWindow, e)
 }
 
-func keyLogRecurse(w *window, cd wicore.CommandDispatcherFull, mode wicore.KeyboardMode) {
+func keyLogRecurse(w *window, cd wicore.Editor, mode wicore.KeyboardMode) {
 	// TODO(maruel): Create a proper enumerator.
 	keys := w.view.KeyBindings().(*keyBindings)
 	var mapping *map[key.Press]string
@@ -70,7 +71,7 @@ func cmdKeyLog(c *privilegedCommandImpl, e *editor, w *window, args ...string) {
 	keyLogRecurse(e.rootWindow, e, wicore.EditMode)
 }
 
-func cmdLogAll(c *wicore.CommandImpl, cd wicore.CommandDispatcherFull, w wicore.Window, args ...string) {
+func cmdLogAll(c *wicore.CommandImpl, cd wicore.Editor, w wicore.Window, args ...string) {
 	cd.ExecuteCommand(w, "command_log")
 	cd.ExecuteCommand(w, "window_log")
 	cd.ExecuteCommand(w, "view_log")
@@ -89,7 +90,7 @@ func cmdViewLog(c *privilegedCommandImpl, e *editor, w *window, args ...string) 
 	}
 }
 
-func cmdWindowLog(c *wicore.CommandImpl, cd wicore.CommandDispatcherFull, w wicore.Window, args ...string) {
+func cmdWindowLog(c *wicore.CommandImpl, cd wicore.Editor, w wicore.Window, args ...string) {
 	root := wicore.RootWindow(w)
 	log.Printf("Window tree:\n%s", root.Tree())
 }
@@ -102,11 +103,11 @@ func RegisterDebugCommands(dispatcher wicore.Commands) {
 			0,
 			cmdCommandLog,
 			wicore.DebugCategory,
-			wicore.LangMap{
-				wicore.LangEn: "Logs the registered commands",
+			lang.Map{
+				lang.En: "Logs the registered commands",
 			},
-			wicore.LangMap{
-				wicore.LangEn: "Logs the registered commands, this is only relevant if -verbose is used.",
+			lang.Map{
+				lang.En: "Logs the registered commands, this is only relevant if -verbose is used.",
 			},
 		},
 		&privilegedCommandImpl{
@@ -114,11 +115,11 @@ func RegisterDebugCommands(dispatcher wicore.Commands) {
 			0,
 			cmdKeyLog,
 			wicore.DebugCategory,
-			wicore.LangMap{
-				wicore.LangEn: "Logs the key bindings",
+			lang.Map{
+				lang.En: "Logs the key bindings",
 			},
-			wicore.LangMap{
-				wicore.LangEn: "Logs the key bindings, this is only relevant if -verbose is used.",
+			lang.Map{
+				lang.En: "Logs the key bindings, this is only relevant if -verbose is used.",
 			},
 		},
 		&wicore.CommandImpl{
@@ -126,11 +127,11 @@ func RegisterDebugCommands(dispatcher wicore.Commands) {
 			0,
 			cmdLogAll,
 			wicore.DebugCategory,
-			wicore.LangMap{
-				wicore.LangEn: "Logs the internal state (commands, view factories, windows)",
+			lang.Map{
+				lang.En: "Logs the internal state (commands, view factories, windows)",
 			},
-			wicore.LangMap{
-				wicore.LangEn: "Logs the internal state (commands, view factories, windows), this is only relevant if -verbose is used.",
+			lang.Map{
+				lang.En: "Logs the internal state (commands, view factories, windows), this is only relevant if -verbose is used.",
 			},
 		},
 		&privilegedCommandImpl{
@@ -138,11 +139,11 @@ func RegisterDebugCommands(dispatcher wicore.Commands) {
 			0,
 			cmdViewLog,
 			wicore.DebugCategory,
-			wicore.LangMap{
-				wicore.LangEn: "Logs the view factories",
+			lang.Map{
+				lang.En: "Logs the view factories",
 			},
-			wicore.LangMap{
-				wicore.LangEn: "Logs the view factories, this is only relevant if -verbose is used.",
+			lang.Map{
+				lang.En: "Logs the view factories, this is only relevant if -verbose is used.",
 			},
 		},
 		&wicore.CommandImpl{
@@ -150,11 +151,11 @@ func RegisterDebugCommands(dispatcher wicore.Commands) {
 			0,
 			cmdWindowLog,
 			wicore.DebugCategory,
-			wicore.LangMap{
-				wicore.LangEn: "Logs the window tree",
+			lang.Map{
+				lang.En: "Logs the window tree",
 			},
-			wicore.LangMap{
-				wicore.LangEn: "Logs the window tree, this is only relevant if -verbose is used.",
+			lang.Map{
+				lang.En: "Logs the window tree, this is only relevant if -verbose is used.",
 			},
 		},
 

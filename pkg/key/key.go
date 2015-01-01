@@ -4,6 +4,7 @@
 
 //go:generate stringer -type=Key
 
+// package key implements generic key definition.
 package key
 
 import "strings"
