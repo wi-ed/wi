@@ -4,7 +4,7 @@
 
 // This command generates the struct eventRegistry based on
 // wicore.EventRegistry.
-//go:generate go run ../tools/wi-event-generator/main.go -output "event_registry.go" -impl
+//go:generate go run ../tools/wi-event-generator/main.go -output event_registry_impl.go -impl
 
 package editor
 
@@ -77,7 +77,7 @@ func (e *editor) PostCommands(cmds [][]string, callback func()) wicore.CommandID
 		copy(tmp.Commands[i], cmd)
 	}
 	id := int(atomic.AddInt64(&e.lastCommandID, 1))
-	e.eventRegistry.onCommands(tmp)
+	e.TriggerCommands(tmp)
 	return wicore.CommandID{0, id}
 }
 
@@ -206,10 +206,10 @@ func (e *editor) terminalLoop(terminal Terminal) {
 		switch event.Type {
 		case EventKey:
 			if event.Key.IsValid() {
-				e.eventRegistry.onTerminalKeyPressed(event.Key)
+				e.TriggerTerminalKeyPressed(event.Key)
 			}
 		case EventResize:
-			e.eventRegistry.onTerminalResized()
+			e.TriggerTerminalResized()
 		}
 	}
 }
@@ -320,7 +320,7 @@ func MakeEditor(terminal Terminal, noPlugin bool) (Editor, error) {
 	e.eventRegistry.RegisterCommands(e.onCommands)
 
 	// This forces creating the default buffer.
-	e.eventRegistry.onTerminalResized()
+	e.TriggerTerminalResized()
 	go e.terminalLoop(terminal)
 
 	RegisterDefaultViewFactories(e)

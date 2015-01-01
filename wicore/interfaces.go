@@ -6,6 +6,7 @@
 // accessable by plugins.
 
 //go:generate stringer -output=interfaces_string.go -type=BorderType,DockingType
+//go:generate go run ../tools/wi-event-generator/main.go -output event_registry_decl.go
 
 package wicore
 
@@ -75,21 +76,19 @@ const (
 // EventID is to be used to cancel an event listener.
 type EventID int
 
-// EventRegistry permits to register callbacks that are called on events.
+// EventsDefinition declares the valid events.
 //
-// When the callback returns false, the next registered events are not called.
-type EventRegistry interface {
-	// Unregister unregiisters a callback. Returns an error if the event was not
-	// registered.
-	Unregister(eventID EventID) error
-	RegisterCommands(callback func(cmds EnqueuedCommands) bool) EventID
-	RegisterDocumentCreated(callback func(doc Document) bool) EventID
-	RegisterDocumentCursorMoved(callback func(doc Document, col, row int) bool) EventID
-	RegisterTerminalResized(callback func() bool) EventID
-	RegisterTerminalKeyPressed(callback func(key key.Press) bool) EventID
-	RegisterViewCreated(callback func(view View) bool) EventID
-	RegisterWindowCreated(callback func(window Window) bool) EventID
-	RegisterWindowResized(callback func(window Window) bool) EventID
+// Do not use this interface directly, use the automatically-generated
+// interface EventRegistry instead.
+type EventsDefinition interface {
+	TriggerCommands(cmds EnqueuedCommands)
+	TriggerDocumentCreated(doc Document)
+	TriggerDocumentCursorMoved(doc Document, col, row int)
+	TriggerTerminalResized()
+	TriggerTerminalKeyPressed(key key.Press)
+	TriggerViewCreated(view View)
+	TriggerWindowCreated(window Window)
+	TriggerWindowResized(window Window)
 }
 
 // Editor is the output device and the main process context. It shows the root
