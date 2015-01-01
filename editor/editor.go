@@ -4,7 +4,7 @@
 
 // This command generates the struct eventRegistry based on
 // wicore.EventRegistry.
-//go:generate go run ../tools/wi-event-generator/main.go
+//go:generate go run ../tools/wi-event-generator/main.go -output "event_registry.go" -impl
 
 package editor
 
