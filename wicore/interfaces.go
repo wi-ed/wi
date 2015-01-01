@@ -76,11 +76,29 @@ const (
 // EventID is to be used to cancel an event listener.
 type EventID int
 
+/*
+// EventID describes an event in the queue.
+type EventID struct {
+	ProcessID int // 0 is the main editor process, other values are for plugins.
+	Index     int
+}
+
+func (c EventID) String() string {
+	return fmt.Sprintf("%d:%d", c.ProcessID, c.Index)
+}
+*/
+
 // EventsDefinition declares the valid events.
 //
 // Do not use this interface directly, use the automatically-generated
 // interface EventRegistry instead.
 type EventsDefinition interface {
+	// TriggerCommands dispatches one or multiple commands to the current active
+	// listener. Normally, it's the View contained to the active Window. Using
+	// this function guarantees that all the commands will be executed in order
+	// without commands interfering.
+	//
+	// `callback` is called synchronously after the command is executed.
 	TriggerCommands(cmds EnqueuedCommands)
 	TriggerDocumentCreated(doc Document)
 	TriggerDocumentCursorMoved(doc Document, col, row int)
@@ -141,7 +159,6 @@ type Editor interface {
 // instances, designating the actual Window by its .ID() method.
 type Window interface {
 	fmt.Stringer
-	CommandDispatcher
 
 	// ID returns the unique id for this Window. The id is guaranteed to be
 	// unique through the process lifetime of the editor.

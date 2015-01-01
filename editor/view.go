@@ -130,12 +130,15 @@ func statusRootViewFactory(e wicore.EventRegistry, args ...string) wicore.View {
 	v.defaultFormat.Bg = wicore.LightGray
 	v.onAttach = func(v *view, w wicore.Window) {
 		id := w.ID()
-		w.PostCommands(
-			[][]string{
-				{"window_new", id, "left", "status_active_window_name"},
-				{"window_new", id, "right", "status_position"},
-				{"window_new", id, "fill", "status_mode"},
-			}, nil)
+		e.TriggerCommands(
+			wicore.EnqueuedCommands{
+				[][]string{
+					{"window_new", id, "left", "status_active_window_name"},
+					{"window_new", id, "right", "status_position"},
+					{"window_new", id, "fill", "status_mode"},
+				},
+				nil,
+			})
 	}
 	return v
 }
@@ -176,7 +179,7 @@ func infobarAlertViewFactory(e wicore.EventRegistry, args ...string) wicore.View
 		go func() {
 			// Dismiss after 5 seconds.
 			<-time.After(5 * time.Second)
-			wicore.PostCommand(w, nil, "window_close", w.ID())
+			wicore.PostCommand(e, nil, "window_close", w.ID())
 		}()
 	}
 	return v

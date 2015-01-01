@@ -114,9 +114,9 @@ func RegisterKeyBindingCommands(dispatcher wicore.Commands) {
 // TODO(maruel): This should be remappable via a configuration flag, for
 // example vim flavor vs emacs flavor. I'm not sure it's worth supporting this
 // without a restart.
-func RegisterDefaultKeyBindings(cd wicore.CommandDispatcher) {
-	wicore.PostCommand(cd, nil, "key_bind", "global", "all", "F1", "help")
-	wicore.PostCommand(cd, nil, "key_bind", "global", "command", ":", "show_command_window")
+func RegisterDefaultKeyBindings(e wicore.EventRegistry) {
+	wicore.PostCommand(e, nil, "key_bind", "global", "all", "F1", "help")
+	wicore.PostCommand(e, nil, "key_bind", "global", "command", ":", "show_command_window")
 	// TODO(maruel): Temporary.
-	wicore.PostCommand(cd, nil, "key_bind", "global", "all", "Ctrl-c", "quit")
+	wicore.PostCommand(e, nil, "key_bind", "global", "all", "Ctrl-c", "quit")
 }

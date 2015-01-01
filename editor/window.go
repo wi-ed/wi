@@ -54,10 +54,6 @@ func (w *window) String() string {
 	return fmt.Sprintf("Window(%s, %s, %v)", w.ID(), w.View().Title(), w.Rect())
 }
 
-func (w *window) PostCommands(cmds [][]string, callback func()) wicore.CommandID {
-	return w.cd.PostCommands(cmds, callback)
-}
-
 func (w *window) ID() string {
 	if w.parent == nil {
 		// editor.rootWindow.id is always 0.
@@ -298,7 +294,7 @@ func (w *window) resizeChildren() {
 		w.viewRect = remaining
 		w.view.SetSize(w.viewRect.Width, w.viewRect.Height)
 	}
-	wicore.PostCommand(w, nil, "editor_redraw")
+	wicore.PostCommand(w.cd, nil, "editor_redraw")
 }
 
 func (w *window) buffer() *wicore.Buffer {
@@ -579,7 +575,7 @@ func cmdWindowSetDocking(c *privilegedCommandImpl, e *editor, w *window, args ..
 		// TODO(maruel): Check no other parent's child window have the same dock.
 		w.docking = docking
 		w.parent.resizeChildren()
-		wicore.PostCommand(w, nil, "editor_redraw")
+		wicore.PostCommand(w.cd, nil, "editor_redraw")
 	}
 }
 

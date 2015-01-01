@@ -31,30 +31,8 @@ const (
 	// TODO(maruel): Add other categories.
 )
 
-// CommandID describes a command in the queue.
-type CommandID struct {
-	ProcessID    int // 0 is the main editor process, other values are for plugins.
-	CommandIndex int
-}
-
-func (c CommandID) String() string {
-	return fmt.Sprintf("%d:%d", c.ProcessID, c.CommandIndex)
-}
-
-// CommandDispatcher owns the command queue. Use this interface to enqueue
-// commands for execution.
-type CommandDispatcher interface {
-	// PostCommands appends several Command calls at the end of the queue. Using
-	// this function guarantees that all the commands will be executed in order
-	// without commands interfering.
-	//
-	// `callback` is called synchronously after the command is executed.
-	PostCommands(cmds [][]string, callback func()) CommandID
-}
-
 // CommandDispatcherFull is a superset of CommandDispatcher for internal use.
 type CommandDispatcherFull interface {
-	CommandDispatcher
 	EventRegistry
 
 	// ExecuteCommand executes a command now. This is only meant to run a command
@@ -212,15 +190,13 @@ func (c *CommandAlias) merged() string {
 
 // Utility functions.
 
-// PostCommand appends a Command at the end of the queue.
-// It is a shortcut to cd.PostCommands([][]string{[]string{cmdName, args...}},
-// callback). Sadly, using `...string` means that callback cannot be the last
-// parameter.
-func PostCommand(cd CommandDispatcher, callback func(), cmdName string, args ...string) CommandID {
+// PostCommand appends a Command at the end of the queue. It is a shortcut to
+// e.TriggerCommands(EnqueuedCommands{...}).
+func PostCommand(e EventRegistry, callback func(), cmdName string, args ...string) {
 	line := make([]string, len(args)+1)
 	line[0] = cmdName
 	copy(line[1:], args)
-	return cd.PostCommands([][]string{line}, callback)
+	e.TriggerCommands(EnqueuedCommands{[][]string{line}, callback})
 }
 
 // GetCommand traverses the Window hierarchy tree to find a View that has

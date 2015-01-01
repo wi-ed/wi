@@ -12,7 +12,6 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"sync/atomic"
 	"time"
 
 	"github.com/maruel/wi/pkg/key"
@@ -48,7 +47,6 @@ type editor struct {
 	lastActive    []wicore.Window               // Most recently used order of Window activatd.
 	documents     []wicore.Document             // All loaded documents.
 	viewFactories map[string]wicore.ViewFactory // All the ViewFactory's that can be used to create new View.
-	lastCommandID int64                         // Used by PostCommand.
 	viewReady     chan bool                     // A View.Buffer() is ready to be drawn.
 	languageMode  wicore.LanguageMode           // Actual language used.
 	keyboardMode  wicore.KeyboardMode           // Global keyboard mode is either CommandMode or EditMode.
@@ -67,18 +65,6 @@ func (e *editor) Close() error {
 
 func (e *editor) Version() string {
 	return version
-}
-
-func (e *editor) PostCommands(cmds [][]string, callback func()) wicore.CommandID {
-	log.Printf("PostCommands(%s)", cmds)
-	tmp := wicore.EnqueuedCommands{make([][]string, len(cmds)), callback}
-	for i, cmd := range cmds {
-		tmp.Commands[i] = make([]string, len(cmd))
-		copy(tmp.Commands[i], cmd)
-	}
-	id := int(atomic.AddInt64(&e.lastCommandID, 1))
-	e.TriggerCommands(tmp)
-	return wicore.CommandID{0, id}
 }
 
 func (e *editor) onTerminalKeyPressed(key key.Press) bool {
