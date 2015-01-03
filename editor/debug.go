@@ -165,3 +165,38 @@ func RegisterDebugCommands(dispatcher wicore.Commands) {
 		dispatcher.Register(cmd)
 	}
 }
+
+// RegisterDebugEvents registers the debug event listeners.
+func RegisterDebugEvents(e wicore.EventRegistry) {
+	// TODO(maruel): Generate automatically?
+	RegisterCommands(func(cmds wicore.EnqueuedCommands) {
+		log.Printf("Commands(%v)", cmds)
+	})
+	RegisterDocumentCreated(func(doc wicore.Document) {
+		log.Printf("DocumentCreated(%s)", doc)
+	})
+	RegisterDocumentCursorMoved(func(doc wicore.Document, col, row int) {
+		log.Printf("DocumentCursorMoved(%s, %d, %d)", doc, col, row)
+	})
+	RegisterEditorKeyboardModeChanged(func(mode wicore.KeyboardMode) {
+		log.Printf("EditorKeyboardModeChanged(%s)", mode)
+	})
+	RegisterEditorLanguage(func(l lang.Language) {
+		log.Printf("EditorLanguage(%s)", l)
+	})
+	RegisterTerminalResized(func() {
+		log.Printf("TerminalResized()")
+	})
+	RegisterTerminalKeyPressed(func(key key.Press) {
+		log.Printf("TerminalKeyPressed(%s)", key)
+	})
+	RegisterViewCreated(func(view wicore.View) {
+		log.Printf("ViewCreated(%s)", view)
+	})
+	RegisterWindowCreated(func(window wicore.Window) {
+		log.Printf("WindowCreated(%s)", window)
+	})
+	RegisterWindowResized(func(window wicore.Window) {
+		log.Printf("WindowResized(%s)", window)
+	})
+}

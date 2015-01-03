@@ -5,6 +5,7 @@
 package editor
 
 import (
+	"fmt"
 	"io"
 	"log"
 	"strings"
@@ -47,6 +48,14 @@ func makeDocument() *document {
 		// TODO(maruel): Obviously, no initial content.
 		content: []string{"Dummy content\n", "Really\n"},
 	}
+}
+
+func (d *document) String() string {
+	return fmt.Sprintf("Document(%s)", d.filePath)
+}
+
+func (d *document) Close() error {
+	return nil
 }
 
 func (d *document) RenderInto(buffer *wicore.Buffer, view wicore.View, offsetLine, offsetColumn int) {

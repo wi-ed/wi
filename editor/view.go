@@ -33,6 +33,10 @@ type view struct {
 
 // wicore.View interface.
 
+func (v *view) String() string {
+	return fmt.Sprintf("View(%s)", v.title)
+}
+
 func (v *view) Close() error {
 	var err error
 	for _, eventID := range v.eventIDs {

@@ -40,6 +40,15 @@ type documentView struct {
 	selection       wicore.Rect // selection if any. TODO(maruel): Selection in columnMode vs normal selection vs line selection.
 }
 
+func (v *documentView) Close() error {
+	err := v.view.Close()
+	err2 := v.document.Close()
+	if err != nil {
+		return err
+	}
+	return err2
+}
+
 func (v *documentView) Buffer() *wicore.Buffer {
 	v.buffer.Fill(wicore.Cell{' ', v.defaultFormat})
 	v.document.RenderInto(v.buffer, v, v.offsetLine, v.offsetColumn)

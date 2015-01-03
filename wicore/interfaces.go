@@ -206,6 +206,7 @@ type Window interface {
 // a command box. View define the key binding and commands supported so it
 // responds to user input.
 type View interface {
+	fmt.Stringer
 	io.Closer
 
 	// Commands returns the commands registered for this specific view. For
@@ -254,6 +255,9 @@ type ViewFactory func(e Editor, args ...string) View
 // buffer', may be loaded in a View or in multiple View, each having their own
 // coloring and cursor position.
 type Document interface {
+	fmt.Stringer
+	io.Closer
+
 	// RenderInto renders a view of a document.
 	//
 	// TODO(maruel): Likely return a new Buffer instance instead, for RPC

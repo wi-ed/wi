@@ -284,6 +284,8 @@ func MakeEditor(terminal Terminal, noPlugin bool) (Editor, error) {
 		keyboardMode:  wicore.EditMode,
 	}
 
+	RegisterDebugEvents(e)
+
 	// The root view is important, it defines all the global commands. It is
 	// pre-filled with the default native commands and keyboard mapping, and it's
 	// up to the plugins to add more global commands on startup.
@@ -298,19 +300,26 @@ func MakeEditor(terminal Terminal, noPlugin bool) (Editor, error) {
 	RegisterDocumentCommands(rootView.Commands())
 	RegisterEditorCommands(rootView.Commands())
 
+	RegisterDefaultViewFactories(e)
+
 	e.rootWindow = makeWindow(nil, rootView, wicore.DockingFill)
 	e.rootWindow.e = e
 	e.lastActive[0] = e.rootWindow
 
-	e.eventRegistry.RegisterTerminalKeyPressed(e.onTerminalKeyPressed)
-	e.eventRegistry.RegisterTerminalResized(e.onTerminalResized)
-	e.eventRegistry.RegisterCommands(e.onCommands)
+	e.RegisterTerminalKeyPressed(e.onTerminalKeyPressed)
+	e.RegisterTerminalResized(e.onTerminalResized)
+	e.RegisterCommands(e.onCommands)
 
+	e.TriggerWindowCreated(e.rootWindow)
+	e.TriggerViewCreated(rootView)
+
+	lang.Set(lang.En)
+	e.TriggerEditorLanguage(lang.En)
 	// This forces creating the default buffer.
 	e.TriggerTerminalResized()
 	go e.terminalLoop(terminal)
 
-	RegisterDefaultViewFactories(e)
+	e.TriggerEditorKeyboardModeChanged(wicore.EditMode)
 
 	if !noPlugin {
 		e.loadPlugins()

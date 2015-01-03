@@ -13,3 +13,7 @@ import (
 // RegisterDebugCommands registers nothing in Release build.
 func RegisterDebugCommands(dispatcher wicore.Commands) {
 }
+
+// RegisterDebugEvents registers the debug event listeners.
+func RegisterDebugEvents(e wicore.EventRegistry) {
+}
