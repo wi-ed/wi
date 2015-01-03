@@ -71,28 +71,28 @@ func (d *document) IsDirty() bool {
 
 // Commands.
 
-func cmdDocumentBuild(c *wicore.CommandImpl, cd wicore.Editor, w wicore.Window, args ...string) {
-	cd.ExecuteCommand(w, "alert", "Implement 'document_build' for your document")
+func cmdDocumentBuild(c *wicore.CommandImpl, e wicore.Editor, w wicore.Window, args ...string) {
+	e.ExecuteCommand(w, "alert", "Implement 'document_build' for your document")
 }
 
-func cmdDocumentNew(c *wicore.CommandImpl, cd wicore.Editor, w wicore.Window, args ...string) {
+func cmdDocumentNew(c *wicore.CommandImpl, e wicore.Editor, w wicore.Window, args ...string) {
 	cmd := make([]string, 3+len(args))
 	//cmd[0] = w.ID()
 	cmd[0] = wicore.RootWindow(w).ID()
 	cmd[1] = "fill"
 	cmd[2] = "new_document"
 	copy(cmd[3:], args)
-	cd.ExecuteCommand(w, "window_new", cmd...)
+	e.ExecuteCommand(w, "window_new", cmd...)
 }
 
-func cmdDocumentOpen(c *wicore.CommandImpl, cd wicore.Editor, w wicore.Window, args ...string) {
+func cmdDocumentOpen(c *wicore.CommandImpl, e wicore.Editor, w wicore.Window, args ...string) {
 	// The Window and View are created synchronously. The View is populated
 	// asynchronously.
 	log.Printf("Faking opening a file: %s", args)
 }
 
-func cmdDocumentRun(c *wicore.CommandImpl, cd wicore.Editor, w wicore.Window, args ...string) {
-	cd.ExecuteCommand(w, "alert", "Implement 'document_run' for your document")
+func cmdDocumentRun(c *wicore.CommandImpl, e wicore.Editor, w wicore.Window, args ...string) {
+	e.ExecuteCommand(w, "alert", "Implement 'document_run' for your document")
 }
 
 // RegisterDocumentCommands registers the top-level native commands to manage

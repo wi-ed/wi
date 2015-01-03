@@ -41,6 +41,7 @@ import (
   "sync"
 
   "github.com/maruel/wi/pkg/key"
+  "github.com/maruel/wi/pkg/lang"
   "github.com/maruel/wi/wicore"
 )
 {{range .Events}}
@@ -121,6 +122,7 @@ package wicore
 
 import (
   "github.com/maruel/wi/pkg/key"
+  "github.com/maruel/wi/pkg/lang"
 )
 
 // EventRegistry permits to register callbacks that are called on events.

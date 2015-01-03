@@ -4,6 +4,7 @@ package wicore
 
 import (
 	"github.com/maruel/wi/pkg/key"
+	"github.com/maruel/wi/pkg/lang"
 )
 
 // EventRegistry permits to register callbacks that are called on events.
@@ -22,6 +23,7 @@ type EventRegistry interface {
 	RegisterDocumentCreated(callback func(a Document) bool) EventID
 	RegisterDocumentCursorMoved(callback func(a Document, b int, c int) bool) EventID
 	RegisterEditorKeyboardModeChanged(callback func(a KeyboardMode) bool) EventID
+	RegisterEditorLanguage(callback func(a lang.Language) bool) EventID
 	RegisterTerminalKeyPressed(callback func(a key.Press) bool) EventID
 	RegisterTerminalResized(callback func() bool) EventID
 	RegisterViewCreated(callback func(a View) bool) EventID

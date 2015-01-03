@@ -325,12 +325,12 @@ func MakeEditor(terminal Terminal, noPlugin bool) (Editor, error) {
 
 // Commands
 
-func cmdAlert(c *wicore.CommandImpl, cd wicore.Editor, w wicore.Window, args ...string) {
-	cd.ExecuteCommand(w, "window_new", "0", "bottom", "infobar_alert", args[0])
+func cmdAlert(c *wicore.CommandImpl, e wicore.Editor, w wicore.Window, args ...string) {
+	e.ExecuteCommand(w, "window_new", "0", "bottom", "infobar_alert", args[0])
 }
 
-func cmdEditorBootstrapUI(c *wicore.CommandImpl, cd wicore.Editor, w wicore.Window, args ...string) {
-	cd.ExecuteCommand(w, "window_new", "0", "bottom", "status_root")
+func cmdEditorBootstrapUI(c *wicore.CommandImpl, e wicore.Editor, w wicore.Window, args ...string) {
+	e.ExecuteCommand(w, "window_new", "0", "bottom", "status_root")
 }
 
 func (e *editor) isDirty() bool {
@@ -344,11 +344,11 @@ func (e *editor) isDirty() bool {
 
 func cmdEditorQuit(c *privilegedCommandImpl, e *editor, w *window, args ...string) {
 	if len(args) >= 1 {
-		e.ExecuteCommand(w, "alert", c.LongDesc(e, w))
+		e.ExecuteCommand(w, "alert", c.LongDesc())
 		return
 	} else if len(args) == 1 {
 		if args[0] != "force" {
-			e.ExecuteCommand(w, "alert", c.LongDesc(e, w))
+			e.ExecuteCommand(w, "alert", c.LongDesc())
 			return
 		}
 	} else {
@@ -374,10 +374,10 @@ func cmdEditorRedraw(c *privilegedCommandImpl, e *editor, w *window, args ...str
 	}()
 }
 
-func cmdShowCommandWindow(c *wicore.CommandImpl, cd wicore.Editor, w wicore.Window, args ...string) {
+func cmdShowCommandWindow(c *wicore.CommandImpl, e wicore.Editor, w wicore.Window, args ...string) {
 	// Create the Window with the command view and attach it to the currently
 	// focused Window.
-	cd.ExecuteCommand(w, "window_new", w.ID(), "floating", "command")
+	e.ExecuteCommand(w, "window_new", w.ID(), "floating", "command")
 }
 
 // RegisterEditorCommands registers the top-level native commands.

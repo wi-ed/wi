@@ -48,7 +48,7 @@ func (v *documentView) Buffer() *wicore.Buffer {
 	return v.buffer
 }
 
-func cmdDocumentCursorLeft(c *wicore.CommandImpl, cd wicore.Editor, w wicore.Window, args ...string) {
+func cmdDocumentCursorLeft(c *wicore.CommandImpl, e wicore.Editor, w wicore.Window, args ...string) {
 	d, ok := w.View().(*documentView)
 	if !ok {
 		panic("Oops")
@@ -60,7 +60,7 @@ func cmdDocumentCursorLeft(c *wicore.CommandImpl, cd wicore.Editor, w wicore.Win
 			// TODO(maruel): Beep.
 		}
 	}
-	cd.TriggerDocumentCursorMoved(d.document, d.cursorColumn, d.cursorLine)
+	e.TriggerDocumentCursorMoved(d.document, d.cursorColumn, d.cursorLine)
 }
 
 func documentViewFactory(e wicore.Editor, args ...string) wicore.View {

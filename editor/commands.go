@@ -55,7 +55,7 @@ func (c *privilegedCommandImpl) Name() string {
 
 func (c *privilegedCommandImpl) Handle(e wicore.Editor, w wicore.Window, args ...string) {
 	if c.ExpectedArgs != -1 && len(args) != c.ExpectedArgs {
-		e.ExecuteCommand(w, "alert", c.LongDesc(e, w))
+		e.ExecuteCommand(w, "alert", c.LongDesc())
 	}
 	// Convert types to internal types.
 	ed := e.(*editor)
@@ -67,12 +67,12 @@ func (c *privilegedCommandImpl) Category(e wicore.Editor, w wicore.Window) wicor
 	return c.CategoryValue
 }
 
-func (c *privilegedCommandImpl) ShortDesc(e wicore.Editor, w wicore.Window) string {
-	return c.ShortDescValue.Get(e.CurrentLanguage())
+func (c *privilegedCommandImpl) ShortDesc() string {
+	return c.ShortDescValue.String()
 }
 
-func (c *privilegedCommandImpl) LongDesc(e wicore.Editor, w wicore.Window) string {
-	return c.LongDescValue.Get(e.CurrentLanguage())
+func (c *privilegedCommandImpl) LongDesc() string {
+	return c.LongDescValue.String()
 }
 
 // Commands
@@ -83,7 +83,7 @@ func cmdCommandAlias(c *wicore.CommandImpl, e wicore.Editor, w wicore.Window, ar
 		w = wicore.RootWindow(w)
 	} else {
 		cmd := wicore.GetCommand(e, w, "command_alias")
-		e.ExecuteCommand(w, "alert", cmd.LongDesc(e, w))
+		e.ExecuteCommand(w, "alert", cmd.LongDesc())
 		return
 	}
 	alias := &wicore.CommandAlias{args[1], args[2], nil}

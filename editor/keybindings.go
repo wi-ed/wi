@@ -54,7 +54,7 @@ func makeKeyBindings() wicore.KeyBindings {
 
 // Commands.
 
-func cmdKeyBind(c *wicore.CommandImpl, cd wicore.Editor, w wicore.Window, args ...string) {
+func cmdKeyBind(c *wicore.CommandImpl, e wicore.Editor, w wicore.Window, args ...string) {
 	location := args[0]
 	modeName := args[1]
 	keyName := args[2]
@@ -63,8 +63,8 @@ func cmdKeyBind(c *wicore.CommandImpl, cd wicore.Editor, w wicore.Window, args .
 	if location == "global" {
 		w = wicore.RootWindow(w)
 	} else if location != "window" {
-		cmd := wicore.GetCommand(cd, w, "key_bind")
-		cd.ExecuteCommand(w, "alert", cmd.LongDesc(cd, w))
+		cmd := wicore.GetCommand(e, w, "key_bind")
+		e.ExecuteCommand(w, "alert", cmd.LongDesc())
 		return
 	}
 
@@ -76,8 +76,8 @@ func cmdKeyBind(c *wicore.CommandImpl, cd wicore.Editor, w wicore.Window, args .
 	} else if modeName == "all" {
 		mode = wicore.AllMode
 	} else {
-		cmd := wicore.GetCommand(cd, w, "key_bind")
-		cd.ExecuteCommand(w, "alert", cmd.LongDesc(cd, w))
+		cmd := wicore.GetCommand(e, w, "key_bind")
+		e.ExecuteCommand(w, "alert", cmd.LongDesc())
 		return
 	}
 	// TODO(maruel): Refuse invalid keyName.

@@ -10,12 +10,24 @@ import (
 	"github.com/maruel/ut"
 )
 
-func TestGetStr(t *testing.T) {
+func TestGetDefaultEn(t *testing.T) {
 	a := Map{
-		En: "Foo",
+		En:   "Foo",
+		FrCa: "Bar",
+	}
+	ut.AssertEqual(t, "Foo", a.Get(Es))
+}
+
+func TestGetDefaultNonCountry(t *testing.T) {
+	a := Map{
 		Fr: "Bar",
 	}
-	ut.AssertEqual(t, "Bar", a.Get(Fr))
-	ut.AssertEqual(t, "Foo", a.Get(Es))
-	ut.AssertEqual(t, "Foo", a.Get(En))
+	ut.AssertEqual(t, "Bar", a.Get(FrCa))
+}
+
+func TestGetDefaultMissing(t *testing.T) {
+	a := Map{
+		FrCa: "Bar",
+	}
+	ut.AssertEqual(t, "", a.Get(Es))
 }

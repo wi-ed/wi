@@ -5,6 +5,14 @@
 // package lang handles localization of language UI.
 package lang
 
+import (
+	"strings"
+	"sync"
+)
+
+var lock sync.Mutex
+var active Language = En
+
 // Language is used to declare the language for UI purpose.
 type Language string
 
@@ -25,7 +33,29 @@ type Map map[Language]string
 func (m Map) Get(lang Language) string {
 	s, ok := m[lang]
 	if !ok {
-		return m[En]
+		items := strings.Split(string(lang), "_")
+		s, ok = m[Language(items[0])]
+		if !ok {
+			s, ok = m[En]
+		}
 	}
 	return s
+}
+
+func (m Map) String() string {
+	return m.Get(Active())
+}
+
+// Active returns the active language for the process.
+func Active() Language {
+	lock.Lock()
+	defer lock.Unlock()
+	return active
+}
+
+// Set sets the active language for the process.
+func Set(lang Language) {
+	lock.Lock()
+	defer lock.Unlock()
+	active = lang
 }

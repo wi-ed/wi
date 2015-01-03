@@ -11,7 +11,7 @@ import (
 	"github.com/maruel/wi/wicore"
 )
 
-func cmdDoc(c *wicore.CommandImpl, cd wicore.Editor, w wicore.Window, args ...string) {
+func cmdDoc(c *wicore.CommandImpl, e wicore.Editor, w wicore.Window, args ...string) {
 	// TODO(maruel): Grab the current word under selection if no args is
 	// provided. Pass this token to shell.
 	docArgs := make([]string, len(args)+1)
@@ -20,12 +20,12 @@ func cmdDoc(c *wicore.CommandImpl, cd wicore.Editor, w wicore.Window, args ...st
 	//dispatcher.Execute(w, "shell", docArgs...)
 }
 
-func cmdHelp(c *wicore.CommandImpl, cd wicore.Editor, w wicore.Window, args ...string) {
+func cmdHelp(c *wicore.CommandImpl, e wicore.Editor, w wicore.Window, args ...string) {
 	// TODO(maruel): Creates a new Window with a ViewHelp.
 	log.Printf("Faking help: %s", args)
 }
 
-func cmdShell(c *wicore.CommandImpl, cd wicore.Editor, w wicore.Window, args ...string) {
+func cmdShell(c *wicore.CommandImpl, e wicore.Editor, w wicore.Window, args ...string) {
 	log.Printf("Faking opening a new shell: %s", args)
 }
 

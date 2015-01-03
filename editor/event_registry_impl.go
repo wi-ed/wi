@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/maruel/wi/pkg/key"
+	"github.com/maruel/wi/pkg/lang"
 	"github.com/maruel/wi/wicore"
 )
 
@@ -28,6 +29,11 @@ type eventDocumentCursorMoved struct {
 type eventEditorKeyboardModeChanged struct {
 	id       wicore.EventID
 	callback func(a wicore.KeyboardMode) bool
+}
+
+type eventEditorLanguage struct {
+	id       wicore.EventID
+	callback func(a lang.Language) bool
 }
 
 type eventTerminalKeyPressed struct {
@@ -66,6 +72,7 @@ type eventRegistry struct {
 	documentCreated           []eventDocumentCreated
 	documentCursorMoved       []eventDocumentCursorMoved
 	editorKeyboardModeChanged []eventEditorKeyboardModeChanged
+	editorLanguage            []eventEditorLanguage
 	terminalKeyPressed        []eventTerminalKeyPressed
 	terminalResized           []eventTerminalResized
 	viewCreated               []eventViewCreated
@@ -82,6 +89,7 @@ func makeEventRegistry() eventRegistry {
 		documentCreated:           make([]eventDocumentCreated, 0, 64),
 		documentCursorMoved:       make([]eventDocumentCursorMoved, 0, 64),
 		editorKeyboardModeChanged: make([]eventEditorKeyboardModeChanged, 0, 64),
+		editorLanguage:            make([]eventEditorLanguage, 0, 64),
 		terminalKeyPressed:        make([]eventTerminalKeyPressed, 0, 64),
 		terminalResized:           make([]eventTerminalResized, 0, 64),
 		viewCreated:               make([]eventViewCreated, 0, 64),
@@ -129,6 +137,14 @@ func (er *eventRegistry) Unregister(eventID wicore.EventID) error {
 			}
 		}
 	case wicore.EventID(0x5000000):
+		for index, value := range er.editorLanguage {
+			if value.id == eventID {
+				copy(er.editorLanguage[index:], er.editorLanguage[index+1:])
+				er.editorLanguage = er.editorLanguage[0 : len(er.editorLanguage)-1]
+				return nil
+			}
+		}
+	case wicore.EventID(0x6000000):
 		for index, value := range er.terminalKeyPressed {
 			if value.id == eventID {
 				copy(er.terminalKeyPressed[index:], er.terminalKeyPressed[index+1:])
@@ -136,7 +152,7 @@ func (er *eventRegistry) Unregister(eventID wicore.EventID) error {
 				return nil
 			}
 		}
-	case wicore.EventID(0x6000000):
+	case wicore.EventID(0x7000000):
 		for index, value := range er.terminalResized {
 			if value.id == eventID {
 				copy(er.terminalResized[index:], er.terminalResized[index+1:])
@@ -144,7 +160,7 @@ func (er *eventRegistry) Unregister(eventID wicore.EventID) error {
 				return nil
 			}
 		}
-	case wicore.EventID(0x7000000):
+	case wicore.EventID(0x8000000):
 		for index, value := range er.viewCreated {
 			if value.id == eventID {
 				copy(er.viewCreated[index:], er.viewCreated[index+1:])
@@ -152,7 +168,7 @@ func (er *eventRegistry) Unregister(eventID wicore.EventID) error {
 				return nil
 			}
 		}
-	case wicore.EventID(0x8000000):
+	case wicore.EventID(0x9000000):
 		for index, value := range er.windowCreated {
 			if value.id == eventID {
 				copy(er.windowCreated[index:], er.windowCreated[index+1:])
@@ -160,7 +176,7 @@ func (er *eventRegistry) Unregister(eventID wicore.EventID) error {
 				return nil
 			}
 		}
-	case wicore.EventID(0x9000000):
+	case wicore.EventID(0xa000000):
 		for index, value := range er.windowResized {
 			if value.id == eventID {
 				copy(er.windowResized[index:], er.windowResized[index+1:])
@@ -284,13 +300,41 @@ func (er *eventRegistry) TriggerEditorKeyboardModeChanged(a wicore.KeyboardMode)
 	}
 }
 
+func (er *eventRegistry) RegisterEditorLanguage(callback func(a lang.Language) bool) wicore.EventID {
+	er.lock.Lock()
+	defer er.lock.Unlock()
+	i := er.nextID
+	er.nextID++
+	er.editorLanguage = append(er.editorLanguage, eventEditorLanguage{i, callback})
+	return i | wicore.EventID(0x5000000)
+}
+
+func (er *eventRegistry) TriggerEditorLanguage(a lang.Language) {
+	er.deferred <- func() {
+		items := func() []func(a lang.Language) bool {
+			er.lock.Lock()
+			defer er.lock.Unlock()
+			items := make([]func(a lang.Language) bool, 0, len(er.editorLanguage))
+			for _, item := range er.editorLanguage {
+				items = append(items, item.callback)
+			}
+			return items
+		}()
+		for _, item := range items {
+			if !item(a) {
+				break
+			}
+		}
+	}
+}
+
 func (er *eventRegistry) RegisterTerminalKeyPressed(callback func(a key.Press) bool) wicore.EventID {
 	er.lock.Lock()
 	defer er.lock.Unlock()
 	i := er.nextID
 	er.nextID++
 	er.terminalKeyPressed = append(er.terminalKeyPressed, eventTerminalKeyPressed{i, callback})
-	return i | wicore.EventID(0x5000000)
+	return i | wicore.EventID(0x6000000)
 }
 
 func (er *eventRegistry) TriggerTerminalKeyPressed(a key.Press) {
@@ -318,7 +362,7 @@ func (er *eventRegistry) RegisterTerminalResized(callback func() bool) wicore.Ev
 	i := er.nextID
 	er.nextID++
 	er.terminalResized = append(er.terminalResized, eventTerminalResized{i, callback})
-	return i | wicore.EventID(0x6000000)
+	return i | wicore.EventID(0x7000000)
 }
 
 func (er *eventRegistry) TriggerTerminalResized() {
@@ -346,7 +390,7 @@ func (er *eventRegistry) RegisterViewCreated(callback func(a wicore.View) bool) 
 	i := er.nextID
 	er.nextID++
 	er.viewCreated = append(er.viewCreated, eventViewCreated{i, callback})
-	return i | wicore.EventID(0x7000000)
+	return i | wicore.EventID(0x8000000)
 }
 
 func (er *eventRegistry) TriggerViewCreated(a wicore.View) {
@@ -374,7 +418,7 @@ func (er *eventRegistry) RegisterWindowCreated(callback func(a wicore.Window) bo
 	i := er.nextID
 	er.nextID++
 	er.windowCreated = append(er.windowCreated, eventWindowCreated{i, callback})
-	return i | wicore.EventID(0x8000000)
+	return i | wicore.EventID(0x9000000)
 }
 
 func (er *eventRegistry) TriggerWindowCreated(a wicore.Window) {
@@ -402,7 +446,7 @@ func (er *eventRegistry) RegisterWindowResized(callback func(a wicore.Window) bo
 	i := er.nextID
 	er.nextID++
 	er.windowResized = append(er.windowResized, eventWindowResized{i, callback})
-	return i | wicore.EventID(0x9000000)
+	return i | wicore.EventID(0xa000000)
 }
 
 func (er *eventRegistry) TriggerWindowResized(a wicore.Window) {

@@ -47,13 +47,11 @@ type Command interface {
 	// documentation purpose.
 	Category(e Editor, w Window) CommandCategory
 	// ShortDesc returns a short description of the command in the language
-	// requested. It defaults to English if the description was not translated in
-	// this language.
-	ShortDesc(e Editor, w Window) string
+	// requested.
+	ShortDesc() string
 	// LongDesc returns a long explanation of the command in the language
-	// requested. It defaults to English if the description was not translated in
-	// this language.
-	LongDesc(e Editor, w Window) string
+	// requested.
+	LongDesc() string
 }
 
 // Commands stores the known commands. This is where plugins can add new
@@ -96,7 +94,7 @@ func (c *CommandImpl) Name() string {
 // Handle implements Command.
 func (c *CommandImpl) Handle(e Editor, w Window, args ...string) {
 	if c.ExpectedArgs != -1 && len(args) != c.ExpectedArgs {
-		e.ExecuteCommand(w, "alert", c.LongDesc(e, w))
+		e.ExecuteCommand(w, "alert", c.LongDesc())
 	}
 	c.HandlerValue(c, e, w, args...)
 }
@@ -107,13 +105,13 @@ func (c *CommandImpl) Category(e Editor, w Window) CommandCategory {
 }
 
 // ShortDesc implements Command.
-func (c *CommandImpl) ShortDesc(e Editor, w Window) string {
-	return c.ShortDescValue.Get(e.CurrentLanguage())
+func (c *CommandImpl) ShortDesc() string {
+	return c.ShortDescValue.String()
 }
 
 // LongDesc implements Command.
-func (c *CommandImpl) LongDesc(e Editor, w Window) string {
-	return c.LongDescValue.Get(e.CurrentLanguage())
+func (c *CommandImpl) LongDesc() string {
+	return c.LongDescValue.String()
 }
 
 // CommandAlias references another command by its name. It's important to not
@@ -140,7 +138,7 @@ func (c *CommandAlias) Handle(e Editor, w Window, args ...string) {
 	} else {
 		// TODO(maruel): This makes assumption on "alert".
 		cmd = GetCommand(e, w, "alert")
-		txt := fmt.Sprintf(AliasNotFound.Get(e.CurrentLanguage()), c.NameValue, c.CommandValue)
+		txt := fmt.Sprintf(AliasNotFound.String(), c.NameValue, c.CommandValue)
 		cmd.Handle(e, w, txt)
 	}
 }
@@ -155,13 +153,13 @@ func (c *CommandAlias) Category(e Editor, w Window) CommandCategory {
 }
 
 // ShortDesc implements Command.
-func (c *CommandAlias) ShortDesc(e Editor, w Window) string {
-	return fmt.Sprintf(AliasFor.Get(e.CurrentLanguage()), c.merged())
+func (c *CommandAlias) ShortDesc() string {
+	return fmt.Sprintf(AliasFor.String(), c.merged())
 }
 
 // LongDesc implements Command.
-func (c *CommandAlias) LongDesc(e Editor, w Window) string {
-	return fmt.Sprintf(AliasFor.Get(e.CurrentLanguage()), c.merged())
+func (c *CommandAlias) LongDesc() string {
+	return fmt.Sprintf(AliasFor.String(), c.merged())
 }
 
 func (c *CommandAlias) merged() string {

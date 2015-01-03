@@ -104,6 +104,7 @@ type EventsDefinition interface {
 	TriggerDocumentCreated(doc Document)
 	TriggerDocumentCursorMoved(doc Document, col, row int)
 	TriggerEditorKeyboardModeChanged(mode KeyboardMode)
+	TriggerEditorLanguage(l lang.Language)
 	TriggerTerminalResized()
 	TriggerTerminalKeyPressed(key key.Press)
 	TriggerViewCreated(view View)
@@ -128,9 +129,6 @@ type Editor interface {
 
 	// RegisterViewFactory makes a new view available by name.
 	RegisterViewFactory(name string, viewFactory ViewFactory) bool
-
-	// CurrentLanguage() returns the current UI language.
-	CurrentLanguage() lang.Language
 
 	// KeyboardMode is global to the editor. It matches vim behavior. For example
 	// in a 2-window setup while in insert mode, using Ctrl-O, Ctrl-W, Down will
