@@ -2,7 +2,7 @@
 // Use of this source code is governed under the Apache License, Version 2.0
 // that can be found in the LICENSE file.
 
-// package lang handles localization of language UI.
+// Package lang handles localization of language UI.
 package lang
 
 import (
@@ -11,7 +11,7 @@ import (
 )
 
 var lock sync.Mutex
-var active Language = En
+var active = En
 
 // Language is used to declare the language for UI purpose.
 type Language string

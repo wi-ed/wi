@@ -96,11 +96,11 @@ func debugHook() io.Closer {
 }
 
 func debugHookEditor(e editor.Editor) {
-	expvar.Publish("active_window", Func(func() string { return e.ActiveWindow().String() }))
-	expvar.Publish("commands", FuncJSON(func() interface{} { return commands(e) }))
-	expvar.Publish("documents", FuncJSON(func() interface{} { return documents(e) }))
-	expvar.Publish("view_factories", FuncJSON(func() interface{} { return viewFactories(e) }))
-	expvar.Publish("windows", FuncJSON(func() interface{} { return windows(e) }))
+	expvar.Publish("active_window", funcString(func() string { return e.ActiveWindow().String() }))
+	expvar.Publish("commands", funcJSON(func() interface{} { return commands(e) }))
+	expvar.Publish("documents", funcJSON(func() interface{} { return documents(e) }))
+	expvar.Publish("view_factories", funcJSON(func() interface{} { return viewFactories(e) }))
+	expvar.Publish("windows", funcJSON(func() interface{} { return windows(e) }))
 	expvar.NewInt("pid").Set(int64(os.Getpid()))
 
 	cmds := []wicore.Command{
@@ -309,15 +309,15 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-type Func func() string
+type funcString func() string
 
-func (f Func) String() string {
+func (f funcString) String() string {
 	return f()
 }
 
-type FuncJSON func() interface{}
+type funcJSON func() interface{}
 
-func (f FuncJSON) String() string {
+func (f funcJSON) String() string {
 	v, _ := json.MarshalIndent(f(), "", "  ")
 	return string(v)
 }

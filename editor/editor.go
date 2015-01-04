@@ -284,10 +284,6 @@ func (e *editor) loadPlugins() {
 //
 // It is fine to run it concurrently in unit test, as no global variable shall
 // be used by the object created by this function.
-//
-// TODO(maruel): Not true anymore due to call lang.Set(lang.En).
-//
-// Editor is closed by this function.
 func MakeEditor(terminal Terminal, noPlugin bool) (Editor, error) {
 	e := &editor{
 		eventRegistry: makeEventRegistry(),

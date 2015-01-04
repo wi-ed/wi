@@ -162,7 +162,7 @@ func (b *Buffer) Fill(cell Cell) {
 	}
 }
 
-// Formats special characters like code points below 32.
+// FormatText formats special characters like code points below 32.
 //
 // TODO(maruel): This must add coloring too.
 //

@@ -30,7 +30,7 @@ type Terminal interface {
 	SetCursor(col, row int)
 }
 
-// EventType is the type of supported event.
+// EventType is the type of supported terminal event.
 type EventType int
 
 // Supported event types.
@@ -92,6 +92,7 @@ func (t *TerminalFake) Blit(b *wicore.Buffer) {
 	t.Buffer.Blit(b)
 }
 
+// SetCursor implements Terminal.
 func (t *TerminalFake) SetCursor(col, line int) {
 	// TODO(maruel): Implement somehow.
 }

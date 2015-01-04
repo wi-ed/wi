@@ -2,7 +2,7 @@
 // Use of this source code is governed under the Apache License, Version 2.0
 // that can be found in the LICENSE file.
 
-// package colors declare constants and functions to simplify color management.
+// Package colors declare constants and functions to simplify color management.
 package colors
 
 // Known colors.
@@ -23,40 +23,40 @@ var (
 	BrightMagenta = RGB{255, 85, 255}
 	BrightYellow  = RGB{255, 255, 85}
 	White         = RGB{255, 255, 255}
-
-	// EGA lists the colors to use for maximum compatibility with terminals that
-	// do not support terminal-256.
-	//
-	// EGA colors <3 forever.
-	// Random intertubes websites says things like:
-	//   sudo apt-get install ncurses-term
-	//   export TERM=xterm-256color
-	//
-	// "tput colors" can be used to determine the number of colors supported by
-	// the terminal.
-	EGA = []RGB{
-		Black,
-		Blue,
-		Green,
-		Cyan,
-		Red,
-		Magenta,
-		Brown,
-		LightGray,
-		DarkGray,
-		BrightBlue,
-		BrightGreen,
-		BrightCyan,
-		BrightRed,
-		BrightMagenta,
-		BrightYellow,
-		White,
-	}
-
-	// TODO(maruel): Add all colors for VGA;
-	// gnome-256color/putty-256color/rxvt-256color/xterm-256color.
-	// Debian package ncurses-term gets the DB for colors.
 )
+
+// EGA lists the colors to use for maximum compatibility with terminals that
+// do not support terminal-256.
+//
+// EGA colors <3 forever.
+// Random intertubes websites says things like:
+//   sudo apt-get install ncurses-term
+//   export TERM=xterm-256color
+//
+// "tput colors" can be used to determine the number of colors supported by
+// the terminal.
+var EGA = []RGB{
+	Black,
+	Blue,
+	Green,
+	Cyan,
+	Red,
+	Magenta,
+	Brown,
+	LightGray,
+	DarkGray,
+	BrightBlue,
+	BrightGreen,
+	BrightCyan,
+	BrightRed,
+	BrightMagenta,
+	BrightYellow,
+	White,
+}
+
+// TODO(maruel): Add all colors for VGA;
+// gnome-256color/putty-256color/rxvt-256color/xterm-256color.
+// Debian package ncurses-term gets the DB for colors.
 
 // RGB represents the color of a single character on screen.
 //

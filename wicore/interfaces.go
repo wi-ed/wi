@@ -311,7 +311,7 @@ type Commands interface {
 	GetNames() []string
 }
 
-// EnqueuedCommand is used internally to dispatch commands through
+// EnqueuedCommands is used internally to dispatch commands through
 // EventRegistry.
 type EnqueuedCommands struct {
 	Commands [][]string

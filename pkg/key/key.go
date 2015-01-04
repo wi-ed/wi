@@ -4,7 +4,7 @@
 
 //go:generate stringer -type=Key
 
-// package key implements generic key definition.
+// Package key implements generic key definition.
 package key
 
 import "strings"
@@ -52,6 +52,9 @@ const (
 	last
 )
 
+// StringToKey parses the string presentation of a key back into a Key.
+//
+// Returns None on invalid key name.
 func StringToKey(key string) Key {
 	// TODO(maruel): Create tool to generate this automatically.
 	switch key {
@@ -161,7 +164,7 @@ func (k Press) IsValid() bool {
 	return k.Alt || k.Ctrl || k.Key != None || k.Ch != rune(0)
 }
 
-// Parses a string and returns a Press.
+// StringToPress parses a string and returns a Press.
 func StringToPress(keyName string) Press {
 	out := Press{}
 	if strings.HasPrefix(keyName, "Ctrl-") {
