@@ -169,34 +169,44 @@ func RegisterDebugCommands(dispatcher wicore.Commands) {
 // RegisterDebugEvents registers the debug event listeners.
 func RegisterDebugEvents(e wicore.EventRegistry) {
 	// TODO(maruel): Generate automatically?
-	RegisterCommands(func(cmds wicore.EnqueuedCommands) {
-		log.Printf("Commands(%v)", cmds)
+	e.RegisterCommands(func(cmds wicore.EnqueuedCommands) bool {
+		//log.Printf("Commands(%v)", cmds)
+		return true
 	})
-	RegisterDocumentCreated(func(doc wicore.Document) {
+	e.RegisterDocumentCreated(func(doc wicore.Document) bool {
 		log.Printf("DocumentCreated(%s)", doc)
+		return true
 	})
-	RegisterDocumentCursorMoved(func(doc wicore.Document, col, row int) {
+	e.RegisterDocumentCursorMoved(func(doc wicore.Document, col, row int) bool {
 		log.Printf("DocumentCursorMoved(%s, %d, %d)", doc, col, row)
+		return true
 	})
-	RegisterEditorKeyboardModeChanged(func(mode wicore.KeyboardMode) {
+	e.RegisterEditorKeyboardModeChanged(func(mode wicore.KeyboardMode) bool {
 		log.Printf("EditorKeyboardModeChanged(%s)", mode)
+		return true
 	})
-	RegisterEditorLanguage(func(l lang.Language) {
+	e.RegisterEditorLanguage(func(l lang.Language) bool {
 		log.Printf("EditorLanguage(%s)", l)
+		return true
 	})
-	RegisterTerminalResized(func() {
+	e.RegisterTerminalResized(func() bool {
 		log.Printf("TerminalResized()")
+		return true
 	})
-	RegisterTerminalKeyPressed(func(key key.Press) {
+	e.RegisterTerminalKeyPressed(func(key key.Press) bool {
 		log.Printf("TerminalKeyPressed(%s)", key)
+		return true
 	})
-	RegisterViewCreated(func(view wicore.View) {
+	e.RegisterViewCreated(func(view wicore.View) bool {
 		log.Printf("ViewCreated(%s)", view)
+		return true
 	})
-	RegisterWindowCreated(func(window wicore.Window) {
+	e.RegisterWindowCreated(func(window wicore.Window) bool {
 		log.Printf("WindowCreated(%s)", window)
+		return true
 	})
-	RegisterWindowResized(func(window wicore.Window) {
+	e.RegisterWindowResized(func(window wicore.Window) bool {
 		log.Printf("WindowResized(%s)", window)
+		return true
 	})
 }

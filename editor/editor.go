@@ -263,12 +263,15 @@ func (e *editor) loadPlugins() {
 // MakeEditor creates an object that implements the Editor interface. The root
 // window doesn't have anything to view in it.
 //
-// It's up to the caller to add child Windows in it. Normally it will be done
-// via the command "editor_bootstrap_ui" to add the status bar, then "new" or
-// "open" to create the initial text buffer.
+// The editor contains a root window and a root view. It's up to the caller to
+// add child Windows in it. Normally it will be done via the command
+// "editor_bootstrap_ui" to add the status bar, then "new" or "open" to create
+// the initial text buffer.
 //
 // It is fine to run it concurrently in unit test, as no global variable shall
 // be used by the object created by this function.
+//
+// TODO(maruel): Not true anymore due to call lang.Set(lang.En).
 //
 // Editor is closed by this function.
 func MakeEditor(terminal Terminal, noPlugin bool) (Editor, error) {
@@ -313,8 +316,8 @@ func MakeEditor(terminal Terminal, noPlugin bool) (Editor, error) {
 	e.TriggerWindowCreated(e.rootWindow)
 	e.TriggerViewCreated(rootView)
 
-	lang.Set(lang.En)
-	e.TriggerEditorLanguage(lang.En)
+	lang.Set(e.language)
+	e.TriggerEditorLanguage(e.language)
 	// This forces creating the default buffer.
 	e.TriggerTerminalResized()
 	go e.terminalLoop(terminal)
