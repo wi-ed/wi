@@ -64,7 +64,7 @@ func TestMainImmediateQuit(t *testing.T) {
 	expected.Fill(wicore.MakeCell(' ', colors.BrightYellow, colors.Black))
 	expected.DrawString("Dummy content", 0, 0, wicore.CellFormat{Fg: colors.BrightYellow, Bg: colors.Black})
 	expected.DrawString("Really", 0, 1, wicore.CellFormat{Fg: colors.BrightYellow, Bg: colors.Black})
-	expected.DrawString("Status Name    EditMode                                          0,0            ", 0, 24, wicore.CellFormat{Fg: colors.Red, Bg: colors.LightGray})
+	expected.DrawString("Status Name    Normal                                            0,0            ", 0, 24, wicore.CellFormat{Fg: colors.Red, Bg: colors.LightGray})
 	expected.Cell(0, 0).F.Bg = colors.White
 	expected.Cell(0, 0).F.Fg = colors.Black
 	compareBuffers(t, expected, terminal.Buffer)
@@ -86,6 +86,6 @@ func TestMainInvalidThenQuit(t *testing.T) {
 	expected := wicore.NewBuffer(80, 25)
 	expected.Fill(wicore.MakeCell(' ', colors.Red, colors.Black))
 	expected.DrawString("Root", 0, 0, wicore.CellFormat{Fg: colors.Red, Bg: colors.Black})
-	expected.DrawString("Status Name    EditMode                                          Status Position   ", 0, 24, wicore.CellFormat{Fg: colors.Red, Bg: colors.LightGray})
+	expected.DrawString("Status Name    Normal                                            Status Position   ", 0, 24, wicore.CellFormat{Fg: colors.Red, Bg: colors.LightGray})
 	compareBuffers(t, expected, terminal.Buffer)
 }

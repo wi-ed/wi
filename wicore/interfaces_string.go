@@ -37,9 +37,9 @@ func (i DockingType) String() string {
 	return _DockingType_name[_DockingType_index[i]:_DockingType_index[i+1]]
 }
 
-const _KeyboardMode_name = "CommandModeEditModeAllMode"
+const _KeyboardMode_name = "NormalInsertAllMode"
 
-var _KeyboardMode_index = [...]uint8{0, 11, 19, 26}
+var _KeyboardMode_index = [...]uint8{0, 6, 12, 19}
 
 func (i KeyboardMode) String() string {
 	i -= 1

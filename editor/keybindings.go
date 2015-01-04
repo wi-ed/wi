@@ -20,11 +20,11 @@ func (k *keyBindings) Set(mode wicore.KeyboardMode, key key.Press, cmdName strin
 		return false
 	}
 	var ok bool
-	if mode == wicore.AllMode || mode == wicore.CommandMode {
+	if mode == wicore.AllMode || mode == wicore.Normal {
 		_, ok = k.commandMappings[key]
 		k.commandMappings[key] = cmdName
 	}
-	if mode == wicore.AllMode || mode == wicore.EditMode {
+	if mode == wicore.AllMode || mode == wicore.Insert {
 		_, ok = k.editMappings[key]
 		k.editMappings[key] = cmdName
 	}
@@ -35,10 +35,10 @@ func (k *keyBindings) Get(mode wicore.KeyboardMode, key key.Press) string {
 	if !key.IsValid() {
 		return ""
 	}
-	if mode == wicore.CommandMode {
+	if mode == wicore.Normal {
 		return k.commandMappings[key]
 	}
-	if mode == wicore.EditMode {
+	if mode == wicore.Insert {
 		return k.editMappings[key]
 	}
 	v, ok := k.commandMappings[key]
@@ -70,9 +70,9 @@ func cmdKeyBind(c *wicore.CommandImpl, e wicore.Editor, w wicore.Window, args ..
 
 	var mode wicore.KeyboardMode
 	if modeName == "command" {
-		mode = wicore.CommandMode
+		mode = wicore.Normal
 	} else if modeName == "edit" {
-		mode = wicore.CommandMode
+		mode = wicore.Normal
 	} else if modeName == "all" {
 		mode = wicore.AllMode
 	} else {
@@ -115,9 +115,12 @@ func RegisterKeyBindingCommands(dispatcher wicore.Commands) {
 // TODO(maruel): This should be remappable via a configuration flag, for
 // example vim flavor vs emacs flavor. I'm not sure it's worth supporting this
 // without a restart.
-func RegisterDefaultKeyBindings(e wicore.EventRegistry) {
+func RegisterDefaultKeyBindings(e wicore.Editor) {
 	wicore.PostCommand(e, nil, "key_bind", "global", "all", "F1", "help")
 	wicore.PostCommand(e, nil, "key_bind", "global", "command", ":", "show_command_window")
 	// TODO(maruel): Temporary.
 	wicore.PostCommand(e, nil, "key_bind", "global", "all", "Ctrl-c", "quit")
+
+	// TODO(maruel): Figure out if prefer command or direct calls. Direct calls is type-safe.
+	wicore.RootWindow(e.ActiveWindow()).View().KeyBindings().Set(wicore.Insert, key.Press{Key: key.Escape}, "key_set_normal")
 }

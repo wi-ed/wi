@@ -28,7 +28,7 @@ func (v *commandView) Buffer() *wicore.Buffer {
 func commandViewFactory(e wicore.Editor, args ...string) wicore.View {
 	keys := makeKeyBindings()
 	// Fill up the key bindings. This includes basic cursor movement, help, etc.
-	//keys.Set(wicore.CommandMode, "Enter", "ExecuteCommmad")
+	//keys.Set(wicore.Normal, "Enter", "ExecuteCommmad")
 
 	return &commandView{
 		view{

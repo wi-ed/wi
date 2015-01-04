@@ -321,19 +321,20 @@ type EnqueuedCommands struct {
 
 // KeyboardMode defines the keyboard mapping (input mode) to use.
 //
-// Unlike vim, there's no Ex mode. It's unnecessary because the command window
-// is a Window on its own, instead of a additional input mode on the current
-// Window.
+// Unlike vim, there's no Command-line and Ex modes. It's unnecessary because
+// the command window is a Window on its own, instead of a additional input
+// mode on the current Window.
+//
+// TODO(maruel): vim also has visual/select which will be necessary.
 type KeyboardMode int
 
 const (
-	// CommandMode is the mode where typing letters results in commands, not
-	// content editing. It's named Normal mode in vim.
-	//
-	// TODO(maruel): Rename for consistency?
-	CommandMode KeyboardMode = iota + 1
-	// EditMode is the mode where typing letters results in content, not commands.
-	EditMode
+	// Normal is the mode where typing letters results in commands, not
+	// content editing.
+	Normal KeyboardMode = iota + 1
+	// Insert is the mode where typing letters results in content, not
+	// commands.
+	Insert
 	// AllMode is to bind keys independent of the current mode. It is useful for
 	// function keys, Ctrl-<letter>, arrow keys, etc.
 	AllMode
@@ -342,6 +343,9 @@ const (
 // KeyBindings stores the mapping between keyboard entry and commands. This
 // includes what can be considered "macros" as much as casual things like arrow
 // keys.
+//
+// TODO(maruel): Right now there's two ways to add bindings, either through
+// calls or through commands. Prefer one over the other.
 type KeyBindings interface {
 	// Set registers a keyboard mapping. In practice keyboard mappings
 	// should normally be registered on startup. Returns false if a key mapping

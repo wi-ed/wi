@@ -50,7 +50,7 @@ type editor struct {
 	viewFactories map[string]wicore.ViewFactory // All the ViewFactory's that can be used to create new View.
 	viewReady     chan bool                     // A View.Buffer() is ready to be drawn.
 	language      lang.Language                 // Actual language used.
-	keyboardMode  wicore.KeyboardMode           // Global keyboard mode is either CommandMode or EditMode.
+	keyboardMode  wicore.KeyboardMode           // Global keyboard mode instead of per Window, it's more logical for users.
 	plugins       Plugins                       // All loaded plugin processes.
 	quitFlag      bool                          // If true, a shutdown is in progress.
 }
@@ -196,6 +196,12 @@ func (e *editor) onTerminalResized() bool {
 	return true
 }
 
+func (e *editor) onDocumentCursorMoved(doc wicore.Document, col, line int) bool {
+	// TODO(maruel): Obviously wrong.
+	e.terminal.SetCursor(col, line)
+	return true
+}
+
 func (e *editor) terminalLoop(terminal Terminal) {
 	for event := range terminal.SeedEvents() {
 		switch event.Type {
@@ -292,7 +298,7 @@ func MakeEditor(terminal Terminal, noPlugin bool) (Editor, error) {
 		viewFactories: make(map[string]wicore.ViewFactory),
 		viewReady:     make(chan bool),
 		language:      lang.En,
-		keyboardMode:  wicore.EditMode,
+		keyboardMode:  wicore.Normal,
 	}
 
 	RegisterDebugEvents(e)
@@ -320,6 +326,7 @@ func MakeEditor(terminal Terminal, noPlugin bool) (Editor, error) {
 	e.RegisterTerminalKeyPressed(e.onTerminalKeyPressed)
 	e.RegisterTerminalResized(e.onTerminalResized)
 	e.RegisterCommands(e.onCommands)
+	e.RegisterDocumentCursorMoved(e.onDocumentCursorMoved)
 
 	e.TriggerWindowCreated(e.rootWindow)
 	e.TriggerViewCreated(rootView)
@@ -330,7 +337,7 @@ func MakeEditor(terminal Terminal, noPlugin bool) (Editor, error) {
 	e.TriggerTerminalResized()
 	go e.terminalLoop(terminal)
 
-	e.TriggerEditorKeyboardModeChanged(wicore.EditMode)
+	e.TriggerEditorKeyboardModeChanged(e.keyboardMode)
 
 	if !noPlugin {
 		e.loadPlugins()

@@ -14,15 +14,20 @@ import (
 type Terminal interface {
 	// Size returns the current size of the terminal window.
 	Size() (int, int)
+
 	// SeedEvents() returns a channel where events will be sent to.
 	//
 	// The channel will be closed when the terminal is closed.
 	SeedEvents() <-chan TerminalEvent
+
 	// Blit updates the terminal output with the buffer specified.
 	//
 	// It is important for the buffer to be the right size, otherwise the display
 	// will be partially updated.
 	Blit(b *wicore.Buffer)
+
+	// SetCursor moves the cursor to a position.
+	SetCursor(col, row int)
 }
 
 // EventType is the type of supported event.
@@ -85,6 +90,10 @@ func (t *TerminalFake) SeedEvents() <-chan TerminalEvent {
 // Blit implements Terminal.
 func (t *TerminalFake) Blit(b *wicore.Buffer) {
 	t.Buffer.Blit(b)
+}
+
+func (t *TerminalFake) SetCursor(col, line int) {
+	// TODO(maruel): Implement somehow.
 }
 
 // NewTerminalFake returns an initialized TerminalFake which implements the

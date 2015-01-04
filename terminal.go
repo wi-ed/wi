@@ -284,3 +284,7 @@ func (t TermBox) Blit(b *wicore.Buffer) {
 		panic(err)
 	}
 }
+
+func (t TermBox) SetCursor(col, line int) {
+	termbox.SetCursor(col, line)
+}

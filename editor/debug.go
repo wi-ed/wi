@@ -40,9 +40,9 @@ func keyLogRecurse(w *window, e wicore.Editor, mode wicore.KeyboardMode) {
 	// TODO(maruel): Create a proper enumerator.
 	keys := w.view.KeyBindings().(*keyBindings)
 	var mapping *map[key.Press]string
-	if mode == wicore.CommandMode {
+	if mode == wicore.Normal {
 		mapping = &keys.commandMappings
-	} else if mode == wicore.EditMode {
+	} else if mode == wicore.Insert {
 		mapping = &keys.editMappings
 	} else {
 		panic("Errr, fix me")
@@ -61,10 +61,10 @@ func keyLogRecurse(w *window, e wicore.Editor, mode wicore.KeyboardMode) {
 }
 
 func cmdKeyLog(c *privilegedCommandImpl, e *editor, w *window, args ...string) {
-	log.Printf("CommandMode commands")
-	keyLogRecurse(e.rootWindow, e, wicore.CommandMode)
-	log.Printf("EditMode commands")
-	keyLogRecurse(e.rootWindow, e, wicore.EditMode)
+	log.Printf("Normal commands")
+	keyLogRecurse(e.rootWindow, e, wicore.Normal)
+	log.Printf("Insert commands")
+	keyLogRecurse(e.rootWindow, e, wicore.Insert)
 }
 
 func cmdLogAll(c *wicore.CommandImpl, e wicore.Editor, w wicore.Window, args ...string) {
