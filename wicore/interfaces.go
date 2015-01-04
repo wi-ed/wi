@@ -118,6 +118,10 @@ type Editor interface {
 	// ViewFactoryNames return the name of all the view factories.
 	ViewFactoryNames() []string
 
+	// AllDocuments returns all the active documents. Some of them may not be in
+	// a View.
+	AllDocuments() []Document
+
 	// KeyboardMode is global to the editor. It matches vim behavior. For example
 	// in a 2-window setup while in insert mode, using Ctrl-O, Ctrl-W, Down will
 	// move to the next window but will stay in insert mode.
@@ -167,11 +171,6 @@ type Window interface {
 	// ID returns the unique id for this Window. The id is guaranteed to be
 	// unique through the process lifetime of the editor.
 	ID() string
-
-	// Tree returns a textual representation of the Window hierarchy. It is only
-	// for debugging purpose.
-	// TODO(maruel): Remove.
-	Tree() string
 
 	// Parent returns the parent Window.
 	Parent() Window

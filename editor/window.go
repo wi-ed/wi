@@ -64,20 +64,6 @@ func (w *window) ID() string {
 	return fmt.Sprintf("%s:%d", w.parent.ID(), w.id)
 }
 
-// Returns a string representing the tree.
-func (w *window) Tree() string {
-	// Not the most performant implementation but does the job.
-	out := w.String() + "\n"
-	for _, child := range w.childrenWindows {
-		for _, line := range strings.Split(child.Tree(), "\n") {
-			if line != "" {
-				out += ("  " + line + "\n")
-			}
-		}
-	}
-	return out
-}
-
 func (w *window) Parent() wicore.Window {
 	// TODO(maruel): Understand why this is necessary at all.
 	if w.parent != nil {

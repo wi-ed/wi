@@ -301,15 +301,12 @@ func MakeEditor(terminal Terminal, noPlugin bool) (Editor, error) {
 		keyboardMode:  wicore.Normal,
 	}
 
-	RegisterDebugEvents(e)
-
 	// The root view is important, it defines all the global commands. It is
 	// pre-filled with the default native commands and keyboard mapping, and it's
 	// up to the plugins to add more global commands on startup.
 	rootView := makeStaticDisabledView(e, "Root", -1, -1)
 
 	// These commands are generic commands, they do not require specific access.
-	RegisterDebugCommands(rootView.Commands())
 	RegisterCommandCommands(rootView.Commands())
 	RegisterKeyBindingCommands(rootView.Commands())
 	RegisterViewCommands(rootView.Commands())
