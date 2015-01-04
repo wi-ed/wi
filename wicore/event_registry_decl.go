@@ -28,6 +28,7 @@ type EventRegistry interface {
 	RegisterEditorKeyboardModeChanged(callback func(a KeyboardMode) bool) EventListenerID
 	RegisterEditorLanguage(callback func(a lang.Language) bool) EventListenerID
 	RegisterTerminalKeyPressed(callback func(a key.Press) bool) EventListenerID
+	RegisterTerminalMetaKeyPressed(callback func(a key.Press) bool) EventListenerID
 	RegisterTerminalResized(callback func() bool) EventListenerID
 	RegisterViewActivated(callback func(a View) bool) EventListenerID
 	RegisterViewCreated(callback func(a View) bool) EventListenerID

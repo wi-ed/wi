@@ -6,6 +6,7 @@
 package lang
 
 import (
+	"fmt"
 	"strings"
 	"sync"
 )
@@ -44,6 +45,11 @@ func (m Map) Get(lang Language) string {
 
 func (m Map) String() string {
 	return m.Get(Active())
+}
+
+// Sprintf returns fmt.Sprintf(m.Get(), args...) as a shortcut.
+func (m Map) Sprintf(args ...interface{}) string {
+	return fmt.Sprintf(m.String(), args...)
 }
 
 // Active returns the active language for the process.

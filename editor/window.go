@@ -453,7 +453,7 @@ func cmdWindowActivate(c *privilegedCommandImpl, e *editor, w *window, args ...s
 
 	child := e.idToWindow(windowName)
 	if child == nil {
-		e.ExecuteCommand(w, "alert", fmt.Sprintf(isNotValidWindow.Get(e.CurrentLanguage()), windowName))
+		e.ExecuteCommand(w, "alert", isNotValidWindow.Sprintf(windowName))
 		return
 	}
 	e.activateWindow(child)
@@ -464,7 +464,7 @@ func cmdWindowClose(c *privilegedCommandImpl, e *editor, w *window, args ...stri
 
 	child := e.idToWindow(windowName)
 	if child == nil {
-		e.ExecuteCommand(w, "alert", fmt.Sprintf(isNotValidWindow.Get(e.CurrentLanguage()), windowName))
+		e.ExecuteCommand(w, "alert", isNotValidWindow.Sprintf(windowName))
 		return
 	}
 	for i, v := range child.parent.childrenWindows {
@@ -487,7 +487,7 @@ func cmdWindowNew(c *privilegedCommandImpl, e *editor, w *window, args ...string
 	parent := e.idToWindow(windowName)
 	if parent == nil {
 		if viewFactoryName != "infobar_alert" {
-			e.ExecuteCommand(w, "alert", fmt.Sprintf(isNotValidWindow.Get(e.CurrentLanguage()), windowName))
+			e.ExecuteCommand(w, "alert", isNotValidWindow.Sprintf(windowName))
 		}
 		return
 	}
@@ -495,7 +495,7 @@ func cmdWindowNew(c *privilegedCommandImpl, e *editor, w *window, args ...string
 	docking := wicore.StringToDockingType(dockingName)
 	if docking == wicore.DockingUnknown {
 		if viewFactoryName != "infobar_alert" {
-			e.ExecuteCommand(w, "alert", fmt.Sprintf(invalidDocking.Get(e.CurrentLanguage()), dockingName))
+			e.ExecuteCommand(w, "alert", invalidDocking.Sprintf(dockingName))
 		}
 		return
 	}
@@ -507,7 +507,7 @@ func cmdWindowNew(c *privilegedCommandImpl, e *editor, w *window, args ...string
 	for _, child := range parent.childrenWindows {
 		if child.Docking() == docking {
 			if viewFactoryName != "infobar_alert" {
-				e.ExecuteCommand(w, "alert", fmt.Sprintf(cantAddTwoWindowWithSameDocking.Get(e.CurrentLanguage()), docking))
+				e.ExecuteCommand(w, "alert", cantAddTwoWindowWithSameDocking.Sprintf(docking))
 			}
 			return
 		}
@@ -517,7 +517,7 @@ func cmdWindowNew(c *privilegedCommandImpl, e *editor, w *window, args ...string
 	viewFactory, ok := e.viewFactories[viewFactoryName]
 	if !ok {
 		if viewFactoryName != "infobar_alert" {
-			e.ExecuteCommand(w, "alert", fmt.Sprintf(invalidViewFactory.Get(e.CurrentLanguage()), viewFactoryName))
+			e.ExecuteCommand(w, "alert", invalidViewFactory.Sprintf(viewFactoryName))
 		}
 		return
 	}
@@ -551,12 +551,12 @@ func cmdWindowSetDocking(c *privilegedCommandImpl, e *editor, w *window, args ..
 
 	child := e.idToWindow(windowName)
 	if child == nil {
-		e.ExecuteCommand(w, "alert", fmt.Sprintf(isNotValidWindow.Get(e.CurrentLanguage()), windowName))
+		e.ExecuteCommand(w, "alert", isNotValidWindow.Sprintf(windowName))
 		return
 	}
 	docking := wicore.StringToDockingType(dockingName)
 	if docking == wicore.DockingUnknown {
-		e.ExecuteCommand(w, "alert", fmt.Sprintf(invalidDocking.Get(e.CurrentLanguage()), dockingName))
+		e.ExecuteCommand(w, "alert", invalidDocking.Sprintf(dockingName))
 		return
 	}
 	if w.docking != docking {
@@ -572,7 +572,7 @@ func cmdWindowSetRect(c *privilegedCommandImpl, e *editor, w *window, args ...st
 
 	child := e.idToWindow(windowName)
 	if child == nil {
-		e.ExecuteCommand(w, "alert", fmt.Sprintf(isNotValidWindow.Get(e.CurrentLanguage()), windowName))
+		e.ExecuteCommand(w, "alert", isNotValidWindow.Sprintf(windowName))
 		return
 	}
 	r := wicore.Rect{}
@@ -582,7 +582,7 @@ func cmdWindowSetRect(c *privilegedCommandImpl, e *editor, w *window, args ...st
 	r.Width, err3 = strconv.Atoi(args[3])
 	r.Height, err4 = strconv.Atoi(args[4])
 	if err1 != nil || err2 != nil || err3 != nil || err4 != nil {
-		e.ExecuteCommand(w, "alert", fmt.Sprintf(invalidRect.Get(e.CurrentLanguage()), args[1], args[2], args[3], args[4]))
+		e.ExecuteCommand(w, "alert", invalidRect.Sprintf(args[1], args[2], args[3], args[4]))
 		return
 	}
 	child.setRect(r)

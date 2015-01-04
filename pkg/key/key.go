@@ -56,7 +56,6 @@ const (
 //
 // Returns None on invalid key name.
 func StringToKey(key string) Key {
-	// TODO(maruel): Create tool to generate this automatically.
 	switch key {
 	case "Escape":
 		return Escape
@@ -131,7 +130,7 @@ func StringToKey(key string) Key {
 type Press struct {
 	Alt  bool
 	Ctrl bool
-	Key  Key  // Non-character key (e.g. F-keys, arrows, etc). Set to None when not used.
+	Key  Key  // Non-character key (e.g. F-keys, arrows, tab, space, etc). Set to None when not used.
 	Ch   rune // Character key, e.g. letter, number. Set to rune(0) when not used.
 }
 
@@ -154,7 +153,8 @@ func (k Press) String() string {
 	return out
 }
 
-// IsMeta returns true if a key press is a meta key.
+// IsMeta returns true if a key press is a meta key. This also includes
+// characters with Ctrl or Alt held.
 func (k Press) IsMeta() bool {
 	return k.Alt || k.Ctrl || k.Key >= Meta
 }

@@ -91,6 +91,7 @@ type EventsDefinition interface {
 	TriggerEditorKeyboardModeChanged(mode KeyboardMode)
 	TriggerEditorLanguage(l lang.Language)
 	TriggerTerminalResized()
+	TriggerTerminalMetaKeyPressed(key key.Press)
 	TriggerTerminalKeyPressed(key key.Press)
 	TriggerViewActivated(view View)
 	TriggerViewCreated(view View)

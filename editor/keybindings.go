@@ -115,8 +115,6 @@ func RegisterKeyBindingCommands(dispatcher wicore.Commands) {
 				lang.En: "Usage: key_bind [window|global] [command|edit|all] <key> <command>\nBinds a keyboard mapping to a command. The binding can be to the active view for view-specific key binding or to the root view for global key bindings.",
 			},
 		},
-
-		&wicore.CommandAlias{"keybind", "key_bind", nil},
 	}
 	for _, cmd := range cmds {
 		dispatcher.Register(cmd)
