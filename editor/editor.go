@@ -147,8 +147,9 @@ func (e *editor) ActiveWindow() wicore.Window {
 }
 
 func (e *editor) activateWindow(w wicore.Window) {
-	log.Printf("ActivateWindow(%s)", w.View().Title())
-	if w.View().IsDisabled() {
+	view := w.View()
+	log.Printf("ActivateWindow(%s)", view.Title())
+	if view.IsDisabled() {
 		e.ExecuteCommand(w, "alert", activateDisabled.Get(e.CurrentLanguage()))
 		return
 	}
@@ -172,6 +173,7 @@ func (e *editor) activateWindow(w wicore.Window) {
 	e.lastActive = append(e.lastActive, nil)
 	copy(e.lastActive[:l], e.lastActive[1:l])
 	e.lastActive[0] = w
+	e.TriggerViewActivated(view)
 }
 
 func (e *editor) RegisterViewFactory(name string, viewFactory wicore.ViewFactory) bool {
@@ -259,6 +261,15 @@ func (e *editor) EventLoop() int {
 	}
 }
 
+func (e *editor) isDirty() bool {
+	for _, doc := range e.documents {
+		if doc.IsDirty() {
+			return true
+		}
+	}
+	return false
+}
+
 func (e *editor) loadPlugins() {
 	// TODO(maruel): Get path.
 	paths, err := EnumPlugins(".")
@@ -308,7 +319,7 @@ func MakeEditor(terminal Terminal, noPlugin bool) (Editor, error) {
 	RegisterViewCommands(rootView.Commands())
 	RegisterWindowCommands(rootView.Commands())
 	RegisterDocumentCommands(rootView.Commands())
-	RegisterEditorCommands(rootView.Commands())
+	RegisterEditorDefaults(rootView)
 
 	RegisterDefaultViewFactories(e)
 
@@ -335,11 +346,6 @@ func MakeEditor(terminal Terminal, noPlugin bool) (Editor, error) {
 	if !noPlugin {
 		e.loadPlugins()
 	}
-
-	// Key bindings are loaded after the plugins, so a plugin has the chance to
-	// hook the command 'key_bind' if desired. It's also the perfect time to hook
-	// 'editor_bootstrap_ui' to customize the default look on startup.
-	RegisterDefaultKeyBindings(e)
 	return e, nil
 }
 
@@ -353,13 +359,10 @@ func cmdEditorBootstrapUI(c *wicore.CommandImpl, e wicore.Editor, w wicore.Windo
 	e.ExecuteCommand(w, "window_new", "0", "bottom", "status_root")
 }
 
-func (e *editor) isDirty() bool {
-	for _, doc := range e.documents {
-		if doc.IsDirty() {
-			return true
-		}
-	}
-	return false
+func cmdEditorCommandWindow(c *wicore.CommandImpl, e wicore.Editor, w wicore.Window, args ...string) {
+	// Create the Window with the command view and attach it to the currently
+	// focused Window.
+	e.ExecuteCommand(w, "window_new", w.ID(), "floating", "command")
 }
 
 func cmdEditorQuit(c *privilegedCommandImpl, e *editor, w *window, args ...string) {
@@ -394,14 +397,9 @@ func cmdEditorRedraw(c *privilegedCommandImpl, e *editor, w *window, args ...str
 	}()
 }
 
-func cmdShowCommandWindow(c *wicore.CommandImpl, e wicore.Editor, w wicore.Window, args ...string) {
-	// Create the Window with the command view and attach it to the currently
-	// focused Window.
-	e.ExecuteCommand(w, "window_new", w.ID(), "floating", "command")
-}
-
-// RegisterEditorCommands registers the top-level native commands.
-func RegisterEditorCommands(dispatcher wicore.Commands) {
+// RegisterEditorDefaults registers the top-level native commands and key
+// bindings.
+func RegisterEditorDefaults(view wicore.View) {
 	cmds := []wicore.Command{
 		&wicore.CommandImpl{
 			"alert",
@@ -425,6 +423,18 @@ func RegisterEditorCommands(dispatcher wicore.Commands) {
 			},
 			lang.Map{
 				lang.En: "Bootstraps the editor's UI. This command is automatically run on startup and cannot be executed afterward. It adds the standard status bar. This command exists so it can be overriden by a plugin, so it can create its own status bar.",
+			},
+		},
+		&wicore.CommandImpl{
+			"editor_command_window",
+			0,
+			cmdEditorCommandWindow,
+			wicore.CommandsCategory,
+			lang.Map{
+				lang.En: "Shows the interactive command window",
+			},
+			lang.Map{
+				lang.En: "This commands exists so it can be bound to a key to pop up the interactive command window.",
 			},
 		},
 		&privilegedCommandImpl{
@@ -451,23 +461,18 @@ func RegisterEditorCommands(dispatcher wicore.Commands) {
 				lang.En: "Forcibly redraws the terminal.",
 			},
 		},
-		&wicore.CommandImpl{
-			"show_command_window",
-			0,
-			cmdShowCommandWindow,
-			wicore.CommandsCategory,
-			lang.Map{
-				lang.En: "Shows the interactive command window",
-			},
-			lang.Map{
-				lang.En: "This commands exists so it can be bound to a key to pop up the interactive command window.",
-			},
-		},
 		&wicore.CommandAlias{"q", "editor_quit", nil},
 		&wicore.CommandAlias{"q!", "editor_quit", []string{"force"}},
 		&wicore.CommandAlias{"quit", "editor_quit", nil},
 	}
+	commands := view.Commands()
 	for _, cmd := range cmds {
-		dispatcher.Register(cmd)
+		commands.Register(cmd)
 	}
+
+	bindings := view.KeyBindings()
+	bindings.Set(wicore.AllMode, key.Press{Key: key.F1}, "help")
+	bindings.Set(wicore.AllMode, key.Press{Ch: ':'}, "editor_command_window")
+	bindings.Set(wicore.AllMode, key.Press{Ctrl: true, Ch: 'c'}, "quit")
+	bindings.Set(wicore.Insert, key.Press{Key: key.Escape}, "key_set_normal")
 }

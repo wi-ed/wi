@@ -46,6 +46,11 @@ type eventTerminalResized struct {
 	callback func() bool
 }
 
+type eventViewActivated struct {
+	id       wicore.EventListenerID
+	callback func(a wicore.View) bool
+}
+
 type eventViewCreated struct {
 	id       wicore.EventListenerID
 	callback func(a wicore.View) bool
@@ -75,6 +80,7 @@ type eventRegistry struct {
 	editorLanguage            []eventEditorLanguage
 	terminalKeyPressed        []eventTerminalKeyPressed
 	terminalResized           []eventTerminalResized
+	viewActivated             []eventViewActivated
 	viewCreated               []eventViewCreated
 	windowCreated             []eventWindowCreated
 	windowResized             []eventWindowResized
@@ -92,6 +98,7 @@ func makeEventRegistry() eventRegistry {
 		editorLanguage:            make([]eventEditorLanguage, 0, 64),
 		terminalKeyPressed:        make([]eventTerminalKeyPressed, 0, 64),
 		terminalResized:           make([]eventTerminalResized, 0, 64),
+		viewActivated:             make([]eventViewActivated, 0, 64),
 		viewCreated:               make([]eventViewCreated, 0, 64),
 		windowCreated:             make([]eventWindowCreated, 0, 64),
 		windowResized:             make([]eventWindowResized, 0, 64),
@@ -161,6 +168,14 @@ func (er *eventRegistry) Unregister(eventID wicore.EventListenerID) error {
 			}
 		}
 	case wicore.EventListenerID(0x8000000):
+		for index, value := range er.viewActivated {
+			if value.id == eventID {
+				copy(er.viewActivated[index:], er.viewActivated[index+1:])
+				er.viewActivated = er.viewActivated[0 : len(er.viewActivated)-1]
+				return nil
+			}
+		}
+	case wicore.EventListenerID(0x9000000):
 		for index, value := range er.viewCreated {
 			if value.id == eventID {
 				copy(er.viewCreated[index:], er.viewCreated[index+1:])
@@ -168,7 +183,7 @@ func (er *eventRegistry) Unregister(eventID wicore.EventListenerID) error {
 				return nil
 			}
 		}
-	case wicore.EventListenerID(0x9000000):
+	case wicore.EventListenerID(0xa000000):
 		for index, value := range er.windowCreated {
 			if value.id == eventID {
 				copy(er.windowCreated[index:], er.windowCreated[index+1:])
@@ -176,7 +191,7 @@ func (er *eventRegistry) Unregister(eventID wicore.EventListenerID) error {
 				return nil
 			}
 		}
-	case wicore.EventListenerID(0xa000000):
+	case wicore.EventListenerID(0xb000000):
 		for index, value := range er.windowResized {
 			if value.id == eventID {
 				copy(er.windowResized[index:], er.windowResized[index+1:])
@@ -384,13 +399,41 @@ func (er *eventRegistry) TriggerTerminalResized() {
 	}
 }
 
+func (er *eventRegistry) RegisterViewActivated(callback func(a wicore.View) bool) wicore.EventListenerID {
+	er.lock.Lock()
+	defer er.lock.Unlock()
+	i := er.nextID
+	er.nextID++
+	er.viewActivated = append(er.viewActivated, eventViewActivated{i, callback})
+	return i | wicore.EventListenerID(0x8000000)
+}
+
+func (er *eventRegistry) TriggerViewActivated(a wicore.View) {
+	er.deferred <- func() {
+		items := func() []func(a wicore.View) bool {
+			er.lock.Lock()
+			defer er.lock.Unlock()
+			items := make([]func(a wicore.View) bool, 0, len(er.viewActivated))
+			for _, item := range er.viewActivated {
+				items = append(items, item.callback)
+			}
+			return items
+		}()
+		for _, item := range items {
+			if !item(a) {
+				break
+			}
+		}
+	}
+}
+
 func (er *eventRegistry) RegisterViewCreated(callback func(a wicore.View) bool) wicore.EventListenerID {
 	er.lock.Lock()
 	defer er.lock.Unlock()
 	i := er.nextID
 	er.nextID++
 	er.viewCreated = append(er.viewCreated, eventViewCreated{i, callback})
-	return i | wicore.EventListenerID(0x8000000)
+	return i | wicore.EventListenerID(0x9000000)
 }
 
 func (er *eventRegistry) TriggerViewCreated(a wicore.View) {
@@ -418,7 +461,7 @@ func (er *eventRegistry) RegisterWindowCreated(callback func(a wicore.Window) bo
 	i := er.nextID
 	er.nextID++
 	er.windowCreated = append(er.windowCreated, eventWindowCreated{i, callback})
-	return i | wicore.EventListenerID(0x9000000)
+	return i | wicore.EventListenerID(0xa000000)
 }
 
 func (er *eventRegistry) TriggerWindowCreated(a wicore.Window) {
@@ -446,7 +489,7 @@ func (er *eventRegistry) RegisterWindowResized(callback func(a wicore.Window) bo
 	i := er.nextID
 	er.nextID++
 	er.windowResized = append(er.windowResized, eventWindowResized{i, callback})
-	return i | wicore.EventListenerID(0xa000000)
+	return i | wicore.EventListenerID(0xb000000)
 }
 
 func (er *eventRegistry) TriggerWindowResized(a wicore.Window) {

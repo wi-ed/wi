@@ -92,6 +92,7 @@ type EventsDefinition interface {
 	TriggerEditorLanguage(l lang.Language)
 	TriggerTerminalResized()
 	TriggerTerminalKeyPressed(key key.Press)
+	TriggerViewActivated(view View)
 	TriggerViewCreated(view View)
 	TriggerWindowCreated(window Window)
 	TriggerWindowResized(window Window)

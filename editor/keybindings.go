@@ -122,20 +122,3 @@ func RegisterKeyBindingCommands(dispatcher wicore.Commands) {
 		dispatcher.Register(cmd)
 	}
 }
-
-// RegisterDefaultKeyBindings registers the default keyboard mapping. Keyboard
-// mapping simply execute the corresponding command. So to add a keyboard map,
-// the corresponding command needs to be added first.
-//
-// TODO(maruel): This should be remappable via a configuration flag, for
-// example vim flavor vs emacs flavor. I'm not sure it's worth supporting this
-// without a restart.
-func RegisterDefaultKeyBindings(e wicore.Editor) {
-	wicore.PostCommand(e, nil, "key_bind", "global", "all", "F1", "help")
-	wicore.PostCommand(e, nil, "key_bind", "global", "command", ":", "show_command_window")
-	// TODO(maruel): Temporary.
-	wicore.PostCommand(e, nil, "key_bind", "global", "all", "Ctrl-c", "quit")
-
-	// TODO(maruel): Figure out if prefer command or direct calls. Direct calls is type-safe.
-	wicore.RootWindow(e.ActiveWindow()).View().KeyBindings().Set(wicore.Insert, key.Press{Key: key.Escape}, "key_set_normal")
-}
