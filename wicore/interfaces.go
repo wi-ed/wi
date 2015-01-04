@@ -5,7 +5,7 @@
 // This file defines all the interfaces to be used by the wi editor and to be
 // accessable by plugins.
 
-//go:generate stringer -output=interfaces_string.go -type=BorderType,DockingType
+//go:generate stringer -output=interfaces_string.go -type=BorderType,CommandCategory,DockingType,KeyboardMode
 //go:generate go run ../tools/wi-event-generator/main.go -output event_registry_decl.go
 
 package wicore
@@ -73,21 +73,6 @@ const (
 	// different.
 	BorderDouble
 )
-
-// EventID is to be used to cancel an event listener.
-type EventID int
-
-/*
-// EventID describes an event in the queue.
-type EventID struct {
-	ProcessID int // 0 is the main editor process, other values are for plugins.
-	Index     int
-}
-
-func (c EventID) String() string {
-	return fmt.Sprintf("%d:%d", c.ProcessID, c.Index)
-}
-*/
 
 // EventsDefinition declares the valid events.
 //
@@ -271,9 +256,108 @@ type Document interface {
 	IsDirty() bool
 }
 
+// CommandCategory is used to put commands into sections for help purposes.
+type CommandCategory int
+
+const (
+	// UnknownCategory means the command couldn't be categorized.
+	UnknownCategory CommandCategory = iota
+	// WindowCategory are commands relating to manipuling windows and UI in
+	// general.
+	WindowCategory
+	// CommandsCategory are commands relating to manipulating commands, aliases,
+	// keybindings.
+	CommandsCategory
+	// EditorCategory are commands relating to the editor lifetime.
+	EditorCategory
+	// DebugCategory are commands relating to debugging the app itself or plugins.
+	DebugCategory
+
+	// TODO(maruel): Add other categories.
+)
+
+// CommandHandler executes the command cmd on the Window w.
+type CommandHandler func(e Editor, w Window, args ...string)
+
+// Command describes a registered command that can be triggered directly at the
+// command prompt, via a keybinding or a plugin.
+type Command interface {
+	// Name is the name of the command.
+	Name() string
+	// Handle executes the command.
+	Handle(e Editor, w Window, args ...string)
+	// Category returns the category the command should be bucketed in, for help
+	// documentation purpose.
+	Category(e Editor, w Window) CommandCategory
+	// ShortDesc returns a short description of the command in the language
+	// requested.
+	ShortDesc() string
+	// LongDesc returns a long explanation of the command in the language
+	// requested.
+	LongDesc() string
+}
+
+// Commands stores the known commands. This is where plugins can add new
+// commands. Each View contains its own Commands.
+type Commands interface {
+	// Register registers a command so it can be executed later. In practice
+	// commands should normally be registered on startup. Returns false if a
+	// command was already registered and was lost.
+	Register(cmd Command) bool
+
+	// Get returns a command if registered, nil otherwise.
+	Get(cmdName string) Command
+
+	// GetNames() return the name of all the commands.
+	GetNames() []string
+}
+
+// EnqueuedCommand is used internally to dispatch commands through
+// EventRegistry.
+type EnqueuedCommands struct {
+	Commands [][]string
+	Callback func()
+}
+
+// KeyboardMode defines the keyboard mapping (input mode) to use.
+//
+// Unlike vim, there's no Ex mode. It's unnecessary because the command window
+// is a Window on its own, instead of a additional input mode on the current
+// Window.
+type KeyboardMode int
+
+const (
+	// CommandMode is the mode where typing letters results in commands, not
+	// content editing. It's named Normal mode in vim.
+	//
+	// TODO(maruel): Rename for consistency?
+	CommandMode KeyboardMode = iota + 1
+	// EditMode is the mode where typing letters results in content, not commands.
+	EditMode
+	// AllMode is to bind keys independent of the current mode. It is useful for
+	// function keys, Ctrl-<letter>, arrow keys, etc.
+	AllMode
+)
+
+// KeyBindings stores the mapping between keyboard entry and commands. This
+// includes what can be considered "macros" as much as casual things like arrow
+// keys.
+type KeyBindings interface {
+	// Set registers a keyboard mapping. In practice keyboard mappings
+	// should normally be registered on startup. Returns false if a key mapping
+	// was already registered and was lost. Set cmdName to "" to remove a key
+	// binding.
+	Set(mode KeyboardMode, key key.Press, cmdName string) bool
+
+	// Get returns a command if registered, nil otherwise.
+	Get(mode KeyboardMode, key key.Press) string
+}
+
 // Config
 
 // Config is the configuration manager.
+//
+// TODO(maruel): It's not figured out yet.
 type Config interface {
 	GetInt(name string) int
 	GetString(name string) string
@@ -281,6 +365,22 @@ type Config interface {
 }
 
 // Utility functions.
+
+// GetKeyBindingCommand traverses the Editor's Window tree to find a View that
+// has the key binding in its Keyboard mapping.
+func GetKeyBindingCommand(e Editor, mode KeyboardMode, key key.Press) string {
+	active := e.ActiveWindow()
+	for {
+		cmdName := active.View().KeyBindings().Get(mode, key)
+		if cmdName != "" {
+			return cmdName
+		}
+		active = active.Parent()
+		if active == nil {
+			return ""
+		}
+	}
+}
 
 // RootWindow returns the root Window when given any Window in the tree.
 func RootWindow(w Window) Window {

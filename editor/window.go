@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/maruel/wi/pkg/colors"
 	"github.com/maruel/wi/pkg/lang"
 	"github.com/maruel/wi/wicore"
 )
@@ -424,8 +425,8 @@ func makeWindow(parent *window, view wicore.View, docking wicore.DockingType) *w
 		docking: docking,
 		border:  border,
 		borderFormat: wicore.CellFormat{
-			Fg: wicore.White,
-			Bg: wicore.Black,
+			Fg: colors.White,
+			Bg: colors.Black,
 		},
 	}
 }

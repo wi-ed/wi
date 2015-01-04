@@ -4,7 +4,10 @@
 
 package editor
 
-import "github.com/maruel/wi/wicore"
+import (
+	"github.com/maruel/wi/pkg/colors"
+	"github.com/maruel/wi/wicore"
+)
 
 // commandView would normally be in a floating Window near the current cursor
 // on the last focused Window or at the very last line at the bottom of the
@@ -34,7 +37,7 @@ func commandViewFactory(e wicore.Editor, args ...string) wicore.View {
 			title:         "Command",
 			naturalX:      30,
 			naturalY:      1,
-			defaultFormat: wicore.CellFormat{Fg: wicore.Green, Bg: wicore.Black},
+			defaultFormat: wicore.CellFormat{Fg: colors.Green, Bg: colors.Black},
 		},
 	}
 }

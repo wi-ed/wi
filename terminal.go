@@ -8,6 +8,7 @@ package main
 
 import (
 	"github.com/maruel/wi/editor"
+	"github.com/maruel/wi/pkg/colors"
 	"github.com/maruel/wi/pkg/key"
 	"github.com/maruel/wi/wicore"
 	"github.com/nsf/termbox-go"
@@ -212,39 +213,39 @@ func termboxKeyToKeyPress(k termbox.Event) key.Press {
 }
 
 // Converts a RGB color into the nearest termbox color.
-func rgbToTermBox(c wicore.RGB) termbox.Attribute {
-	switch wicore.NearestEGAColor(c) {
-	case wicore.Black:
+func rgbToTermBox(c colors.RGB) termbox.Attribute {
+	switch colors.NearestEGA(c) {
+	case colors.Black:
 		return termbox.ColorBlack
-	case wicore.Blue:
+	case colors.Blue:
 		return termbox.ColorBlue
-	case wicore.Green:
+	case colors.Green:
 		return termbox.ColorGreen
-	case wicore.Cyan:
+	case colors.Cyan:
 		return termbox.ColorCyan
-	case wicore.Red:
+	case colors.Red:
 		return termbox.ColorRed
-	case wicore.Magenta:
+	case colors.Magenta:
 		return termbox.ColorMagenta
-	case wicore.Brown:
+	case colors.Brown:
 		return termbox.ColorYellow
-	case wicore.LightGray:
+	case colors.LightGray:
 		return termbox.ColorWhite
-	case wicore.DarkGray:
+	case colors.DarkGray:
 		return termbox.ColorBlack | termbox.AttrBold
-	case wicore.BrightBlue:
+	case colors.BrightBlue:
 		return termbox.ColorBlue | termbox.AttrBold
-	case wicore.BrightGreen:
+	case colors.BrightGreen:
 		return termbox.ColorGreen | termbox.AttrBold
-	case wicore.BrightCyan:
+	case colors.BrightCyan:
 		return termbox.ColorCyan | termbox.AttrBold
-	case wicore.BrightRed:
+	case colors.BrightRed:
 		return termbox.ColorRed | termbox.AttrBold
-	case wicore.BrightMagenta:
+	case colors.BrightMagenta:
 		return termbox.ColorMagenta | termbox.AttrBold
-	case wicore.BrightYellow:
+	case colors.BrightYellow:
 		return termbox.ColorYellow | termbox.AttrBold
-	case wicore.White:
+	case colors.White:
 		return termbox.ColorWhite | termbox.AttrBold
 	default:
 		return termbox.ColorDefault

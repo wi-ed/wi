@@ -7,6 +7,9 @@ import (
 	"github.com/maruel/wi/pkg/lang"
 )
 
+// EventListenerID is to be used to cancel an event listener.
+type EventListenerID int
+
 // EventRegistry permits to register callbacks that are called on events.
 //
 // When the callback returns false, the next registered events are not called.
@@ -17,16 +20,16 @@ type EventRegistry interface {
 
 	// Unregister unregisters a callback. Returns an error if the event was not
 	// registered.
-	Unregister(eventID EventID) error
+	Unregister(eventID EventListenerID) error
 
-	RegisterCommands(callback func(a EnqueuedCommands) bool) EventID
-	RegisterDocumentCreated(callback func(a Document) bool) EventID
-	RegisterDocumentCursorMoved(callback func(a Document, b int, c int) bool) EventID
-	RegisterEditorKeyboardModeChanged(callback func(a KeyboardMode) bool) EventID
-	RegisterEditorLanguage(callback func(a lang.Language) bool) EventID
-	RegisterTerminalKeyPressed(callback func(a key.Press) bool) EventID
-	RegisterTerminalResized(callback func() bool) EventID
-	RegisterViewCreated(callback func(a View) bool) EventID
-	RegisterWindowCreated(callback func(a Window) bool) EventID
-	RegisterWindowResized(callback func(a Window) bool) EventID
+	RegisterCommands(callback func(a EnqueuedCommands) bool) EventListenerID
+	RegisterDocumentCreated(callback func(a Document) bool) EventListenerID
+	RegisterDocumentCursorMoved(callback func(a Document, b int, c int) bool) EventListenerID
+	RegisterEditorKeyboardModeChanged(callback func(a KeyboardMode) bool) EventListenerID
+	RegisterEditorLanguage(callback func(a lang.Language) bool) EventListenerID
+	RegisterTerminalKeyPressed(callback func(a key.Press) bool) EventListenerID
+	RegisterTerminalResized(callback func() bool) EventListenerID
+	RegisterViewCreated(callback func(a View) bool) EventListenerID
+	RegisterWindowCreated(callback func(a Window) bool) EventListenerID
+	RegisterWindowResized(callback func(a Window) bool) EventListenerID
 }

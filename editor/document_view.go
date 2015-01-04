@@ -5,6 +5,7 @@
 package editor
 
 import (
+	"github.com/maruel/wi/pkg/colors"
 	"github.com/maruel/wi/pkg/key"
 	"github.com/maruel/wi/pkg/lang"
 	"github.com/maruel/wi/wicore"
@@ -54,8 +55,8 @@ func (v *documentView) Buffer() *wicore.Buffer {
 	v.document.RenderInto(v.buffer, v, v.offsetColumn, v.offsetLine)
 	// TODO(maruel): Draw the cursor using proper terminal function.
 	cell := v.buffer.Cell(v.offsetColumn+v.cursorColumn, v.offsetLine+v.cursorLine)
-	cell.F.Bg = wicore.White
-	cell.F.Fg = wicore.Black
+	cell.F.Bg = colors.White
+	cell.F.Fg = colors.Black
 	// TODO(maruel): Draw the selection over.
 	return v.buffer
 }
@@ -252,7 +253,7 @@ func documentViewFactory(e wicore.Editor, args ...string) wicore.View {
 			title:         "<Empty document>", // TODO(maruel): Title == document.filePath ?
 			naturalX:      100,
 			naturalY:      100,
-			defaultFormat: wicore.CellFormat{Fg: wicore.BrightYellow, Bg: wicore.Black},
+			defaultFormat: wicore.CellFormat{Fg: colors.BrightYellow, Bg: colors.Black},
 		},
 		document: makeDocument(),
 	}

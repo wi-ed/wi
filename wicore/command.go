@@ -2,7 +2,7 @@
 // Use of this source code is governed under the Apache License, Version 2.0
 // that can be found in the LICENSE file.
 
-//go:generate stringer -output=command_string.go -type=CommandCategory
+// Generic Command implementation to implement commands more easily in plugins.
 
 package wicore
 
@@ -12,69 +12,6 @@ import (
 
 	"github.com/maruel/wi/pkg/lang"
 )
-
-// CommandCategory is used to put commands into sections for help purposes.
-type CommandCategory int
-
-const (
-	// UnknownCategory means the command couldn't be categorized.
-	UnknownCategory CommandCategory = iota
-	// WindowCategory are commands relating to manipuling windows and UI in
-	// general.
-	WindowCategory
-	// CommandsCategory are commands relating to manipulating commands, aliases,
-	// keybindings.
-	CommandsCategory
-	// EditorCategory are commands relating to the editor lifetime.
-	EditorCategory
-	// DebugCategory are commands relating to debugging the app itself or plugins.
-	DebugCategory
-
-	// TODO(maruel): Add other categories.
-)
-
-// CommandHandler executes the command cmd on the Window w.
-type CommandHandler func(e Editor, w Window, args ...string)
-
-// Command describes a registered command that can be triggered directly at the
-// command prompt, via a keybinding or a plugin.
-type Command interface {
-	// Name is the name of the command.
-	Name() string
-	// Handle executes the command.
-	Handle(e Editor, w Window, args ...string)
-	// Category returns the category the command should be bucketed in, for help
-	// documentation purpose.
-	Category(e Editor, w Window) CommandCategory
-	// ShortDesc returns a short description of the command in the language
-	// requested.
-	ShortDesc() string
-	// LongDesc returns a long explanation of the command in the language
-	// requested.
-	LongDesc() string
-}
-
-// Commands stores the known commands. This is where plugins can add new
-// commands. Each View contains its own Commands.
-type Commands interface {
-	// Register registers a command so it can be executed later. In practice
-	// commands should normally be registered on startup. Returns false if a
-	// command was already registered and was lost.
-	Register(cmd Command) bool
-
-	// Get returns a command if registered, nil otherwise.
-	Get(cmdName string) Command
-
-	// GetNames() return the name of all the commands.
-	GetNames() []string
-}
-
-// EnqueuedCommand is used internally to dispatch commands through
-// EventRegistry.
-type EnqueuedCommands struct {
-	Commands [][]string
-	Callback func()
-}
 
 // CommandImplHandler is the CommandHandler to use when coupled with CommandImpl.
 type CommandImplHandler func(c *CommandImpl, e Editor, w Window, args ...string)

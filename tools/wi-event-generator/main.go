@@ -46,7 +46,7 @@ import (
 )
 {{range .Events}}
 type event{{.Name}} struct{
-	id wicore.EventID
+	id wicore.EventListenerID
 	callback func({{.Args}}) {{.Result}}
 }
 {{end}}
@@ -54,7 +54,7 @@ type event{{.Name}} struct{
 // interface wicore.EventRegistry.
 type eventRegistry struct {
   lock   sync.Mutex
-  nextID wicore.EventID
+  nextID wicore.EventListenerID
 	deferred chan func()
 {{range .Events}}
 	{{.Lower}} []event{{.Name}}{{end}}
@@ -69,7 +69,7 @@ func makeEventRegistry() eventRegistry {
 	}
 }
 
-func (er *eventRegistry) Unregister(eventID wicore.EventID) error {
+func (er *eventRegistry) Unregister(eventID wicore.EventListenerID) error {
   er.lock.Lock()
   defer er.lock.Unlock()
 	// TODO(maruel): The buffers are never reallocated, so it's effectively a
@@ -87,7 +87,7 @@ func (er *eventRegistry) Unregister(eventID wicore.EventID) error {
 	return errors.New("trying to unregister an non existing event listener")
 }{{range .Events}}
 
-func (er *eventRegistry) Register{{.Name}}(callback func({{.Args}}) {{.Result}}) wicore.EventID {
+func (er *eventRegistry) Register{{.Name}}(callback func({{.Args}}) {{.Result}}) wicore.EventListenerID {
   er.lock.Lock()
   defer er.lock.Unlock()
   i := er.nextID
@@ -125,6 +125,9 @@ import (
   "github.com/maruel/wi/pkg/lang"
 )
 
+// EventListenerID is to be used to cancel an event listener.
+type EventListenerID int
+
 // EventRegistry permits to register callbacks that are called on events.
 //
 // When the callback returns false, the next registered events are not called.
@@ -135,9 +138,9 @@ type EventRegistry interface {
 
   // Unregister unregisters a callback. Returns an error if the event was not
   // registered.
-  Unregister(eventID EventID) error
+  Unregister(eventID EventListenerID) error
 {{range .Events}}
-  Register{{.Name}}(callback func({{.Args}}) {{.Result}}) EventID{{end}}
+  Register{{.Name}}(callback func({{.Args}}) {{.Result}}) EventListenerID{{end}}
 }
 `))
 
@@ -196,7 +199,7 @@ func extractEvents(impl bool, bitmask uint) ([]Event, error) {
 			Name:      name,
 			Lower:     lower,
 			Index:     len(events),
-			BitValue:  fmt.Sprintf("wicore.EventID(0x%x)", (len(events)+1)<<bitmask),
+			BitValue:  fmt.Sprintf("wicore.EventListenerID(0x%x)", (len(events)+1)<<bitmask),
 			Args:      strings.Join(args, ", "),
 			ArgsNames: strings.Join(argsNames, ", "),
 			Result:    "bool",
@@ -217,7 +220,7 @@ func generate(impl bool) ([]byte, error) {
 	d := tmplData{
 		// Skip os.Args[0] since it may point into $TMP.
 		CmdLine: "go run ../tools/wi-event-generator/main.go " + strings.Join(os.Args[1:], " "),
-		BitMask: fmt.Sprintf("wicore.EventID(0x%x)", ((1<<32)-1)-((1<<bitmask)-1)),
+		BitMask: fmt.Sprintf("wicore.EventListenerID(0x%x)", ((1<<32)-1)-((1<<bitmask)-1)),
 		Events:  events,
 	}
 	out := bytes.Buffer{}

@@ -10,6 +10,7 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/maruel/wi/pkg/colors"
 	"github.com/maruel/wi/wicore"
 )
 
@@ -28,7 +29,7 @@ type view struct {
 	onAttach      func(v *view, w wicore.Window)
 	defaultFormat wicore.CellFormat
 	buffer        *wicore.Buffer
-	eventIDs      []wicore.EventID
+	eventIDs      []wicore.EventListenerID
 }
 
 // wicore.View interface.
@@ -118,8 +119,8 @@ func makeStaticDisabledView(e wicore.Editor, title string, naturalX, naturalY in
 			isDisabled:    true,
 			naturalX:      naturalX,
 			naturalY:      naturalY,
-			defaultFormat: wicore.CellFormat{Fg: wicore.Red, Bg: wicore.Black},
-			eventIDs:      []wicore.EventID{},
+			defaultFormat: wicore.CellFormat{Fg: colors.Red, Bg: colors.Black},
+			eventIDs:      []wicore.EventListenerID{},
 		},
 	}
 }
@@ -131,7 +132,7 @@ func statusRootViewFactory(e wicore.Editor, args ...string) wicore.View {
 	// set the root status Window to y=0, so that it becomes effectively
 	// invisible when the editor window is too small.
 	v := makeStaticDisabledView(e, "Status Root", 1, 1)
-	v.defaultFormat.Bg = wicore.LightGray
+	v.defaultFormat.Bg = colors.LightGray
 	v.onAttach = func(v *view, w wicore.Window) {
 		id := w.ID()
 		e.TriggerCommands(
