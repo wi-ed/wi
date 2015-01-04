@@ -130,6 +130,9 @@ type Editor interface {
 	// RegisterViewFactory makes a new view available by name.
 	RegisterViewFactory(name string, viewFactory ViewFactory) bool
 
+	// ViewFactoryNames return the name of all the view factories.
+	ViewFactoryNames() []string
+
 	// KeyboardMode is global to the editor. It matches vim behavior. For example
 	// in a 2-window setup while in insert mode, using Ctrl-O, Ctrl-W, Down will
 	// move to the next window but will stay in insert mode.

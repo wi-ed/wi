@@ -180,6 +180,14 @@ func (e *editor) RegisterViewFactory(name string, viewFactory wicore.ViewFactory
 	return !present
 }
 
+func (e *editor) ViewFactoryNames() []string {
+	names := make([]string, 0, len(e.viewFactories))
+	for name := range e.viewFactories {
+		names = append(names, name)
+	}
+	return names
+}
+
 func (e *editor) onTerminalResized() bool {
 	// Resize the Windows. This also invalidates it, which will also force a
 	// redraw if the size changed.

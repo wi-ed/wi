@@ -10,6 +10,8 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+
+	"github.com/maruel/wi/editor"
 )
 
 func debugHook() io.Closer {
@@ -19,4 +21,7 @@ func debugHook() io.Closer {
 	log.SetFlags(0)
 	log.SetOutput(ioutil.Discard)
 	return nil
+}
+
+func debugHookEditor(e editor.Editor) {
 }

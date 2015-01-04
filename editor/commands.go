@@ -12,12 +12,14 @@ import (
 // commands is the map of registered commands.
 type commands struct {
 	commands map[string]wicore.Command
+	names    []string
 }
 
 func (c *commands) Register(cmd wicore.Command) bool {
 	name := cmd.Name()
 	_, ok := c.commands[name]
 	c.commands[name] = cmd
+	c.names = nil
 	return !ok
 }
 
@@ -25,8 +27,18 @@ func (c *commands) Get(cmd string) wicore.Command {
 	return c.commands[cmd]
 }
 
+func (c *commands) GetNames() []string {
+	if c.names == nil {
+		c.names = make([]string, 0, len(c.commands))
+		for name := range c.commands {
+			c.names = append(c.names, name)
+		}
+	}
+	return c.names
+}
+
 func makeCommands() wicore.Commands {
-	return &commands{make(map[string]wicore.Command)}
+	return &commands{make(map[string]wicore.Command), nil}
 }
 
 // privilegedCommandImplHandler is the CommandHandler to use when coupled with

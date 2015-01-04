@@ -87,6 +87,7 @@ func mainImpl() int {
 	defer func() {
 		_ = e.Close()
 	}()
+	debugHookEditor(e)
 
 	wicore.PostCommand(e, nil, "editor_bootstrap_ui")
 	if *command {

@@ -18,26 +18,22 @@ import (
 	"github.com/maruel/wi/wicore"
 )
 
-func commandLogRecurse(w *window, e wicore.Editor) {
-	// TODO(maruel): Create a proper enumerator.
-	cmds := w.view.Commands().(*commands)
-	names := make([]string, 0, len(cmds.commands))
-	for k := range cmds.commands {
-		names = append(names, k)
-	}
+func commandLogRecurse(w wicore.Window) {
+	cmds := w.View().Commands()
+	names := cmds.GetNames()
 	sort.Strings(names)
-	for _, n := range names {
-		c := cmds.commands[n]
+	for _, name := range names {
+		c := cmds.Get(name)
 		log.Printf("  %s  %s: %s", w.ID(), c.Name(), c.ShortDesc())
 	}
-	for _, child := range w.childrenWindows {
-		commandLogRecurse(child, e)
+	for _, child := range w.ChildrenWindows() {
+		commandLogRecurse(child)
 	}
 }
 
-func cmdCommandLog(c *privilegedCommandImpl, e *editor, w *window, args ...string) {
+func cmdCommandLog(c *wicore.CommandImpl, e wicore.Editor, w wicore.Window, args ...string) {
 	// Start at the root and recurse.
-	commandLogRecurse(e.rootWindow, e)
+	commandLogRecurse(wicore.RootWindow(w))
 }
 
 func keyLogRecurse(w *window, e wicore.Editor, mode wicore.KeyboardMode) {
@@ -78,11 +74,8 @@ func cmdLogAll(c *wicore.CommandImpl, e wicore.Editor, w wicore.Window, args ...
 	e.ExecuteCommand(w, "key_log")
 }
 
-func cmdViewLog(c *privilegedCommandImpl, e *editor, w *window, args ...string) {
-	names := make([]string, 0, len(e.viewFactories))
-	for k := range e.viewFactories {
-		names = append(names, k)
-	}
+func cmdViewLog(c *wicore.CommandImpl, e wicore.Editor, w wicore.Window, args ...string) {
+	names := e.ViewFactoryNames()
 	sort.Strings(names)
 	log.Printf("View factories:")
 	for _, name := range names {
@@ -98,7 +91,7 @@ func cmdWindowLog(c *wicore.CommandImpl, e wicore.Editor, w wicore.Window, args 
 // RegisterDebugCommands registers all debug related commands in Debug build.
 func RegisterDebugCommands(dispatcher wicore.Commands) {
 	cmds := []wicore.Command{
-		&privilegedCommandImpl{
+		&wicore.CommandImpl{
 			"command_log",
 			0,
 			cmdCommandLog,
@@ -134,7 +127,7 @@ func RegisterDebugCommands(dispatcher wicore.Commands) {
 				lang.En: "Logs the internal state (commands, view factories, windows), this is only relevant if -verbose is used.",
 			},
 		},
-		&privilegedCommandImpl{
+		&wicore.CommandImpl{
 			"view_log",
 			0,
 			cmdViewLog,

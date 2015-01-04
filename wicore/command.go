@@ -64,6 +64,9 @@ type Commands interface {
 
 	// Get returns a command if registered, nil otherwise.
 	Get(cmdName string) Command
+
+	// GetNames() return the name of all the commands.
+	GetNames() []string
 }
 
 // EnqueuedCommand is used internally to dispatch commands through
