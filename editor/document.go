@@ -58,7 +58,7 @@ func (d *document) Close() error {
 	return nil
 }
 
-func (d *document) RenderInto(buffer *wicore.Buffer, view wicore.View, offsetLine, offsetColumn int) {
+func (d *document) RenderInto(buffer *wicore.Buffer, view wicore.View, offsetColumn, offsetLine int) {
 	for row, l := range d.content {
 		// This will automatically elide text.
 		if offsetColumn != 0 {

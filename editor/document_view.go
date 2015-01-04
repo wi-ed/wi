@@ -29,7 +29,7 @@ type ColorMode int
 type documentView struct {
 	view
 	document        *document
-	cursorLine      int
+	cursorLine      int // cursor position is 0-based.
 	cursorColumn    int
 	cursorColumnMax int         // cursor position if the line was long enough.
 	offsetLine      int         // Offset of the view of the document.
@@ -51,25 +51,103 @@ func (v *documentView) Close() error {
 
 func (v *documentView) Buffer() *wicore.Buffer {
 	v.buffer.Fill(wicore.Cell{' ', v.defaultFormat})
-	v.document.RenderInto(v.buffer, v, v.offsetLine, v.offsetColumn)
-	// TODO(maruel): Draw the cursor over.
+	v.document.RenderInto(v.buffer, v, v.offsetColumn, v.offsetLine)
+	// TODO(maruel): Draw the cursor using proper terminal function.
+	cell := v.buffer.Cell(v.offsetColumn+v.cursorColumn, v.offsetLine+v.cursorLine)
+	cell.F.Bg = wicore.White
+	cell.F.Fg = wicore.Black
 	// TODO(maruel): Draw the selection over.
 	return v.buffer
 }
 
-func cmdDocumentCursorLeft(c *wicore.CommandImpl, e wicore.Editor, w wicore.Window, args ...string) {
-	d, ok := w.View().(*documentView)
-	if !ok {
-		panic("Oops")
-	}
-	if d.cursorColumn--; d.cursorColumn == -1 {
-		// Maybe make the wrap behavior optional.
-		if d.cursorLine--; d.cursorLine == -1 {
-			d.cursorLine = 0
-			// TODO(maruel): Beep.
+// cursorMoved triggers the event and ensures the cursor is visible.
+func (v *documentView) cursorMoved(e wicore.Editor) {
+	e.TriggerDocumentCursorMoved(v.document, v.cursorColumn, v.cursorLine)
+	// TODO(maruel): Adjust v.offsetLine and v.offsetColumn as necessary.
+	// TODO(maruel): Trigger redraw.
+}
+
+func cmdToDoc(handler func(v *documentView, e wicore.Editor)) wicore.CommandImplHandler {
+	return func(c *wicore.CommandImpl, e wicore.Editor, w wicore.Window, args ...string) {
+		v, ok := w.View().(*documentView)
+		if !ok {
+			e.ExecuteCommand(w, "alert", "Internal error")
+			return
 		}
+		handler(v, e)
 	}
-	e.TriggerDocumentCursorMoved(d.document, d.cursorColumn, d.cursorLine)
+}
+
+func cmdDocumentCursorLeft(v *documentView, e wicore.Editor) {
+	if v.cursorColumn == 0 {
+		// TODO(maruel): Make wrap behavior optional.
+		if v.cursorLine == 0 {
+			// TODO(maruel): Beep.
+			return
+		}
+		v.cursorLine--
+		v.cursorColumn = len(v.document.content[v.cursorLine]) - 1
+	}
+	v.cursorColumnMax = v.cursorColumn
+	v.cursorMoved(e)
+}
+
+func cmdDocumentCursorRight(v *documentView, e wicore.Editor) {
+	if v.cursorColumn == len(v.document.content[v.cursorLine])-1 {
+		// TODO(maruel): Make wrap behavior optional.
+		if v.cursorLine > len(v.document.content)-1 {
+			// TODO(maruel): Beep.
+			return
+		}
+		v.cursorLine++
+		v.cursorColumn = 0
+	} else {
+		v.cursorColumn++
+	}
+	v.cursorColumnMax = v.cursorColumn
+	v.cursorMoved(e)
+}
+
+func cmdDocumentCursorUp(v *documentView, e wicore.Editor) {
+	if v.cursorLine == 0 {
+		// TODO(maruel): Beep.
+		return
+	}
+	v.cursorLine--
+	if v.cursorColumn >= len(v.document.content[v.cursorLine]) {
+		v.cursorColumn = len(v.document.content[v.cursorLine]) - 1
+	}
+	v.cursorMoved(e)
+}
+
+func cmdDocumentCursorDown(v *documentView, e wicore.Editor) {
+	if v.cursorLine >= len(v.document.content)-1 {
+		// TODO(maruel): Beep.
+		return
+	}
+	v.cursorLine++
+	if v.cursorColumn >= len(v.document.content[v.cursorLine]) {
+		v.cursorColumn = len(v.document.content[v.cursorLine]) - 1
+	}
+	v.cursorMoved(e)
+}
+
+func cmdDocumentCursorHome(v *documentView, e wicore.Editor) {
+	if v.cursorLine != 0 || v.cursorColumnMax != 0 {
+		v.cursorLine = 0
+		v.cursorColumn = 0
+		v.cursorColumnMax = v.cursorColumn
+		v.cursorMoved(e)
+	}
+}
+
+func cmdDocumentCursorEnd(v *documentView, e wicore.Editor) {
+	if v.cursorLine != len(v.document.content)-1 || v.cursorColumnMax != len(v.document.content[v.cursorLine])-1 {
+		v.cursorLine = len(v.document.content) - 1
+		v.cursorColumn = len(v.document.content[v.cursorLine]) - 1
+		v.cursorColumnMax = v.cursorColumn
+		v.cursorMoved(e)
+	}
 }
 
 func documentViewFactory(e wicore.Editor, args ...string) wicore.View {
@@ -77,14 +155,74 @@ func documentViewFactory(e wicore.Editor, args ...string) wicore.View {
 	cmds := []wicore.Command{
 		&wicore.CommandImpl{
 			"document_cursor_left",
-			-1,
-			cmdDocumentCursorLeft,
+			0,
+			cmdToDoc(cmdDocumentCursorLeft),
 			wicore.WindowCategory,
 			lang.Map{
 				lang.En: "Moves cursor left",
 			},
 			lang.Map{
 				lang.En: "Moves cursor left.",
+			},
+		},
+		&wicore.CommandImpl{
+			"document_cursor_right",
+			0,
+			cmdToDoc(cmdDocumentCursorRight),
+			wicore.WindowCategory,
+			lang.Map{
+				lang.En: "Moves cursor right",
+			},
+			lang.Map{
+				lang.En: "Moves cursor right.",
+			},
+		},
+		&wicore.CommandImpl{
+			"document_cursor_up",
+			0,
+			cmdToDoc(cmdDocumentCursorUp),
+			wicore.WindowCategory,
+			lang.Map{
+				lang.En: "Moves cursor up",
+			},
+			lang.Map{
+				lang.En: "Moves cursor up.",
+			},
+		},
+		&wicore.CommandImpl{
+			"document_cursor_down",
+			0,
+			cmdToDoc(cmdDocumentCursorDown),
+			wicore.WindowCategory,
+			lang.Map{
+				lang.En: "Moves cursor down",
+			},
+			lang.Map{
+				lang.En: "Moves cursor down.",
+			},
+		},
+		&wicore.CommandImpl{
+			"document_cursor_home",
+			0,
+			cmdToDoc(cmdDocumentCursorHome),
+			wicore.WindowCategory,
+			lang.Map{
+				lang.En: "Moves cursor to the beginning of the document",
+			},
+			lang.Map{
+				lang.En: "Moves cursor to the beginning of the document.",
+			},
+		},
+		&wicore.CommandImpl{
+			"document_cursor_end",
+			0,
+			cmdToDoc(cmdDocumentCursorEnd),
+			wicore.WindowCategory,
+			lang.Map{
+				lang.En: "Moves cursor to the end of the document",
+			},
+			lang.Map{
+				lang.En: "Moves cursor to the end of the document.",
 			},
 		},
 	}
@@ -94,9 +232,20 @@ func documentViewFactory(e wicore.Editor, args ...string) wicore.View {
 
 	bindings := makeKeyBindings()
 	bindings.Set(wicore.AllMode, key.Press{Key: key.Left}, "document_cursor_left")
+	bindings.Set(wicore.AllMode, key.Press{Key: key.Right}, "document_cursor_right")
+	bindings.Set(wicore.AllMode, key.Press{Key: key.Up}, "document_cursor_up")
+	bindings.Set(wicore.AllMode, key.Press{Key: key.Down}, "document_cursor_down")
+	bindings.Set(wicore.AllMode, key.Press{Key: key.Home}, "document_cursor_home")
+	bindings.Set(wicore.AllMode, key.Press{Key: key.End}, "document_cursor_end")
+	// vim style movement.
+	bindings.Set(wicore.AllMode, key.Press{Ch: 'h'}, "document_cursor_left")
+	bindings.Set(wicore.AllMode, key.Press{Ch: 'l'}, "document_cursor_right")
+	bindings.Set(wicore.AllMode, key.Press{Ch: 'k'}, "document_cursor_up")
+	bindings.Set(wicore.AllMode, key.Press{Ch: 'j'}, "document_cursor_down")
 
 	// TODO(maruel): Sort out "use max space".
-	d := &documentView{
+	// TODO(maruel): Load last cursor position from config.
+	v := &documentView{
 		view: view{
 			commands:      dispatcher,
 			keyBindings:   bindings,
@@ -107,6 +256,6 @@ func documentViewFactory(e wicore.Editor, args ...string) wicore.View {
 		},
 		document: makeDocument(),
 	}
-	e.TriggerDocumentCursorMoved(d.document, d.cursorColumn, d.cursorLine)
-	return d
+	v.cursorMoved(e)
+	return v
 }

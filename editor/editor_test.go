@@ -64,6 +64,8 @@ func TestMainImmediateQuit(t *testing.T) {
 	expected.DrawString("Dummy content", 0, 0, wicore.CellFormat{Fg: wicore.BrightYellow, Bg: wicore.Black})
 	expected.DrawString("Really", 0, 1, wicore.CellFormat{Fg: wicore.BrightYellow, Bg: wicore.Black})
 	expected.DrawString("Status Name    EditMode                                          0,0            ", 0, 24, wicore.CellFormat{Fg: wicore.Red, Bg: wicore.LightGray})
+	expected.Cell(0, 0).F.Bg = wicore.White
+	expected.Cell(0, 0).F.Fg = wicore.Black
 	compareBuffers(t, expected, terminal.Buffer)
 }
 

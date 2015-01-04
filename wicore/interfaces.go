@@ -262,7 +262,7 @@ type Document interface {
 	//
 	// TODO(maruel): Likely return a new Buffer instance instead, for RPC
 	// friendlyness. To be decided.
-	RenderInto(buffer *Buffer, view View, offsetLine, offsetColumn int)
+	RenderInto(buffer *Buffer, view View, offsetColumn, offsetLine int)
 
 	// IsDirty is true if the content should be saved before quitting.
 	IsDirty() bool
