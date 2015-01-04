@@ -355,6 +355,9 @@ type KeyBindings interface {
 
 	// Get returns a command if registered, nil otherwise.
 	Get(mode KeyboardMode, key key.Press) string
+
+	// GetAssigned returns all the assigned keys for this mode.
+	GetAssigned(mode KeyboardMode) []key.Press
 }
 
 // Config

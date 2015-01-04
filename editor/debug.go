@@ -36,35 +36,28 @@ func cmdCommandLog(c *wicore.CommandImpl, e wicore.Editor, w wicore.Window, args
 	commandLogRecurse(wicore.RootWindow(w))
 }
 
-func keyLogRecurse(w *window, e wicore.Editor, mode wicore.KeyboardMode) {
-	// TODO(maruel): Create a proper enumerator.
-	keys := w.view.KeyBindings().(*keyBindings)
-	var mapping *map[key.Press]string
-	if mode == wicore.Normal {
-		mapping = &keys.commandMappings
-	} else if mode == wicore.Insert {
-		mapping = &keys.editMappings
-	} else {
-		panic("Errr, fix me")
-	}
-	names := make([]string, 0, len(*mapping))
-	for k := range *mapping {
+func keyLogRecurse(w wicore.Window, e wicore.Editor, mode wicore.KeyboardMode) {
+	bindings := w.View().KeyBindings()
+	assigned := bindings.GetAssigned(mode)
+	names := make([]string, 0, len(assigned))
+	for _, k := range assigned {
 		names = append(names, k.String())
 	}
 	sort.Strings(names)
 	for _, name := range names {
-		log.Printf("  %s  %s: %s", w.ID(), name, (*mapping)[key.StringToPress(name)])
+		log.Printf("  %s  %s: %s", w.ID(), name, bindings.Get(mode, key.StringToPress(name)))
 	}
-	for _, child := range w.childrenWindows {
+	for _, child := range w.ChildrenWindows() {
 		keyLogRecurse(child, e, mode)
 	}
 }
 
-func cmdKeyLog(c *privilegedCommandImpl, e *editor, w *window, args ...string) {
+func cmdKeyLog(c *wicore.CommandImpl, e wicore.Editor, w wicore.Window, args ...string) {
 	log.Printf("Normal commands")
-	keyLogRecurse(e.rootWindow, e, wicore.Normal)
+	rootWindow := wicore.RootWindow(e.ActiveWindow())
+	keyLogRecurse(rootWindow, e, wicore.Normal)
 	log.Printf("Insert commands")
-	keyLogRecurse(e.rootWindow, e, wicore.Insert)
+	keyLogRecurse(rootWindow, e, wicore.Insert)
 }
 
 func cmdLogAll(c *wicore.CommandImpl, e wicore.Editor, w wicore.Window, args ...string) {
@@ -103,7 +96,7 @@ func RegisterDebugCommands(dispatcher wicore.Commands) {
 				lang.En: "Logs the registered commands, this is only relevant if -verbose is used.",
 			},
 		},
-		&privilegedCommandImpl{
+		&wicore.CommandImpl{
 			"key_log",
 			0,
 			cmdKeyLog,

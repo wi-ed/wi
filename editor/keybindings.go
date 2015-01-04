@@ -11,8 +11,8 @@ import (
 )
 
 type keyBindings struct {
-	commandMappings map[key.Press]string
-	editMappings    map[key.Press]string
+	normalMappings map[key.Press]string
+	insertMappings map[key.Press]string
 }
 
 func (k *keyBindings) Set(mode wicore.KeyboardMode, key key.Press, cmdName string) bool {
@@ -21,12 +21,12 @@ func (k *keyBindings) Set(mode wicore.KeyboardMode, key key.Press, cmdName strin
 	}
 	var ok bool
 	if mode == wicore.AllMode || mode == wicore.Normal {
-		_, ok = k.commandMappings[key]
-		k.commandMappings[key] = cmdName
+		_, ok = k.normalMappings[key]
+		k.normalMappings[key] = cmdName
 	}
 	if mode == wicore.AllMode || mode == wicore.Insert {
-		_, ok = k.editMappings[key]
-		k.editMappings[key] = cmdName
+		_, ok = k.insertMappings[key]
+		k.insertMappings[key] = cmdName
 	}
 	return !ok
 }
@@ -35,17 +35,32 @@ func (k *keyBindings) Get(mode wicore.KeyboardMode, key key.Press) string {
 	if !key.IsValid() {
 		return ""
 	}
-	if mode == wicore.Normal {
-		return k.commandMappings[key]
+	if mode == wicore.Normal || mode == wicore.AllMode {
+		if v, ok := k.normalMappings[key]; ok {
+			return v
+		}
 	}
-	if mode == wicore.Insert {
-		return k.editMappings[key]
+	if mode == wicore.Insert || mode == wicore.AllMode {
+		if v, ok := k.insertMappings[key]; ok {
+			return v
+		}
 	}
-	v, ok := k.commandMappings[key]
-	if !ok {
-		return k.editMappings[key]
+	return ""
+}
+
+func (k *keyBindings) GetAssigned(mode wicore.KeyboardMode) []key.Press {
+	out := []key.Press{}
+	if mode == wicore.Normal || mode == wicore.AllMode {
+		for k := range k.normalMappings {
+			out = append(out, k)
+		}
 	}
-	return v
+	if mode == wicore.Insert || mode == wicore.AllMode {
+		for k := range k.insertMappings {
+			out = append(out, k)
+		}
+	}
+	return out
 }
 
 func makeKeyBindings() wicore.KeyBindings {
