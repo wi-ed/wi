@@ -10,6 +10,8 @@
 package main
 
 import (
+	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"expvar"
 	"flag"
@@ -23,48 +25,96 @@ import (
 	"runtime/pprof"
 	"sort"
 	"strings"
-	"time"
+	"sync"
 
 	"github.com/maruel/wi/editor"
 	"github.com/maruel/wi/pkg/key"
 	"github.com/maruel/wi/pkg/lang"
 	"github.com/maruel/wi/wicore"
-	"github.com/nsf/termbox-go"
 )
 
 var (
-	crash      = flag.Duration("crash", 0, "Crash after specified duration")
-	prof       = flag.String("http", "", "Start a profiling web server")
+	httpServer = flag.String("http", "", "Start a debug web server to observe internal states")
 	cpuprofile = flag.String("cpuprofile", "", "Write cpu profile to file; use \"go tool pprof wi <file>\" to read the data; See https://blog.golang.org/profiling-go-programs for more details")
+	data       debugData
 )
 
-type onDebugClose struct {
-	logFile  io.Closer
-	profFile io.Closer
+type debugData struct {
+	wg        sync.WaitGroup
+	lock      sync.Mutex
+	newData   *sync.Cond
+	quit      bool
+	logBuffer bytes.Buffer // Memory leak containing the process buffer. TODO(maruel): limit its size.
+	logFile   io.Closer
+	profFile  io.Closer
 }
 
-func (o onDebugClose) Close() error {
-	if o.logFile != nil {
-		o.logFile.Close()
+func (d *debugData) Close() error {
+	d.lock.Lock()
+	d.quit = true
+	d.lock.Unlock()
+	d.newData.Broadcast()
+	if d.logFile != nil {
+		d.logFile.Close()
+		d.logFile = nil
 	}
-	if o.profFile != nil {
+	if d.profFile != nil {
 		pprof.StopCPUProfile()
-		o.profFile.Close()
+		d.profFile.Close()
+		d.profFile = nil
 	}
+	d.wg.Wait()
 	return nil
 }
 
+func (d *debugData) Write(p []byte) (int, error) {
+	d.lock.Lock()
+	defer d.lock.Unlock()
+	d.newData.Broadcast()
+	return d.logBuffer.Write(p)
+}
+
+// streamTo doesn't update b.lastRead so multiple calls can happen
+// simultaneously. It forcibly flushes the output so it is sent to the
+// underlying TCP connection.
+func (d *debugData) streamTo(w io.Writer) (int, error) {
+	d.wg.Add(1)
+	defer d.wg.Done()
+	f, ok := w.(http.Flusher)
+	offset := 0
+	var err error
+	d.lock.Lock()
+	defer d.lock.Unlock()
+	for !d.quit {
+		buf := d.logBuffer.Bytes()
+		if len(buf) != offset {
+			var n int
+			n, err = w.Write(buf[offset:])
+			offset += n
+			if ok && n != 0 {
+				f.Flush()
+			}
+		}
+		if err != nil {
+			break
+		}
+		d.newData.Wait()
+	}
+	return offset, err
+}
+
 func debugHook() io.Closer {
-	o := onDebugClose{}
+	data.newData = sync.NewCond(&data.lock)
 	log.SetFlags(log.Lmicroseconds | log.Lshortfile)
+	log.SetOutput(&data)
 	if f, err := os.OpenFile("wi.log", os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0666); err == nil {
-		o.logFile = f
-		log.SetOutput(f)
+		data.logFile = f
+		log.SetOutput(io.MultiWriter(&data, f))
 	}
 
 	if *cpuprofile != "" {
 		if f, err := os.OpenFile(*cpuprofile, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0666); err == nil {
-			o.profFile = f
+			data.profFile = f
 			pprof.StartCPUProfile(f)
 		} else {
 			log.Printf("Failed to open %s: %s", *cpuprofile, err)
@@ -76,23 +126,15 @@ func debugHook() io.Closer {
 	// http://golang.org/pkg/runtime/pprof/
 	// TODO(maruel): Add pprof.WriteHeapProfile(f) when desired (?)
 
-	if *crash > 0 {
-		// Crashes but ensure that the terminal is closed first. It's useful to
-		// figure out what's happening with an infinite loop for example.
-		time.AfterFunc(*crash, func() {
-			o.Close()
-			termbox.Close()
-			panic("Timeout")
-		})
-	}
-
-	if *prof != "" {
+	if *httpServer != "" {
 		http.HandleFunc("/", rootHandler)
+		http.HandleFunc("/favicon.ico", faviconHandler)
+		http.HandleFunc("/log", logHandler)
 		go func() {
-			log.Println(http.ListenAndServe(*prof, nil))
+			log.Println(http.ListenAndServe(*httpServer, nil))
 		}()
 	}
-	return o
+	return &data
 }
 
 func debugHookEditor(e editor.Editor) {
@@ -239,9 +281,12 @@ func prettyPrintJSON(in []byte) []byte {
 var tmplRoot = template.Must(template.New("root").Parse(`<!DOCTYPE html>
 	<html>
 	<head>
-		<title>wi</title>
+		<title>wi internals</title>
 		<meta charset="utf-8">
 		<style>
+		h1 {
+			font-size: 1.1em;
+		}
 		.data_table {
 			width: 100%;
 		}
@@ -257,7 +302,11 @@ var tmplRoot = template.Must(template.New("root").Parse(`<!DOCTYPE html>
 		</style>
 	</head>
 	<body>
+	<h1>wi internal details</h1>
 	<ul>
+		<li>
+			<a href="/log">Process log (same as in wi.log)</a>.
+		</li>
 		<li>
 			<a href="/debug/pprof/">Profiling information</a>.
 			For more information, see <a href="https://golang.org/pkg/net/http/pprof/">golang.org/pkg/net/http/pprof/</a>.
@@ -307,6 +356,17 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 	if err := tmplRoot.Execute(w, d); err != nil {
 		io.WriteString(w, err.Error())
 	}
+}
+
+func logHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	data.streamTo(w)
+}
+
+func faviconHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "image/x-image")
+	wiPNG, _ := base64.StdEncoding.DecodeString("iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAVUlEQVQ4y2NgGGjACGP8////PzkGMFHqAhQDrklLY1WELI5LDcN/KLgqJfUfGaDz0QHJXkB3AROxCkkKxGvS0gxaT58SZQiGAVpPn+LlD/J0MEINAAC5TUkhJn+lswAAAABJRU5ErkJggg==")
+	w.Write(wiPNG)
 }
 
 type funcString func() string
