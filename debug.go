@@ -215,45 +215,35 @@ func debugHookEditor(e editor.Editor) {
 	}
 
 	// TODO(maruel): Generate automatically?
-	e.RegisterCommands(func(cmds wicore.EnqueuedCommands) bool {
+	e.RegisterCommands(func(cmds wicore.EnqueuedCommands) {
 		//log.Printf("Commands(%v)", cmds)
-		return true
 	})
-	e.RegisterDocumentCreated(func(doc wicore.Document) bool {
+	e.RegisterDocumentCreated(func(doc wicore.Document) {
 		log.Printf("DocumentCreated(%s)", doc)
-		return true
 	})
-	e.RegisterDocumentCursorMoved(func(doc wicore.Document, col, row int) bool {
+	e.RegisterDocumentCursorMoved(func(doc wicore.Document, col, row int) {
 		log.Printf("DocumentCursorMoved(%s, %d, %d)", doc, col, row)
-		return true
 	})
-	e.RegisterEditorKeyboardModeChanged(func(mode wicore.KeyboardMode) bool {
+	e.RegisterEditorKeyboardModeChanged(func(mode wicore.KeyboardMode) {
 		log.Printf("EditorKeyboardModeChanged(%s)", mode)
-		return true
 	})
-	e.RegisterEditorLanguage(func(l lang.Language) bool {
+	e.RegisterEditorLanguage(func(l lang.Language) {
 		log.Printf("EditorLanguage(%s)", l)
-		return true
 	})
-	e.RegisterTerminalResized(func() bool {
+	e.RegisterTerminalResized(func() {
 		log.Printf("TerminalResized()")
-		return true
 	})
-	e.RegisterTerminalKeyPressed(func(key key.Press) bool {
+	e.RegisterTerminalKeyPressed(func(key key.Press) {
 		log.Printf("TerminalKeyPressed(%s)", key)
-		return true
 	})
-	e.RegisterViewCreated(func(view wicore.View) bool {
+	e.RegisterViewCreated(func(view wicore.View) {
 		log.Printf("ViewCreated(%s)", view)
-		return true
 	})
-	e.RegisterWindowCreated(func(window wicore.Window) bool {
+	e.RegisterWindowCreated(func(window wicore.Window) {
 		log.Printf("WindowCreated(%s)", window)
-		return true
 	})
-	e.RegisterWindowResized(func(window wicore.Window) bool {
+	e.RegisterWindowResized(func(window wicore.Window) {
 		log.Printf("WindowResized(%s)", window)
-		return true
 	})
 }
 

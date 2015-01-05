@@ -64,7 +64,7 @@ func (e *editor) Version() string {
 	return version
 }
 
-func (e *editor) onTerminalMetaKeyPressed(k key.Press) bool {
+func (e *editor) onTerminalMetaKeyPressed(k key.Press) {
 	if !k.IsValid() {
 		panic("Unexpected non-key")
 	}
@@ -79,17 +79,15 @@ func (e *editor) onTerminalMetaKeyPressed(k key.Press) bool {
 	} else {
 		e.ExecuteCommand(e.ActiveWindow(), "alert", notMapped.Sprintf(k))
 	}
-	return true
 }
 
-func (e *editor) onTerminalKeyPressed(k key.Press) bool {
+func (e *editor) onTerminalKeyPressed(k key.Press) {
 	if !k.IsValid() {
 		panic("Unexpected non-key")
 	}
 	if k.IsMeta() {
 		panic("Unexpected meta")
 	}
-	return true
 }
 
 func (e *editor) ExecuteCommand(w wicore.Window, cmdName string, args ...string) {
@@ -105,14 +103,13 @@ func (e *editor) ExecuteCommand(w wicore.Window, cmdName string, args ...string)
 	}
 }
 
-func (e *editor) onCommands(cmds wicore.EnqueuedCommands) bool {
+func (e *editor) onCommands(cmds wicore.EnqueuedCommands) {
 	for _, cmd := range cmds.Commands {
 		e.ExecuteCommand(e.ActiveWindow(), cmd[0], cmd[1:]...)
 	}
 	if cmds.Callback != nil {
 		cmds.Callback()
 	}
-	return true
 }
 
 func (e *editor) KeyboardMode() wicore.KeyboardMode {
@@ -181,18 +178,16 @@ func (e *editor) ViewFactoryNames() []string {
 	return names
 }
 
-func (e *editor) onTerminalResized() bool {
+func (e *editor) onTerminalResized() {
 	// Resize the Windows. This also invalidates it, which will also force a
 	// redraw if the size changed.
 	w, h := e.terminal.Size()
 	e.rootWindow.setRect(wicore.Rect{0, 0, w, h})
-	return true
 }
 
-func (e *editor) onDocumentCursorMoved(doc wicore.Document, col, line int) bool {
+func (e *editor) onDocumentCursorMoved(doc wicore.Document, col, line int) {
 	// TODO(maruel): Obviously wrong.
 	e.terminal.SetCursor(col, line)
-	return true
 }
 
 func (e *editor) terminalLoop(terminal Terminal) {

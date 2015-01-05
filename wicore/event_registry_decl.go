@@ -22,16 +22,16 @@ type EventRegistry interface {
 	// registered.
 	Unregister(eventID EventListenerID) error
 
-	RegisterCommands(callback func(a EnqueuedCommands) bool) EventListenerID
-	RegisterDocumentCreated(callback func(a Document) bool) EventListenerID
-	RegisterDocumentCursorMoved(callback func(a Document, b int, c int) bool) EventListenerID
-	RegisterEditorKeyboardModeChanged(callback func(a KeyboardMode) bool) EventListenerID
-	RegisterEditorLanguage(callback func(a lang.Language) bool) EventListenerID
-	RegisterTerminalKeyPressed(callback func(a key.Press) bool) EventListenerID
-	RegisterTerminalMetaKeyPressed(callback func(a key.Press) bool) EventListenerID
-	RegisterTerminalResized(callback func() bool) EventListenerID
-	RegisterViewActivated(callback func(a View) bool) EventListenerID
-	RegisterViewCreated(callback func(a View) bool) EventListenerID
-	RegisterWindowCreated(callback func(a Window) bool) EventListenerID
-	RegisterWindowResized(callback func(a Window) bool) EventListenerID
+	RegisterCommands(callback func(a EnqueuedCommands)) EventListenerID
+	RegisterDocumentCreated(callback func(a Document)) EventListenerID
+	RegisterDocumentCursorMoved(callback func(a Document, b int, c int)) EventListenerID
+	RegisterEditorKeyboardModeChanged(callback func(a KeyboardMode)) EventListenerID
+	RegisterEditorLanguage(callback func(a lang.Language)) EventListenerID
+	RegisterTerminalKeyPressed(callback func(a key.Press)) EventListenerID
+	RegisterTerminalMetaKeyPressed(callback func(a key.Press)) EventListenerID
+	RegisterTerminalResized(callback func()) EventListenerID
+	RegisterViewActivated(callback func(a View)) EventListenerID
+	RegisterViewCreated(callback func(a View)) EventListenerID
+	RegisterWindowCreated(callback func(a Window)) EventListenerID
+	RegisterWindowResized(callback func(a Window)) EventListenerID
 }

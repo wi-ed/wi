@@ -160,9 +160,8 @@ func statusModeViewFactory(e wicore.Editor, args ...string) wicore.View {
 	// Mostly for testing purpose, will contain the current mode "Insert" or "Command".
 	v := makeStaticDisabledView(e, e.KeyboardMode().String(), 10, 1)
 	v.defaultFormat = wicore.CellFormat{}
-	id := e.RegisterEditorKeyboardModeChanged(func(mode wicore.KeyboardMode) bool {
+	id := e.RegisterEditorKeyboardModeChanged(func(mode wicore.KeyboardMode) {
 		v.title = mode.String()
-		return true
 	})
 	v.eventIDs = append(v.eventIDs, id)
 	return v
@@ -173,9 +172,8 @@ func statusPositionViewFactory(e wicore.Editor, args ...string) wicore.View {
 	// TODO(maruel): Register events of movement, make itself Invalidate().
 	v := makeStaticDisabledView(e, "Status Position", 15, 1)
 	v.defaultFormat = wicore.CellFormat{}
-	id := e.RegisterDocumentCursorMoved(func(doc wicore.Document, col, row int) bool {
+	id := e.RegisterDocumentCursorMoved(func(doc wicore.Document, col, row int) {
 		v.title = fmt.Sprintf("%d,%d", col, row)
-		return true
 	})
 	v.eventIDs = append(v.eventIDs, id)
 	return v

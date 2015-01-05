@@ -24,7 +24,7 @@ func (v *commandView) Buffer() *wicore.Buffer {
 	return v.buffer
 }
 
-func (v *commandView) onTerminalKeyPressed(k key.Press) bool {
+func (v *commandView) onTerminalKeyPressed(k key.Press) {
 	// TODO(maruel): React to keys.
 	if k.Ch != '\000' {
 		v.text += string(k.Ch)
@@ -38,13 +38,8 @@ func (v *commandView) onTerminalKeyPressed(k key.Press) bool {
 			v.text += " "
 		case key.Tab:
 			// Command completion.
-		default:
-			// Not handled. Continue searching.
-			return true
 		}
 	}
-	// Handled.
-	return false
 }
 
 // The command dialog box.
@@ -68,9 +63,8 @@ func commandViewFactory(e wicore.Editor, args ...string) wicore.View {
 		"",
 	}
 	eventID := e.RegisterTerminalKeyPressed(v.onTerminalKeyPressed)
-	e.RegisterViewActivated(func(v wicore.View) bool {
+	e.RegisterViewActivated(func(v wicore.View) {
 		_ = e.Unregister(eventID)
-		return true
 	})
 	return v
 }

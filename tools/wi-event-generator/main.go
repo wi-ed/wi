@@ -108,9 +108,7 @@ func (er *eventRegistry) Trigger{{.Name}}({{.Args}}) {
 			return items
 		}()
 		for _, item := range items {
-			if !item({{.ArgsNames}}) {
-				break
-			}
+			item({{.ArgsNames}})
 		}
 	}
 }{{end}}
@@ -202,7 +200,7 @@ func extractEvents(impl bool, bitmask uint) ([]Event, error) {
 			BitValue:  fmt.Sprintf("wicore.EventListenerID(0x%x)", (len(events)+1)<<bitmask),
 			Args:      strings.Join(args, ", "),
 			ArgsNames: strings.Join(argsNames, ", "),
-			Result:    "bool",
+			Result:    "",
 		})
 	}
 	return events, nil

@@ -68,7 +68,7 @@ func (v *documentView) cursorMoved(e wicore.Editor) {
 	// TODO(maruel): Trigger redraw.
 }
 
-func (v *documentView) onKeyPress(e wicore.Editor, k key.Press) bool {
+func (v *documentView) onKeyPress(e wicore.Editor, k key.Press) {
 	// TODO(maruel): Only get when the View is active.
 	l := v.document.content[v.cursorLine]
 	v.document.content[v.cursorLine] = l[:v.cursorColumn] + string(k.Ch) + l[v.cursorColumn:]
@@ -77,7 +77,6 @@ func (v *documentView) onKeyPress(e wicore.Editor, k key.Press) bool {
 	v.cursorMoved(e)
 	// TODO(maruel): Implement dirty instead.
 	e.TriggerTerminalResized()
-	return true
 }
 
 func cmdToDoc(handler func(v *documentView, e wicore.Editor)) wicore.CommandImplHandler {
@@ -272,8 +271,8 @@ func documentViewFactory(e wicore.Editor, args ...string) wicore.View {
 	v.onAttach = func(_ *view, w wicore.Window) {
 		v.cursorMoved(e)
 	}
-	v.eventIDs = append(v.eventIDs, e.RegisterTerminalKeyPressed(func(k key.Press) bool {
-		return v.onKeyPress(e, k)
+	v.eventIDs = append(v.eventIDs, e.RegisterTerminalKeyPressed(func(k key.Press) {
+		v.onKeyPress(e, k)
 	}))
 	return v
 }
