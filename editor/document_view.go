@@ -68,6 +68,18 @@ func (v *documentView) cursorMoved(e wicore.Editor) {
 	// TODO(maruel): Trigger redraw.
 }
 
+func (v *documentView) onKeyPress(e wicore.Editor, k key.Press) bool {
+	// TODO(maruel): Only get when the View is active.
+	l := v.document.content[v.cursorLine]
+	v.document.content[v.cursorLine] = l[:v.cursorColumn] + string(k.Ch) + l[v.cursorColumn:]
+	v.cursorColumn++
+	v.cursorColumnMax = v.cursorColumn
+	v.cursorMoved(e)
+	// TODO(maruel): Implement dirty instead.
+	e.TriggerTerminalResized()
+	return true
+}
+
 func cmdToDoc(handler func(v *documentView, e wicore.Editor)) wicore.CommandImplHandler {
 	return func(c *wicore.CommandImpl, e wicore.Editor, w wicore.Window, args ...string) {
 		v, ok := w.View().(*documentView)
@@ -239,10 +251,10 @@ func documentViewFactory(e wicore.Editor, args ...string) wicore.View {
 	bindings.Set(wicore.AllMode, key.Press{Key: key.Home}, "document_cursor_home")
 	bindings.Set(wicore.AllMode, key.Press{Key: key.End}, "document_cursor_end")
 	// vim style movement.
-	bindings.Set(wicore.AllMode, key.Press{Ch: 'h'}, "document_cursor_left")
-	bindings.Set(wicore.AllMode, key.Press{Ch: 'l'}, "document_cursor_right")
-	bindings.Set(wicore.AllMode, key.Press{Ch: 'k'}, "document_cursor_up")
-	bindings.Set(wicore.AllMode, key.Press{Ch: 'j'}, "document_cursor_down")
+	bindings.Set(wicore.Normal, key.Press{Ch: 'h'}, "document_cursor_left")
+	bindings.Set(wicore.Normal, key.Press{Ch: 'l'}, "document_cursor_right")
+	bindings.Set(wicore.Normal, key.Press{Ch: 'k'}, "document_cursor_up")
+	bindings.Set(wicore.Normal, key.Press{Ch: 'j'}, "document_cursor_down")
 
 	// TODO(maruel): Sort out "use max space".
 	// TODO(maruel): Load last cursor position from config.
@@ -257,6 +269,11 @@ func documentViewFactory(e wicore.Editor, args ...string) wicore.View {
 		},
 		document: makeDocument(),
 	}
-	v.cursorMoved(e)
+	v.onAttach = func(_ *view, w wicore.Window) {
+		v.cursorMoved(e)
+	}
+	v.eventIDs = append(v.eventIDs, e.RegisterTerminalKeyPressed(func(k key.Press) bool {
+		return v.onKeyPress(e, k)
+	}))
 	return v
 }
