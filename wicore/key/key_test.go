@@ -16,6 +16,8 @@ func TestKey(t *testing.T) {
 		ut.AssertEqual(t, true, len(s) > 1)
 		ut.AssertEqual(t, i, StringToKey(s))
 	}
+
+	ut.AssertEqual(t, "Key(33)", Key(last+1).String())
 }
 
 func TestPress(t *testing.T) {
@@ -35,5 +37,11 @@ func TestPress(t *testing.T) {
 		ut.AssertEqualIndex(t, i, v, StringToPress(v.String()))
 		v.Ctrl = false
 		ut.AssertEqualIndex(t, i, v, StringToPress(v.String()))
+	}
+
+	ut.AssertEqual(t, "", Press{}.String())
+
+	for i := Key(0); i < Meta; i++ {
+		ut.AssertEqual(t, false, Press{Key: i}.IsMeta())
 	}
 }

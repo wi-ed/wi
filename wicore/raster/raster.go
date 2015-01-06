@@ -128,7 +128,7 @@ func (b *Buffer) Cell(X, Y int) *Cell {
 // Text will be automatically elided if necessary.
 func (b *Buffer) DrawString(s string, X, Y int, f CellFormat) {
 	line := b.Line(Y)
-	if len(line) < X {
+	if len(line) <= X {
 		return
 	}
 	bytes := []byte(ElideText(s, len(line)-X))
@@ -193,7 +193,7 @@ func ElideText(s string, width int) string {
 	if length <= width {
 		return s
 	}
-	return s[:length-1] + "…"
+	return s[:width-1] + "…"
 }
 
 // Blit copies src into b.

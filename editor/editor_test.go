@@ -87,6 +87,6 @@ func TestMainInvalidThenQuit(t *testing.T) {
 	expected := raster.NewBuffer(80, 25)
 	expected.Fill(raster.MakeCell(' ', colors.Red, colors.Black))
 	expected.DrawString("Root", 0, 0, raster.CellFormat{Fg: colors.Red, Bg: colors.Black})
-	expected.DrawString("Status Name    Normal                                            Status Position   ", 0, 24, raster.CellFormat{Fg: colors.Red, Bg: colors.LightGray})
+	expected.DrawString("Status Name    Normal                                            Status Position", 0, 24, raster.CellFormat{Fg: colors.Red, Bg: colors.LightGray})
 	compareBuffers(t, expected, terminal.Buffer)
 }
