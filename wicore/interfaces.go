@@ -13,7 +13,9 @@ package wicore
 import (
 	"fmt"
 	"io"
+	"reflect"
 
+	"github.com/maruel/interfaceGUID"
 	"github.com/maruel/wi/wicore/key"
 	"github.com/maruel/wi/wicore/lang"
 	"github.com/maruel/wi/wicore/raster"
@@ -375,6 +377,16 @@ type Config interface {
 
 // Utility functions.
 
+// CalculateVersion returns the hex string of the hash of the primary
+// interfaces for this package.
+//
+// It traverses the Editor type recursively, expanding all types referenced
+// recursively. This data is used to generate an hash that represents the
+// "version" of this interface.
+func CalculateVersion() string {
+	return interfaceGUID.CalculateGUID(reflect.TypeOf((*Editor)(nil)).Elem())
+}
+
 // GetKeyBindingCommand traverses the Editor's Window tree to find a View that
 // has the key binding in its Keyboard mapping.
 func GetKeyBindingCommand(e Editor, mode KeyboardMode, key key.Press) string {
@@ -421,4 +433,26 @@ func PositionOnScreen(w Window) raster.Rect {
 		}
 	}
 	return out
+}
+
+type multiCloser []io.Closer
+
+func (m multiCloser) Close() (err error) {
+	for _, i := range m {
+		err1 := i.Close()
+		if err1 != nil {
+			err = err1
+		}
+	}
+	return
+}
+
+// MakeReadWriteCloser creates a io.ReadWriteCloser out of one io.ReadCloser
+// and one io.WriteCloser.
+func MakeReadWriteCloser(reader io.ReadCloser, writer io.WriteCloser) io.ReadWriteCloser {
+	return struct {
+		io.Reader
+		io.Writer
+		io.Closer
+	}{reader, writer, multiCloser{reader, writer}}
 }

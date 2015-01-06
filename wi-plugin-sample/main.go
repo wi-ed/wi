@@ -11,10 +11,10 @@
 package main
 
 import (
-	"github.com/maruel/wi/wicore"
+	"github.com/maruel/wi/wicore/plugin"
 )
 
 func main() {
 	// This starts the control loop. See its doc for more up-to-date details.
-	wicore.Main()
+	plugin.Main()
 }
