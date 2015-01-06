@@ -6,7 +6,7 @@
 :: Short test until we got something up and running.
 cd %~dp0\..
 cls
-go build -tags debug
+go build -race -tags debug
 if errorlevel 1 goto :EOF
 wi -c log_all editor_quit
 if errorlevel 1 goto :EOF

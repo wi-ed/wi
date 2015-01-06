@@ -8,6 +8,6 @@
 set -e
 
 cd $(dirname $0)/..
-go build -tags debug
+go build -race -tags debug
 ./wi -c log_all editor_quit
 cat wi.log
