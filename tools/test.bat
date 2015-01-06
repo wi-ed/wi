@@ -4,6 +4,7 @@
 :: that can be found in the LICENSE file.
 
 :: Short test until we got something up and running.
+cd %~dp0\..
 cls
 go build -tags debug
 if errorlevel 1 goto :EOF
