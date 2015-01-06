@@ -185,11 +185,11 @@ func infobarAlertViewFactory(e wicore.Editor, args ...string) wicore.View {
 	l := utf8.RuneCountInString(out)
 	v := makeStaticDisabledView(e, out, l, 1)
 	v.onAttach = func(v *view, w wicore.Window) {
-		go func() {
+		wicore.Go("infobarAlert", func() {
 			// Dismiss after 5 seconds.
 			<-time.After(5 * time.Second)
 			wicore.PostCommand(e, nil, "window_close", w.ID())
-		}()
+		})
 	}
 	return v
 }

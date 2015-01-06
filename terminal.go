@@ -8,6 +8,7 @@ package main
 
 import (
 	"github.com/maruel/wi/editor"
+	"github.com/maruel/wi/wicore"
 	"github.com/maruel/wi/wicore/colors"
 	"github.com/maruel/wi/wicore/key"
 	"github.com/maruel/wi/wicore/raster"
@@ -29,7 +30,7 @@ func (t TermBox) SeedEvents() <-chan editor.TerminalEvent {
 	// have an hard dependency of editor on termbox-go; this makes both unit
 	// testing easier and future-proof the editor.
 	c := make(chan editor.TerminalEvent)
-	go func() {
+	wicore.Go("SeedEvents", func() {
 		for {
 			e := termbox.PollEvent()
 			switch e.Type {
@@ -49,7 +50,7 @@ func (t TermBox) SeedEvents() <-chan editor.TerminalEvent {
 				return
 			}
 		}
-	}()
+	})
 	return c
 }
 

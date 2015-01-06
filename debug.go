@@ -130,9 +130,9 @@ func debugHook() io.Closer {
 		http.HandleFunc("/", rootHandler)
 		http.HandleFunc("/favicon.ico", faviconHandler)
 		http.HandleFunc("/log", logHandler)
-		go func() {
+		wicore.Go("HTTPserver", func() {
 			log.Println(http.ListenAndServe(*httpServer, nil))
-		}()
+		})
 	}
 	return &data
 }

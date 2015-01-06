@@ -261,8 +261,7 @@ func (e *editor) isDirty() bool {
 }
 
 func (e *editor) loadPlugins() {
-	// TODO(maruel): Get path.
-	paths, err := EnumPlugins(".")
+	paths, err := enumPlugins(getPluginsPaths())
 	if err != nil {
 		log.Printf("Failed to enum plugins: %s", err)
 	} else {
@@ -329,7 +328,7 @@ func MakeEditor(terminal Terminal, noPlugin bool) (Editor, error) {
 	e.TriggerEditorLanguage(lang.En)
 	// This forces creating the default buffer.
 	e.TriggerTerminalResized()
-	go e.terminalLoop(terminal)
+	wicore.Go("terminalLoop", func() { e.terminalLoop(terminal) })
 
 	e.TriggerEditorKeyboardModeChanged(e.keyboardMode)
 
@@ -380,9 +379,9 @@ func cmdEditorQuit(c *privilegedCommandImpl, e *editor, w *window, args ...strin
 }
 
 func cmdEditorRedraw(c *privilegedCommandImpl, e *editor, w *window, args ...string) {
-	go func() {
+	wicore.Go("viewReady", func() {
 		e.viewReady <- true
-	}()
+	})
 }
 
 // RegisterEditorDefaults registers the top-level native commands and key

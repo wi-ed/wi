@@ -5,6 +5,7 @@
 package editor
 
 import (
+	"github.com/maruel/wi/wicore"
 	"github.com/maruel/wi/wicore/key"
 	"github.com/maruel/wi/wicore/raster"
 )
@@ -79,11 +80,11 @@ func (t *TerminalFake) Size() (int, int) {
 // SeedEvents implements Terminal.
 func (t *TerminalFake) SeedEvents() <-chan TerminalEvent {
 	out := make(chan TerminalEvent)
-	go func() {
+	wicore.Go("SeedEvents", func() {
 		for _, i := range t.Events {
 			out <- i
 		}
-	}()
+	})
 	return out
 }
 

@@ -43,7 +43,7 @@ import (
 	"github.com/nsf/termbox-go"
 )
 
-func mainImpl() int {
+func terminalThread(returnCode chan<- int, mustClose chan<- func()) {
 	// "flag" and "termbox" use a lot of global variables so they can't be easily
 	// included in parallel tests.
 	command := flag.Bool("c", false, "Runs the commands specified on startup")
@@ -54,17 +54,20 @@ func mainImpl() int {
 	// Process this one early. No one wants version output to take 1s.
 	if *version {
 		println(version)
-		return 0
+		returnCode <- 0
+		return
 	}
 
 	if *command && flag.NArg() == 0 {
 		fmt.Fprintf(os.Stderr, "error: -c implies specifying commands to execute")
-		return 1
+		returnCode <- 1
+		return
 	}
 
 	if err := termbox.Init(); err != nil {
 		fmt.Fprintf(os.Stderr, "failed to initialize terminal: %s", err)
-		return 1
+		returnCode <- 1
+		return
 	}
 
 	out := debugHook()
@@ -74,15 +77,16 @@ func mainImpl() int {
 		}()
 	}
 
-	// It is really important that no other goroutine panic() or call
-	// log.Fatal(), otherwise the terminal will be left in a broken state.
-	defer termbox.Close()
+	// It is really important that all other goroutine wrap with handlePanic(),
+	// otherwise the terminal will be left in a broken state.
+	mustClose <- termbox.Close
 	termbox.SetInputMode(termbox.InputAlt | termbox.InputMouse)
 
 	e, err := editor.MakeEditor(&TermBox{}, *noPlugin)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %s", err)
-		return 1
+		returnCode <- 1
+		return
 	}
 	defer func() {
 		_ = e.Close()
@@ -102,7 +106,32 @@ func mainImpl() int {
 		// If nothing, opens a blank editor.
 		wicore.PostCommand(e, nil, "new")
 	}
-	return e.EventLoop()
+	returnCode <- e.EventLoop()
+}
+
+func mainImpl() int {
+	returnCode := make(chan int)
+	var closer func()
+	mustClose := make(chan func())
+	wicore.Go("terminalThread", func() { terminalThread(returnCode, mustClose) })
+	for {
+		select {
+		case c := <-mustClose:
+			closer = c
+		case r := <-returnCode:
+			if closer != nil {
+				closer()
+			}
+			return r
+		case p := <-wicore.GotPanic:
+			fmt.Fprintf(os.Stderr, "Got panic!\n")
+			if closer != nil {
+				closer()
+			}
+			fmt.Fprintf(os.Stderr, "Panic: %s\n", p)
+			return 1
+		}
+	}
 }
 
 func main() {

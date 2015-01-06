@@ -13,6 +13,7 @@ import (
 	"net/rpc"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"sync"
@@ -65,9 +66,9 @@ func (p Plugins) Close() error {
 }
 
 // loadPlugin starts a plugin and returns the process.
-func loadPlugin(server *rpc.Server, args ...string) (Plugin, error) {
-	log.Printf("loadPlugin(%v)", args)
-	cmd := exec.Command(args[0], args[1:]...)
+func loadPlugin(server *rpc.Server, cmdLine []string) (Plugin, error) {
+	log.Printf("loadPlugin(%v)", cmdLine)
+	cmd := exec.Command(cmdLine[0], cmdLine[1:]...)
 	cmd.Env = append(os.Environ(), "WI=plugin")
 
 	stdin, err := cmd.StdinPipe()
@@ -88,80 +89,124 @@ func loadPlugin(server *rpc.Server, args ...string) (Plugin, error) {
 		return nil, err
 	}
 
+	first := make(chan error)
+
 	// Fail on any write to Stderr.
-	go func() {
+	wicore.Go("stderrReader", func() {
 		buf := make([]byte, 2048)
 		n, _ := stderr.Read(buf)
 		if n != 0 {
-			// TODO(maruel): Must not panic but instead send an alert command.
-			panic(fmt.Sprintf("Plugin %v failed: %s", args, buf))
+			first <- fmt.Errorf("plugin %v failed: %s", cmdLine, buf)
 		}
-	}()
+	})
 
-	// Before starting the RPC, ensures the version matches.
-	expectedVersion := wicore.CalculateVersion()
-	b := make([]byte, 40)
-	if _, err := stdout.Read(b); err != nil {
+	wicore.Go("stdoutReader", func() {
+		// Before starting the RPC, ensures the version matches.
+		expectedVersion := wicore.CalculateVersion()
+		b := make([]byte, 40)
+		if _, err := stdout.Read(b); err != nil {
+			first <- err
+		}
+		actualVersion := string(b)
+		if expectedVersion != actualVersion {
+			first <- fmt.Errorf("unexpected wicore version; expected %s, got %s", expectedVersion, actualVersion)
+		}
+		first <- nil
+	})
+
+	err = <-first
+	if err != nil {
 		return nil, err
-	}
-	actualVersion := string(b)
-	if expectedVersion != actualVersion {
-		return nil, fmt.Errorf("unexpected wicore version; expected %s, got %s", expectedVersion, actualVersion)
 	}
 
 	// Start the RPC server for this plugin.
-	go func() {
+	wicore.Go("RPCserver", func() {
 		server.ServeConn(wicore.MakeReadWriteCloser(stdout, stdin))
-	}()
+	})
 
 	return &pluginProcess{cmd.Process}, nil
 }
 
-// executeRaw starts a plugin present as source file for quick hacking. It
-// first compile the file then run it.
-func executeRaw(server *rpc.Server, filePath string) (Plugin, error) {
-	return loadPlugin(server, "go", "run", filePath)
-}
-
-// EnumPlugins enumerate the plugins that should be loaded.
+// getPluginsPaths returns the search paths for plugins.
 //
-// TODO(maruel): Get the path of the executable. It's a bit involved since very
-// OS specific but it's doable. Then all plugins in the same directory are
-// access.
-func EnumPlugins(searchDir string) ([]string, error) {
-	files, err := ioutil.ReadDir(searchDir)
-	if err != nil {
-		return nil, err
-	}
-	if len(files) == 0 {
-		return nil, nil
-	}
-
+// Currently look at ".", each element of $GOPATH/bin and in $WIPLUGINSPATH.
+func getPluginsPaths() []string {
 	out := []string{}
-	for _, f := range files {
-		if f.IsDir() {
-			continue
-		}
-		name := f.Name()
-		if !strings.HasPrefix(name, "wi-plugin-") {
-			continue
-		}
-		// Crude check for executable test.
-		if runtime.GOOS == "windows" {
-			if !strings.HasSuffix(name, ".exe") {
-				continue
-			}
-		} else {
-			if f.Mode()&0111 == 0 {
-				continue
-			}
-		}
-		out = append(out, name)
+	for _, i := range filepath.SplitList(os.Getenv("GOPATH")) {
+		out = append(out, filepath.Join(i, "bin"))
 	}
-	return out, nil
+	for _, i := range filepath.SplitList(os.Getenv("WIPLUGINSPATH")) {
+		out = append(out, i)
+	}
+	return out
 }
 
-func loadPlugins(pluginExecutables []string) (Plugins, error) {
+// enumPlugins enumerate the plugins that should be loaded.
+//
+// It returns the command lines to use to start the processes. It support
+// normal executable, standalone source file and directory containing multiple
+// source files.
+//
+// Source files will incur a ~500ms to ~1s compilation overhead, so they should
+// eventually be compiled. Still, it's very useful for quick prototyping.
+func enumPlugins(searchDirs []string) ([][]string, error) {
+	out := [][]string{}
+	var err error
+	for _, searchDir := range searchDirs {
+		files, err2 := ioutil.ReadDir(searchDir)
+		if err2 != nil {
+			err = err2
+		}
+		if len(files) == 0 {
+			continue
+		}
+
+		for _, f := range files {
+			name := f.Name()
+			if !strings.HasPrefix(name, "wi-plugin-") {
+				continue
+			}
+			filePath := filepath.Join(searchDir, name)
+
+			if f.IsDir() {
+				// Compile on-the-fly a directory of source files.
+				// TODO(maruel): When built with -tags debug, pass it along.
+				files, err2 := filepath.Glob(filepath.Join(filePath, "*.go"))
+				if len(files) == 0 || err2 != nil {
+					continue
+				}
+				i := []string{"go", "run"}
+				for _, t := range files {
+					i = append(i, filepath.Join(filePath, t))
+				}
+				out = append(out, i)
+				continue
+			}
+
+			if strings.HasSuffix(name, ".go") {
+				// Compile on-the-fly a source file.
+				// TODO(maruel): When built with -tags debug, pass it along.
+				out = append(out, []string{"go", "run", filePath})
+				continue
+			}
+
+			// Crude check for executable test.
+			if runtime.GOOS == "windows" {
+				if !strings.HasSuffix(name, ".exe") {
+					continue
+				}
+			} else {
+				if f.Mode()&0111 == 0 {
+					continue
+				}
+			}
+			out = append(out, []string{filePath})
+		}
+	}
+	return out, err
+}
+
+func loadPlugins(pluginExecutables [][]string) (Plugins, error) {
 	type x struct {
 		Plugin
 		error
@@ -171,30 +216,32 @@ func loadPlugins(pluginExecutables []string) (Plugins, error) {
 	// TODO(maruel): http://golang.org/pkg/net/rpc/#Server.RegisterName
 	// It should be an interface with methods of style DoStuff(Foo, Bar) Baz
 	//server.RegisterName("Editor", e)
-	go func() {
+	wicore.Go("loadPlugins", func() {
 		var wg sync.WaitGroup
-		for _, name := range pluginExecutables {
+		for _, cmd := range pluginExecutables {
 			wg.Add(1)
-			go func(s *rpc.Server, n string) {
-				defer wg.Done()
-				if p, err := loadPlugin(s, n); err != nil {
-					c <- x{error: fmt.Errorf("failed to load %s: %s", n, err)}
-				} else {
-					c <- x{Plugin: p}
-				}
-			}(server, name)
+			wicore.Go("loadPlugin", func() {
+				func(s *rpc.Server, n []string) {
+					defer wg.Done()
+					if p, err := loadPlugin(s, n); err != nil {
+						c <- x{error: fmt.Errorf("failed to load %v: %s", n, err)}
+					} else {
+						c <- x{Plugin: p}
+					}
+				}(server, cmd)
+			})
 		}
 		// Wait for all the plugins to be loaded.
 		wg.Wait()
 		close(c)
-	}()
+	})
 
 	// Convert to a slice.
 	var wg sync.WaitGroup
 	out := make(Plugins, 0, len(pluginExecutables))
 	errs := make([]error, 0)
 	wg.Add(1)
-	go func() {
+	wicore.Go("pluginReaper", func() {
 		defer wg.Done()
 		for i := range c {
 			if i.error != nil {
@@ -203,7 +250,7 @@ func loadPlugins(pluginExecutables []string) (Plugins, error) {
 				out = append(out, i.Plugin)
 			}
 		}
-	}()
+	})
 	wg.Wait()
 
 	var err error
