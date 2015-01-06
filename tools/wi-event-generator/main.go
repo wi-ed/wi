@@ -40,8 +40,8 @@ import (
   "errors"
   "sync"
 
-  "github.com/maruel/wi/pkg/key"
-  "github.com/maruel/wi/pkg/lang"
+  "github.com/maruel/wi/wicore/key"
+  "github.com/maruel/wi/wicore/lang"
   "github.com/maruel/wi/wicore"
 )
 {{range .Events}}
@@ -138,8 +138,8 @@ package wicore
 import (
 	"io"
 
-  "github.com/maruel/wi/pkg/key"
-  "github.com/maruel/wi/pkg/lang"
+  "github.com/maruel/wi/wicore/key"
+  "github.com/maruel/wi/wicore/lang"
 )
 
 // EventListener is to be used to cancel an event listener.

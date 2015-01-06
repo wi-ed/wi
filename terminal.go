@@ -8,9 +8,9 @@ package main
 
 import (
 	"github.com/maruel/wi/editor"
-	"github.com/maruel/wi/pkg/colors"
-	"github.com/maruel/wi/pkg/key"
-	"github.com/maruel/wi/wicore"
+	"github.com/maruel/wi/wicore/colors"
+	"github.com/maruel/wi/wicore/key"
+	"github.com/maruel/wi/wicore/raster"
 	"github.com/nsf/termbox-go"
 )
 
@@ -253,7 +253,7 @@ func rgbToTermBox(c colors.RGB) termbox.Attribute {
 }
 
 // Blit converts the editor.Buffer format into termbox format.
-func (t TermBox) Blit(b *wicore.Buffer) {
+func (t TermBox) Blit(b *raster.Buffer) {
 	width, height := termbox.Size()
 	cells := termbox.CellBuffer()
 	if width > b.Width {

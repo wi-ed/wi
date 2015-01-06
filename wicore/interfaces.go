@@ -14,8 +14,9 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/maruel/wi/pkg/key"
-	"github.com/maruel/wi/pkg/lang"
+	"github.com/maruel/wi/wicore/key"
+	"github.com/maruel/wi/wicore/lang"
+	"github.com/maruel/wi/wicore/raster"
 )
 
 // UI
@@ -181,7 +182,7 @@ type Window interface {
 
 	// Rect returns the position based on the parent Window area, except if
 	// Docking() is DockingFloating.
-	Rect() Rect
+	Rect() raster.Rect
 
 	// Docking returns where this Window is docked relative to the parent Window.
 	// A DockingFloating window is effectively starting a new independent Rect.
@@ -217,7 +218,7 @@ type View interface {
 	IsDisabled() bool
 
 	// Buffer returns the display buffer for this Window.
-	Buffer() *Buffer
+	Buffer() *raster.Buffer
 
 	// NaturalSize returns the natural size of the content. It can be -1 for as
 	// long/large as possible, 0 if indeterminate. The return value of this
@@ -233,7 +234,7 @@ type View interface {
 	// DefaultFormat returns the default coloring for this View. If this View has
 	// an CellFormat.Empty()==true format, it will uses whatever parent Window's
 	// View DefaultFormat().
-	DefaultFormat() CellFormat
+	DefaultFormat() raster.CellFormat
 }
 
 // ViewFactory returns a new View.
@@ -251,7 +252,7 @@ type Document interface {
 	//
 	// TODO(maruel): Likely return a new Buffer instance instead, for RPC
 	// friendlyness. To be decided.
-	RenderInto(buffer *Buffer, view View, offsetColumn, offsetLine int)
+	RenderInto(buffer *raster.Buffer, view View, offsetColumn, offsetLine int)
 
 	// IsDirty is true if the content should be saved before quitting.
 	IsDirty() bool
@@ -401,7 +402,7 @@ func RootWindow(w Window) Window {
 }
 
 // PositionOnScreen returns the exact position on screen of a Window.
-func PositionOnScreen(w Window) Rect {
+func PositionOnScreen(w Window) raster.Rect {
 	out := w.Rect()
 	if w.Docking() == DockingFloating {
 		return out

@@ -5,8 +5,8 @@
 package editor
 
 import (
-	"github.com/maruel/wi/pkg/key"
-	"github.com/maruel/wi/wicore"
+	"github.com/maruel/wi/wicore/key"
+	"github.com/maruel/wi/wicore/raster"
 )
 
 // Terminal is the interface to the actual terminal termbox so it can be mocked
@@ -24,7 +24,7 @@ type Terminal interface {
 	//
 	// It is important for the buffer to be the right size, otherwise the display
 	// will be partially updated.
-	Blit(b *wicore.Buffer)
+	Blit(b *raster.Buffer)
 
 	// SetCursor moves the cursor to a position.
 	SetCursor(col, row int)
@@ -68,7 +68,7 @@ type TerminalFake struct {
 	Width  int
 	Height int
 	Events []TerminalEvent
-	Buffer *wicore.Buffer
+	Buffer *raster.Buffer
 }
 
 // Size implements Terminal.
@@ -88,7 +88,7 @@ func (t *TerminalFake) SeedEvents() <-chan TerminalEvent {
 }
 
 // Blit implements Terminal.
-func (t *TerminalFake) Blit(b *wicore.Buffer) {
+func (t *TerminalFake) Blit(b *raster.Buffer) {
 	t.Buffer.Blit(b)
 }
 
@@ -106,6 +106,6 @@ func NewTerminalFake(width, height int, events []TerminalEvent) *TerminalFake {
 		width,
 		height,
 		events,
-		wicore.NewBuffer(width, height),
+		raster.NewBuffer(width, height),
 	}
 }

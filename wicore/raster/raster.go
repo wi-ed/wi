@@ -2,13 +2,14 @@
 // Use of this source code is governed under the Apache License, Version 2.0
 // that can be found in the LICENSE file.
 
-package wicore
+// Package raster implements text buffering.
+package raster
 
 import (
 	"fmt"
 	"unicode/utf8"
 
-	"github.com/maruel/wi/pkg/colors"
+	"github.com/maruel/wi/wicore/colors"
 )
 
 // Rect is highly inspired by image.Rectangle but uses more standard origin +
@@ -23,11 +24,6 @@ type Rect struct {
 // Empty reports whether the rectangle area is 0.
 func (r Rect) Empty() bool {
 	return r.Width == 0 || r.Height == 0
-}
-
-// Eq reports whether r and s are equal.
-func (r Rect) Eq(s Rect) bool {
-	return r.X == s.X && r.Y == s.Y && r.Width == s.Width && r.Height == s.Height
 }
 
 // In reports whether every point in r is in s.

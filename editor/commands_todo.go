@@ -7,8 +7,8 @@ package editor
 import (
 	"log"
 
-	"github.com/maruel/wi/pkg/lang"
 	"github.com/maruel/wi/wicore"
+	"github.com/maruel/wi/wicore/lang"
 )
 
 func cmdDoc(c *wicore.CommandImpl, e wicore.Editor, w wicore.Window, args ...string) {

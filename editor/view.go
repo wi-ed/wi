@@ -10,8 +10,9 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/maruel/wi/pkg/colors"
 	"github.com/maruel/wi/wicore"
+	"github.com/maruel/wi/wicore/colors"
+	"github.com/maruel/wi/wicore/raster"
 )
 
 // TODO(maruel): Likely move into wicore for reuse.
@@ -27,8 +28,8 @@ type view struct {
 	actualY       int
 	window        wicore.Window
 	onAttach      func(v *view, w wicore.Window)
-	defaultFormat wicore.CellFormat
-	buffer        *wicore.Buffer
+	defaultFormat raster.CellFormat
+	buffer        *raster.Buffer
 	events        []wicore.EventListener
 }
 
@@ -73,7 +74,7 @@ func (v *view) SetSize(x, y int) {
 	log.Printf("View(%s).SetSize(%d, %d)", v.Title(), x, y)
 	v.actualX = x
 	v.actualY = y
-	v.buffer = wicore.NewBuffer(x, y)
+	v.buffer = raster.NewBuffer(x, y)
 }
 
 func (v *view) OnAttach(w wicore.Window) {
@@ -84,7 +85,7 @@ func (v *view) OnAttach(w wicore.Window) {
 }
 
 // DefaultFormat returns the View's format or the parent Window's View's format.
-func (v *view) DefaultFormat() wicore.CellFormat {
+func (v *view) DefaultFormat() raster.CellFormat {
 	if v.defaultFormat.Empty() && v.window != nil {
 		w := v.window.Parent()
 		if w != nil {
@@ -99,11 +100,11 @@ type staticDisabledView struct {
 	view
 }
 
-func (v *staticDisabledView) Buffer() *wicore.Buffer {
+func (v *staticDisabledView) Buffer() *raster.Buffer {
 	// TODO(maruel): Use the parent view format by default. No idea how to
 	// surface this information here. Cost is at least a RPC, potentially
 	// multiple when multiple plugins are involved in the tree.
-	v.buffer.Fill(wicore.Cell{' ', v.DefaultFormat()})
+	v.buffer.Fill(raster.Cell{' ', v.DefaultFormat()})
 	v.buffer.DrawString(v.Title(), 0, 0, v.DefaultFormat())
 	return v.buffer
 }
@@ -119,7 +120,7 @@ func makeStaticDisabledView(e wicore.Editor, title string, naturalX, naturalY in
 			isDisabled:    true,
 			naturalX:      naturalX,
 			naturalY:      naturalY,
-			defaultFormat: wicore.CellFormat{Fg: colors.Red, Bg: colors.Black},
+			defaultFormat: raster.CellFormat{Fg: colors.Red, Bg: colors.Black},
 			events:        []wicore.EventListener{},
 		},
 	}
@@ -152,14 +153,14 @@ func statusActiveWindowNameViewFactory(e wicore.Editor, args ...string) wicore.V
 	// Active Window View name.
 	// TODO(maruel): Register events of Window activation, make itself Invalidate().
 	v := makeStaticDisabledView(e, "Status Name", 15, 1)
-	v.defaultFormat = wicore.CellFormat{}
+	v.defaultFormat = raster.CellFormat{}
 	return v
 }
 
 func statusModeViewFactory(e wicore.Editor, args ...string) wicore.View {
 	// Mostly for testing purpose, will contain the current mode "Insert" or "Command".
 	v := makeStaticDisabledView(e, e.KeyboardMode().String(), 10, 1)
-	v.defaultFormat = wicore.CellFormat{}
+	v.defaultFormat = raster.CellFormat{}
 	event := e.RegisterEditorKeyboardModeChanged(func(mode wicore.KeyboardMode) {
 		v.title = mode.String()
 	})
@@ -171,7 +172,7 @@ func statusPositionViewFactory(e wicore.Editor, args ...string) wicore.View {
 	// Position, % of file.
 	// TODO(maruel): Register events of movement, make itself Invalidate().
 	v := makeStaticDisabledView(e, "Status Position", 15, 1)
-	v.defaultFormat = wicore.CellFormat{}
+	v.defaultFormat = raster.CellFormat{}
 	event := e.RegisterDocumentCursorMoved(func(doc wicore.Document, col, row int) {
 		v.title = fmt.Sprintf("%d,%d", col, row)
 	})

@@ -5,9 +5,9 @@
 package editor
 
 import (
-	"github.com/maruel/wi/pkg/key"
-	"github.com/maruel/wi/pkg/lang"
 	"github.com/maruel/wi/wicore"
+	"github.com/maruel/wi/wicore/key"
+	"github.com/maruel/wi/wicore/lang"
 )
 
 type keyBindings struct {

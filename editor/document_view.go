@@ -5,10 +5,11 @@
 package editor
 
 import (
-	"github.com/maruel/wi/pkg/colors"
-	"github.com/maruel/wi/pkg/key"
-	"github.com/maruel/wi/pkg/lang"
 	"github.com/maruel/wi/wicore"
+	"github.com/maruel/wi/wicore/colors"
+	"github.com/maruel/wi/wicore/key"
+	"github.com/maruel/wi/wicore/lang"
+	"github.com/maruel/wi/wicore/raster"
 )
 
 // ColorMode is the coloring mode in effect.
@@ -38,7 +39,7 @@ type documentView struct {
 	wordWrap        bool        // true if word-wrapping is in effect. TODO(maruel): Implement.
 	columnMode      bool        // true if free movement is in effect. TODO(maruel): Implement.
 	colorMode       ColorMode   // Coloring of the file. Technically it'd be possible to have one file view without color and another with. TODO(maruel): Determine if useful.
-	selection       wicore.Rect // selection if any. TODO(maruel): Selection in columnMode vs normal selection vs line selection.
+	selection       raster.Rect // selection if any. TODO(maruel): Selection in columnMode vs normal selection vs line selection.
 }
 
 func (v *documentView) Close() error {
@@ -50,8 +51,8 @@ func (v *documentView) Close() error {
 	return err2
 }
 
-func (v *documentView) Buffer() *wicore.Buffer {
-	v.buffer.Fill(wicore.Cell{' ', v.defaultFormat})
+func (v *documentView) Buffer() *raster.Buffer {
+	v.buffer.Fill(raster.Cell{' ', v.defaultFormat})
 	v.document.RenderInto(v.buffer, v, v.offsetColumn, v.offsetLine)
 	// TODO(maruel): Draw the cursor using proper terminal function.
 	cell := v.buffer.Cell(v.offsetColumn+v.cursorColumn, v.offsetLine+v.cursorLine)
@@ -264,7 +265,7 @@ func documentViewFactory(e wicore.Editor, args ...string) wicore.View {
 			title:         "<Empty document>", // TODO(maruel): Title == document.filePath ?
 			naturalX:      100,
 			naturalY:      100,
-			defaultFormat: wicore.CellFormat{Fg: colors.BrightYellow, Bg: colors.Black},
+			defaultFormat: raster.CellFormat{Fg: colors.BrightYellow, Bg: colors.Black},
 		},
 		document: makeDocument(),
 	}

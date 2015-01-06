@@ -5,9 +5,10 @@
 package editor
 
 import (
-	"github.com/maruel/wi/pkg/colors"
-	"github.com/maruel/wi/pkg/key"
 	"github.com/maruel/wi/wicore"
+	"github.com/maruel/wi/wicore/colors"
+	"github.com/maruel/wi/wicore/key"
+	"github.com/maruel/wi/wicore/raster"
 )
 
 // commandView would normally be in a floating Window near the current cursor
@@ -18,8 +19,8 @@ type commandView struct {
 	text string
 }
 
-func (v *commandView) Buffer() *wicore.Buffer {
-	v.buffer.Fill(wicore.Cell{' ', v.DefaultFormat()})
+func (v *commandView) Buffer() *raster.Buffer {
+	v.buffer.Fill(raster.Cell{' ', v.DefaultFormat()})
 	v.buffer.DrawString(v.text, 0, 0, v.DefaultFormat())
 	return v.buffer
 }
@@ -58,7 +59,7 @@ func commandViewFactory(e wicore.Editor, args ...string) wicore.View {
 			title:         "Command",
 			naturalX:      30,
 			naturalY:      1,
-			defaultFormat: wicore.CellFormat{Fg: colors.Green, Bg: colors.Black},
+			defaultFormat: raster.CellFormat{Fg: colors.Green, Bg: colors.Black},
 		},
 		"",
 	}

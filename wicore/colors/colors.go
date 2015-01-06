@@ -28,8 +28,8 @@ var (
 // EGA lists the colors to use for maximum compatibility with terminals that
 // do not support terminal-256.
 //
-// EGA colors <3 forever.
-// Random intertubes websites says things like:
+// TODO(maruel): Support terminal-256. Random intertubes websites says things
+// like:
 //   sudo apt-get install ncurses-term
 //   export TERM=xterm-256color
 //

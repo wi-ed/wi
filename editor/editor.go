@@ -13,9 +13,10 @@ import (
 	"log"
 	"time"
 
-	"github.com/maruel/wi/pkg/key"
-	"github.com/maruel/wi/pkg/lang"
 	"github.com/maruel/wi/wicore"
+	"github.com/maruel/wi/wicore/key"
+	"github.com/maruel/wi/wicore/lang"
+	"github.com/maruel/wi/wicore/raster"
 )
 
 const (
@@ -121,7 +122,7 @@ func (e *editor) draw() {
 	log.Print("draw()")
 	// TODO(maruel): Cache the buffer.
 	w, h := e.terminal.Size()
-	out := wicore.NewBuffer(w, h)
+	out := raster.NewBuffer(w, h)
 	drawRecurse(e.rootWindow, 0, 0, out)
 	e.terminal.Blit(out)
 }
@@ -182,7 +183,7 @@ func (e *editor) onTerminalResized() {
 	// Resize the Windows. This also invalidates it, which will also force a
 	// redraw if the size changed.
 	w, h := e.terminal.Size()
-	e.rootWindow.setRect(wicore.Rect{0, 0, w, h})
+	e.rootWindow.setRect(raster.Rect{0, 0, w, h})
 }
 
 func (e *editor) onDocumentCursorMoved(doc wicore.Document, col, line int) {

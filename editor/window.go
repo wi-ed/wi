@@ -10,9 +10,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/maruel/wi/pkg/colors"
-	"github.com/maruel/wi/pkg/lang"
 	"github.com/maruel/wi/wicore"
+	"github.com/maruel/wi/wicore/colors"
+	"github.com/maruel/wi/wicore/lang"
+	"github.com/maruel/wi/wicore/raster"
 )
 
 var singleBorder = []rune{'\u2500', '\u2502', '\u250D', '\u2510', '\u2514', '\u2518'}
@@ -39,15 +40,15 @@ type window struct {
 	parent          *window
 	e               wicore.Editor
 	childrenWindows []*window
-	windowBuffer    *wicore.Buffer // includes the border
-	rect            wicore.Rect    // Window Rect as described in wicore.Window.Rect().
-	clientAreaRect  wicore.Rect    // Usable area within the Window, the part not obscured by borders.
-	viewRect        wicore.Rect    // Window View Rect, which is the client area not used by childrenWindows.
+	windowBuffer    *raster.Buffer // includes the border
+	rect            raster.Rect    // Window Rect as described in wicore.Window.Rect().
+	clientAreaRect  raster.Rect    // Usable area within the Window, the part not obscured by borders.
+	viewRect        raster.Rect    // Window View Rect, which is the client area not used by childrenWindows.
 	view            wicore.View    // View that renders the content. It may be nil if this Window has no content.
 	docking         wicore.DockingType
 	border          wicore.BorderType
 	effectiveBorder drawnBorder       // effectiveBorder automatically collapses borders when the Window Rect is too small and is based on docking.
-	borderFormat    wicore.CellFormat // Format to be used in borders. It can be different from .View().DefaultFormat().
+	borderFormat    raster.CellFormat // Format to be used in borders. It can be different from .View().DefaultFormat().
 }
 
 // wicore.Window interface.
@@ -80,7 +81,7 @@ func (w *window) ChildrenWindows() []wicore.Window {
 	return out
 }
 
-func (w *window) Rect() wicore.Rect {
+func (w *window) Rect() raster.Rect {
 	return w.rect
 }
 
@@ -139,9 +140,9 @@ func (e *editor) idToWindow(id string) *window {
 // setRect sets the rect of this Window, based on the parent's Window own
 // Rect(). It updates Rect() and synchronously updates the child Window that
 // are not DockingFloating.
-func (w *window) setRect(rect wicore.Rect) {
+func (w *window) setRect(rect raster.Rect) {
 	// setRect() recreates the buffer and immediately draws the borders.
-	if !w.rect.Eq(rect) {
+	if w.rect != rect {
 		w.rect = rect
 		// Internal consistency check.
 		if w.parent != nil {
@@ -150,7 +151,7 @@ func (w *window) setRect(rect wicore.Rect) {
 			}
 		}
 
-		w.windowBuffer = wicore.NewBuffer(w.rect.Width, w.rect.Height)
+		w.windowBuffer = raster.NewBuffer(w.rect.Width, w.rect.Height)
 		w.updateBorder()
 	}
 	// Still flow the call through children Window, so DockingFloating are
@@ -159,7 +160,7 @@ func (w *window) setRect(rect wicore.Rect) {
 }
 
 // calculateEffectiveBorder calculates window.effectiveBorder.
-func calculateEffectiveBorder(r wicore.Rect, d wicore.DockingType) drawnBorder {
+func calculateEffectiveBorder(r raster.Rect, d wicore.DockingType) drawnBorder {
 	switch d {
 	case wicore.DockingFill:
 		return drawnBorderNone
@@ -285,7 +286,7 @@ func (w *window) resizeChildren() {
 	wicore.PostCommand(w.e, nil, "editor_redraw")
 }
 
-func (w *window) buffer() *wicore.Buffer {
+func (w *window) buffer() *raster.Buffer {
 	// TODO(maruel): Redo API.
 	// Opportunistically refresh the view buffer.
 	if w.viewRect.Width != 0 && w.viewRect.Height != 0 {
@@ -327,36 +328,36 @@ func (w *window) updateBorder() {
 	// TODO(maruel): Switch to a bitmask check by incrementally reducing w.clientAreaRect.
 	switch w.effectiveBorder {
 	case drawnBorderNone:
-		w.clientAreaRect = wicore.Rect{0, 0, w.rect.Width, w.rect.Height}
+		w.clientAreaRect = raster.Rect{0, 0, w.rect.Width, w.rect.Height}
 
 	case drawnBorderLeft:
-		w.clientAreaRect = wicore.Rect{1, 0, w.rect.Width - 1, w.rect.Height}
-		w.windowBuffer.SubBuffer(wicore.Rect{0, 0, 1, w.rect.Height}).Fill(w.cell(s[1]))
+		w.clientAreaRect = raster.Rect{1, 0, w.rect.Width - 1, w.rect.Height}
+		w.windowBuffer.SubBuffer(raster.Rect{0, 0, 1, w.rect.Height}).Fill(w.cell(s[1]))
 
 	case drawnBorderRight:
-		w.clientAreaRect = wicore.Rect{0, 0, w.rect.Width - 1, w.rect.Height}
-		w.windowBuffer.SubBuffer(wicore.Rect{w.rect.Width - 1, 0, 1, w.rect.Height}).Fill(w.cell(s[1]))
+		w.clientAreaRect = raster.Rect{0, 0, w.rect.Width - 1, w.rect.Height}
+		w.windowBuffer.SubBuffer(raster.Rect{w.rect.Width - 1, 0, 1, w.rect.Height}).Fill(w.cell(s[1]))
 
 	case drawnBorderTop:
-		w.clientAreaRect = wicore.Rect{0, 1, w.rect.Width, w.rect.Height - 1}
-		w.windowBuffer.SubBuffer(wicore.Rect{0, 0, w.rect.Width, 1}).Fill(w.cell(s[0]))
+		w.clientAreaRect = raster.Rect{0, 1, w.rect.Width, w.rect.Height - 1}
+		w.windowBuffer.SubBuffer(raster.Rect{0, 0, w.rect.Width, 1}).Fill(w.cell(s[0]))
 
 	case drawnBorderBottom:
-		w.clientAreaRect = wicore.Rect{0, 0, w.rect.Width, w.rect.Height - 1}
-		w.windowBuffer.SubBuffer(wicore.Rect{0, w.rect.Height - 1, w.rect.Width, 1}).Fill(w.cell(s[0]))
+		w.clientAreaRect = raster.Rect{0, 0, w.rect.Width, w.rect.Height - 1}
+		w.windowBuffer.SubBuffer(raster.Rect{0, w.rect.Height - 1, w.rect.Width, 1}).Fill(w.cell(s[0]))
 
 	case drawnBorderAll:
-		w.clientAreaRect = wicore.Rect{1, 1, w.rect.Width - 2, w.rect.Height - 2}
+		w.clientAreaRect = raster.Rect{1, 1, w.rect.Width - 2, w.rect.Height - 2}
 		// Corners.
 		*w.windowBuffer.Cell(0, 0) = w.cell(s[2])
 		*w.windowBuffer.Cell(0, w.rect.Height-1) = w.cell(s[4])
 		*w.windowBuffer.Cell(w.rect.Width-1, 0) = w.cell(s[3])
 		*w.windowBuffer.Cell(w.rect.Width-1, w.rect.Height-1) = w.cell(s[5])
 		// Lines.
-		w.windowBuffer.SubBuffer(wicore.Rect{1, 0, w.rect.Width - 2, 1}).Fill(w.cell(s[0]))
-		w.windowBuffer.SubBuffer(wicore.Rect{1, w.rect.Height - 1, w.rect.Width - 2, w.rect.Height - 1}).Fill(w.cell(s[0]))
-		w.windowBuffer.SubBuffer(wicore.Rect{0, 1, 1, w.rect.Height - 2}).Fill(w.cell(s[1]))
-		w.windowBuffer.SubBuffer(wicore.Rect{w.rect.Width - 1, 1, w.rect.Width - 1, w.rect.Height - 2}).Fill(w.cell(s[1]))
+		w.windowBuffer.SubBuffer(raster.Rect{1, 0, w.rect.Width - 2, 1}).Fill(w.cell(s[0]))
+		w.windowBuffer.SubBuffer(raster.Rect{1, w.rect.Height - 1, w.rect.Width - 2, w.rect.Height - 1}).Fill(w.cell(s[0]))
+		w.windowBuffer.SubBuffer(raster.Rect{0, 1, 1, w.rect.Height - 2}).Fill(w.cell(s[1]))
+		w.windowBuffer.SubBuffer(raster.Rect{w.rect.Width - 1, 1, w.rect.Width - 1, w.rect.Height - 2}).Fill(w.cell(s[1]))
 
 	default:
 		panic("Unknown drawnBorder")
@@ -372,7 +373,7 @@ func (w *window) updateBorder() {
 	}
 }
 
-func (w *window) getBorderFormat() wicore.CellFormat {
+func (w *window) getBorderFormat() raster.CellFormat {
 	c := w.borderFormat
 	if c.Empty() {
 		// Defaults to the view format.
@@ -385,8 +386,8 @@ func (w *window) getBorderFormat() wicore.CellFormat {
 	return c
 }
 
-func (w *window) cell(r rune) wicore.Cell {
-	return wicore.Cell{r, w.getBorderFormat()}
+func (w *window) cell(r rune) raster.Cell {
+	return raster.Cell{r, w.getBorderFormat()}
 }
 
 func makeWindow(parent *window, view wicore.View, docking wicore.DockingType) *window {
@@ -410,7 +411,7 @@ func makeWindow(parent *window, view wicore.View, docking wicore.DockingType) *w
 		view:    view,
 		docking: docking,
 		border:  border,
-		borderFormat: wicore.CellFormat{
+		borderFormat: raster.CellFormat{
 			Fg: colors.White,
 			Bg: colors.Black,
 		},
@@ -418,7 +419,7 @@ func makeWindow(parent *window, view wicore.View, docking wicore.DockingType) *w
 }
 
 // drawRecurse recursively draws the Window tree into buffer out.
-func drawRecurse(w *window, offsetX, offsetY int, out *wicore.Buffer) {
+func drawRecurse(w *window, offsetX, offsetY int, out *raster.Buffer) {
 	log.Printf("drawRecurse(%s, %d, %d); %v", w.View().Title(), offsetX, offsetY, w.Rect())
 	if w.Docking() == wicore.DockingFloating {
 		// Floating Window are relative to the screen, not the parent Window.
@@ -575,7 +576,7 @@ func cmdWindowSetRect(c *privilegedCommandImpl, e *editor, w *window, args ...st
 		e.ExecuteCommand(w, "alert", isNotValidWindow.Sprintf(windowName))
 		return
 	}
-	r := wicore.Rect{}
+	r := raster.Rect{}
 	var err1, err2, err3, err4 error
 	r.X, err1 = strconv.Atoi(args[1])
 	r.Y, err2 = strconv.Atoi(args[2])

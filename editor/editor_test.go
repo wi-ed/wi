@@ -10,8 +10,9 @@ import (
 	"testing"
 
 	"github.com/maruel/ut"
-	"github.com/maruel/wi/pkg/colors"
 	"github.com/maruel/wi/wicore"
+	"github.com/maruel/wi/wicore/colors"
+	"github.com/maruel/wi/wicore/raster"
 )
 
 func init() {
@@ -33,7 +34,7 @@ func keepLog(t *testing.T) func() {
 	}
 }
 
-func compareBuffers(t *testing.T, expected *wicore.Buffer, actual *wicore.Buffer) {
+func compareBuffers(t *testing.T, expected *raster.Buffer, actual *raster.Buffer) {
 	ut.AssertEqual(t, expected.Height, actual.Height)
 	ut.AssertEqual(t, expected.Width, actual.Width)
 	// First compares lines of text, then colors.
@@ -60,11 +61,11 @@ func TestMainImmediateQuit(t *testing.T) {
 	wicore.PostCommand(editor, nil, "editor_quit")
 	ut.AssertEqual(t, 0, editor.EventLoop())
 
-	expected := wicore.NewBuffer(80, 25)
-	expected.Fill(wicore.MakeCell(' ', colors.BrightYellow, colors.Black))
-	expected.DrawString("Dummy content", 0, 0, wicore.CellFormat{Fg: colors.BrightYellow, Bg: colors.Black})
-	expected.DrawString("Really", 0, 1, wicore.CellFormat{Fg: colors.BrightYellow, Bg: colors.Black})
-	expected.DrawString("Status Name    Normal                                            0,0            ", 0, 24, wicore.CellFormat{Fg: colors.Red, Bg: colors.LightGray})
+	expected := raster.NewBuffer(80, 25)
+	expected.Fill(raster.MakeCell(' ', colors.BrightYellow, colors.Black))
+	expected.DrawString("Dummy content", 0, 0, raster.CellFormat{Fg: colors.BrightYellow, Bg: colors.Black})
+	expected.DrawString("Really", 0, 1, raster.CellFormat{Fg: colors.BrightYellow, Bg: colors.Black})
+	expected.DrawString("Status Name    Normal                                            0,0            ", 0, 24, raster.CellFormat{Fg: colors.Red, Bg: colors.LightGray})
 	expected.Cell(0, 0).F.Bg = colors.White
 	expected.Cell(0, 0).F.Fg = colors.Black
 	compareBuffers(t, expected, terminal.Buffer)
@@ -83,9 +84,9 @@ func TestMainInvalidThenQuit(t *testing.T) {
 	wicore.PostCommand(editor, nil, "editor_quit")
 	ut.AssertEqual(t, 0, editor.EventLoop())
 
-	expected := wicore.NewBuffer(80, 25)
-	expected.Fill(wicore.MakeCell(' ', colors.Red, colors.Black))
-	expected.DrawString("Root", 0, 0, wicore.CellFormat{Fg: colors.Red, Bg: colors.Black})
-	expected.DrawString("Status Name    Normal                                            Status Position   ", 0, 24, wicore.CellFormat{Fg: colors.Red, Bg: colors.LightGray})
+	expected := raster.NewBuffer(80, 25)
+	expected.Fill(raster.MakeCell(' ', colors.Red, colors.Black))
+	expected.DrawString("Root", 0, 0, raster.CellFormat{Fg: colors.Red, Bg: colors.Black})
+	expected.DrawString("Status Name    Normal                                            Status Position   ", 0, 24, raster.CellFormat{Fg: colors.Red, Bg: colors.LightGray})
 	compareBuffers(t, expected, terminal.Buffer)
 }

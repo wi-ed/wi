@@ -11,8 +11,9 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/maruel/wi/pkg/lang"
 	"github.com/maruel/wi/wicore"
+	"github.com/maruel/wi/wicore/lang"
+	"github.com/maruel/wi/wicore/raster"
 )
 
 // ReadWriteSeekCloser is a generic handle to a file.
@@ -58,7 +59,7 @@ func (d *document) Close() error {
 	return nil
 }
 
-func (d *document) RenderInto(buffer *wicore.Buffer, view wicore.View, offsetColumn, offsetLine int) {
+func (d *document) RenderInto(buffer *raster.Buffer, view wicore.View, offsetColumn, offsetLine int) {
 	for row, l := range d.content {
 		// This will automatically elide text.
 		if offsetColumn != 0 {

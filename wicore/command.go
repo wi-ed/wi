@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/maruel/wi/pkg/lang"
+	"github.com/maruel/wi/wicore/lang"
 )
 
 // CommandImplHandler is the CommandHandler to use when coupled with CommandImpl.

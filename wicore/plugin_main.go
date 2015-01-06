@@ -18,8 +18,8 @@ import (
 // interfaces for this package.
 //
 // It traverses the Editor type recursively, expanding all types referenced
-// recursively. This data is used to generate an hash, that will represent the
-// version of this interface.
+// recursively. This data is used to generate an hash that represents the
+// "version" of this interface.
 func CalculateVersion() string {
 	return interfaceGUID.CalculateGUID(reflect.TypeOf((*Editor)(nil)).Elem())
 }

@@ -5,8 +5,8 @@
 package editor
 
 import (
-	"github.com/maruel/wi/pkg/lang"
 	"github.com/maruel/wi/wicore"
+	"github.com/maruel/wi/wicore/lang"
 )
 
 // commands is the map of registered commands.
