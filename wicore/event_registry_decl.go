@@ -3,12 +3,16 @@
 package wicore
 
 import (
+	"io"
+
 	"github.com/maruel/wi/pkg/key"
 	"github.com/maruel/wi/pkg/lang"
 )
 
-// EventListenerID is to be used to cancel an event listener.
-type EventListenerID int
+// EventListener is to be used to cancel an event listener.
+type EventListener interface {
+	io.Closer
+}
 
 // EventRegistry permits to register callbacks that are called on events.
 //
@@ -18,20 +22,16 @@ type EventListenerID int
 type EventRegistry interface {
 	EventsDefinition
 
-	// Unregister unregisters a callback. Returns an error if the event was not
-	// registered.
-	Unregister(eventID EventListenerID) error
-
-	RegisterCommands(callback func(a EnqueuedCommands)) EventListenerID
-	RegisterDocumentCreated(callback func(a Document)) EventListenerID
-	RegisterDocumentCursorMoved(callback func(a Document, b int, c int)) EventListenerID
-	RegisterEditorKeyboardModeChanged(callback func(a KeyboardMode)) EventListenerID
-	RegisterEditorLanguage(callback func(a lang.Language)) EventListenerID
-	RegisterTerminalKeyPressed(callback func(a key.Press)) EventListenerID
-	RegisterTerminalMetaKeyPressed(callback func(a key.Press)) EventListenerID
-	RegisterTerminalResized(callback func()) EventListenerID
-	RegisterViewActivated(callback func(a View)) EventListenerID
-	RegisterViewCreated(callback func(a View)) EventListenerID
-	RegisterWindowCreated(callback func(a Window)) EventListenerID
-	RegisterWindowResized(callback func(a Window)) EventListenerID
+	RegisterCommands(callback func(a EnqueuedCommands)) EventListener
+	RegisterDocumentCreated(callback func(a Document)) EventListener
+	RegisterDocumentCursorMoved(callback func(a Document, b int, c int)) EventListener
+	RegisterEditorKeyboardModeChanged(callback func(a KeyboardMode)) EventListener
+	RegisterEditorLanguage(callback func(a lang.Language)) EventListener
+	RegisterTerminalKeyPressed(callback func(a key.Press)) EventListener
+	RegisterTerminalMetaKeyPressed(callback func(a key.Press)) EventListener
+	RegisterTerminalResized(callback func()) EventListener
+	RegisterViewActivated(callback func(a View)) EventListener
+	RegisterViewCreated(callback func(a View)) EventListener
+	RegisterWindowCreated(callback func(a Window)) EventListener
+	RegisterWindowResized(callback func(a Window)) EventListener
 }

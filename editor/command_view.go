@@ -62,9 +62,9 @@ func commandViewFactory(e wicore.Editor, args ...string) wicore.View {
 		},
 		"",
 	}
-	eventID := e.RegisterTerminalKeyPressed(v.onTerminalKeyPressed)
+	event := e.RegisterTerminalKeyPressed(v.onTerminalKeyPressed)
 	e.RegisterViewActivated(func(v wicore.View) {
-		_ = e.Unregister(eventID)
+		_ = event.Close()
 	})
 	return v
 }

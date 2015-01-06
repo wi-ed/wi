@@ -29,7 +29,7 @@ type view struct {
 	onAttach      func(v *view, w wicore.Window)
 	defaultFormat wicore.CellFormat
 	buffer        *wicore.Buffer
-	eventIDs      []wicore.EventListenerID
+	events        []wicore.EventListener
 }
 
 // wicore.View interface.
@@ -40,8 +40,8 @@ func (v *view) String() string {
 
 func (v *view) Close() error {
 	var err error
-	for _, eventID := range v.eventIDs {
-		err2 := v.eventRegistry.Unregister(eventID)
+	for _, event := range v.events {
+		err2 := event.Close()
 		if err2 != nil {
 			err = err2
 		}
@@ -120,7 +120,7 @@ func makeStaticDisabledView(e wicore.Editor, title string, naturalX, naturalY in
 			naturalX:      naturalX,
 			naturalY:      naturalY,
 			defaultFormat: wicore.CellFormat{Fg: colors.Red, Bg: colors.Black},
-			eventIDs:      []wicore.EventListenerID{},
+			events:        []wicore.EventListener{},
 		},
 	}
 }
@@ -160,10 +160,10 @@ func statusModeViewFactory(e wicore.Editor, args ...string) wicore.View {
 	// Mostly for testing purpose, will contain the current mode "Insert" or "Command".
 	v := makeStaticDisabledView(e, e.KeyboardMode().String(), 10, 1)
 	v.defaultFormat = wicore.CellFormat{}
-	id := e.RegisterEditorKeyboardModeChanged(func(mode wicore.KeyboardMode) {
+	event := e.RegisterEditorKeyboardModeChanged(func(mode wicore.KeyboardMode) {
 		v.title = mode.String()
 	})
-	v.eventIDs = append(v.eventIDs, id)
+	v.events = append(v.events, event)
 	return v
 }
 
@@ -172,10 +172,10 @@ func statusPositionViewFactory(e wicore.Editor, args ...string) wicore.View {
 	// TODO(maruel): Register events of movement, make itself Invalidate().
 	v := makeStaticDisabledView(e, "Status Position", 15, 1)
 	v.defaultFormat = wicore.CellFormat{}
-	id := e.RegisterDocumentCursorMoved(func(doc wicore.Document, col, row int) {
+	event := e.RegisterDocumentCursorMoved(func(doc wicore.Document, col, row int) {
 		v.title = fmt.Sprintf("%d,%d", col, row)
 	})
-	v.eventIDs = append(v.eventIDs, id)
+	v.events = append(v.events, event)
 	return v
 }
 

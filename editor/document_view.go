@@ -271,7 +271,7 @@ func documentViewFactory(e wicore.Editor, args ...string) wicore.View {
 	v.onAttach = func(_ *view, w wicore.Window) {
 		v.cursorMoved(e)
 	}
-	v.eventIDs = append(v.eventIDs, e.RegisterTerminalKeyPressed(func(k key.Press) {
+	v.events = append(v.events, e.RegisterTerminalKeyPressed(func(k key.Press) {
 		v.onKeyPress(e, k)
 	}))
 	return v
