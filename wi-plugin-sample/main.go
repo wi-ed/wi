@@ -8,6 +8,11 @@
 //   - Ensure that the plugin system is actually working.
 //   - Serve as a copy-pastable skeleton to help people who would like to write
 //     a plugin.
+//
+// To try it out, from the wi/ directory, run `go build` then set the
+// environment variable `WIPLUGINSPATH=.`, so that this directory is
+// automatically compiled via `go run`. See ../editor/plugins.go for the gory
+// details.
 package main
 
 import (
@@ -16,5 +21,5 @@ import (
 
 func main() {
 	// This starts the control loop. See its doc for more up-to-date details.
-	plugin.Main()
+	plugin.Main("wi-plugin-sample")
 }

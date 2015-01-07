@@ -49,16 +49,12 @@ func (p *pluginProcess) Close() error {
 	return nil
 }
 
-func (p *pluginProcess) Funky(in string, out *string) error {
-	err := p.client.Call("PluginRPC.Funky", in, out)
-	log.Printf("PluginRPC(%d).Funky(%s) = %s, %s", p.proc.Pid, in, *out, err)
-	return err
+func (p *pluginProcess) GetInfo(in int, out *wicore.PluginDetails) error {
+	return p.client.Call("PluginRPC.GetInfo", in, out)
 }
 
 func (p *pluginProcess) Quit(in int, out *int) error {
-	err := p.client.Call("PluginRPC.Quit", in, out)
-	log.Printf("PluginRPC(%d).Quit(%s) = %s, %s", p.proc.Pid, in, *out, err)
-	return err
+	return p.client.Call("PluginRPC.Quit", in, out)
 }
 
 // Plugins is the collection of Plugin instances, it represents all the live
@@ -107,7 +103,7 @@ func loadPlugin(cmdLine []string) (Plugin, error) {
 		buf := make([]byte, 2048)
 		n, _ := stderr.Read(buf)
 		if n != 0 {
-			first <- fmt.Errorf("plugin %v failed: %s", cmdLine, buf)
+			first <- fmt.Errorf("plugin %v failed: %s", cmdLine, buf[:n])
 		}
 	})
 
@@ -133,13 +129,11 @@ func loadPlugin(cmdLine []string) (Plugin, error) {
 	conn := wicore.MakeReadWriteCloser(stdout, stdin)
 	client := rpc.NewClient(conn)
 	p := &pluginProcess{cmd.Process, client}
-	out := ""
-	if err = p.Funky("txt", &out); err != nil {
+	out := wicore.PluginDetails{}
+	if err = p.GetInfo(0, &out); err != nil {
 		return nil, err
 	}
-	if out != "atxta" {
-		return nil, fmt.Errorf("failed: %s", out)
-	}
+	log.Printf("Plugin(%d) = %s", p.proc.Pid, out.Name)
 	return p, nil
 }
 

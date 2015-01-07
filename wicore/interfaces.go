@@ -364,10 +364,14 @@ type KeyBindings interface {
 	GetAssigned(mode KeyboardMode) []key.Press
 }
 
+type PluginDetails struct {
+	Name string
+}
+
 // PluginRPC is the interface exposed by the plugin.
 type PluginRPC interface {
-	Funky(in string, out *string) error
-	Quit(value int, _ *int) error
+	GetInfo(ignored int, out *PluginDetails) error
+	Quit(in int, ignored *int) error
 }
 
 // Config

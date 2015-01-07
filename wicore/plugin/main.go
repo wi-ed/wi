@@ -17,10 +17,11 @@ import (
 // pluginRPC implements wicore.PluginRPC.
 type pluginRPC struct {
 	conn io.Closer
+	name string
 }
 
-func (p *pluginRPC) Funky(in string, out *string) error {
-	*out = "a" + in + "a"
+func (p *pluginRPC) GetInfo(ignored int, out *wicore.PluginDetails) error {
+	out.Name = p.name
 	return nil
 }
 
@@ -34,7 +35,7 @@ func (p *pluginRPC) Quit(value int, _ *int) error {
 
 // Main is the function to call from your plugin to initiate the communication
 // channel between wi and your plugin.
-func Main() {
+func Main(name string) {
 	if os.ExpandEnv("${WI}") != "plugin" {
 		fmt.Fprint(os.Stderr, "This is a wi plugin. This program is only meant to be run through wi itself.\n")
 		os.Exit(1)
@@ -44,7 +45,7 @@ func Main() {
 
 	conn := wicore.MakeReadWriteCloser(os.Stdin, os.Stdout)
 	server := rpc.NewServer()
-	_ = server.RegisterName("PluginRPC", &pluginRPC{os.Stdin})
+	_ = server.RegisterName("PluginRPC", &pluginRPC{os.Stdin, name})
 	server.ServeConn(conn)
 	os.Exit(0)
 }
