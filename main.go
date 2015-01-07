@@ -43,7 +43,7 @@ import (
 	"github.com/nsf/termbox-go"
 )
 
-func terminalThread(returnCode chan<- int, mustClose chan<- func()) {
+func terminalThread(mustClose chan<- func()) int {
 	// "flag" and "termbox" use a lot of global variables so they can't be easily
 	// included in parallel tests.
 	command := flag.Bool("c", false, "Runs the commands specified on startup")
@@ -54,20 +54,17 @@ func terminalThread(returnCode chan<- int, mustClose chan<- func()) {
 	// Process this one early. No one wants version output to take 1s.
 	if *version {
 		println(version)
-		returnCode <- 0
-		return
+		return 0
 	}
 
 	if *command && flag.NArg() == 0 {
 		fmt.Fprintf(os.Stderr, "error: -c implies specifying commands to execute")
-		returnCode <- 1
-		return
+		return 1
 	}
 
 	if err := termbox.Init(); err != nil {
 		fmt.Fprintf(os.Stderr, "failed to initialize terminal: %s", err)
-		returnCode <- 1
-		return
+		return 1
 	}
 
 	out := debugHook()
@@ -85,8 +82,7 @@ func terminalThread(returnCode chan<- int, mustClose chan<- func()) {
 	e, err := editor.MakeEditor(&TermBox{}, *noPlugin)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %s", err)
-		returnCode <- 1
-		return
+		return 1
 	}
 	defer func() {
 		_ = e.Close()
@@ -106,14 +102,16 @@ func terminalThread(returnCode chan<- int, mustClose chan<- func()) {
 		// If nothing, opens a blank editor.
 		wicore.PostCommand(e, nil, "new")
 	}
-	returnCode <- e.EventLoop()
+	return e.EventLoop()
 }
 
 func mainImpl() int {
 	returnCode := make(chan int)
 	var closer func()
 	mustClose := make(chan func())
-	wicore.Go("terminalThread", func() { terminalThread(returnCode, mustClose) })
+	wicore.Go("terminalThread", func() {
+		returnCode <- terminalThread(mustClose)
+	})
 	for {
 		select {
 		case c := <-mustClose:

@@ -21,33 +21,44 @@ import (
 	"github.com/maruel/wi/wicore"
 )
 
-// TODO(maruel): Implement the RPC to make plugins work.
-
 // Plugin represents a live plugin process.
 type Plugin interface {
 	io.Closer
+
+	wicore.PluginRPC
 }
 
 // pluginProcess represents an out-of-process plugin.
 type pluginProcess struct {
-	proc *os.Process
+	proc   *os.Process
+	client *rpc.Client
 }
 
 func (p *pluginProcess) Close() error {
+	if p.client != nil {
+		tmp := 0
+		_ = p.Quit(0, &tmp)
+		_ = p.client.Close()
+		p.client = nil
+	}
 	if p.proc != nil {
-		// TODO(maruel): Nicely terminate the child process via an RPC.
-		return p.proc.Kill()
+		err := p.proc.Kill()
+		p.proc = nil
+		return err
 	}
 	return nil
 }
 
-// pluginInline is a "plugin" that lives in the same process. It is used for
-// "stock" plugins and for unit testing.
-type pluginInline struct {
+func (p *pluginProcess) Funky(in string, out *string) error {
+	err := p.client.Call("PluginRPC.Funky", in, out)
+	log.Printf("PluginRPC(%d).Funky(%s) = %s, %s", p.proc.Pid, in, *out, err)
+	return err
 }
 
-func (p *pluginInline) Close() error {
-	return nil
+func (p *pluginProcess) Quit(in int, out *int) error {
+	err := p.client.Call("PluginRPC.Quit", in, out)
+	log.Printf("PluginRPC(%d).Quit(%s) = %s, %s", p.proc.Pid, in, *out, err)
+	return err
 }
 
 // Plugins is the collection of Plugin instances, it represents all the live
@@ -66,7 +77,7 @@ func (p Plugins) Close() error {
 }
 
 // loadPlugin starts a plugin and returns the process.
-func loadPlugin(server *rpc.Server, cmdLine []string) (Plugin, error) {
+func loadPlugin(cmdLine []string) (Plugin, error) {
 	log.Printf("loadPlugin(%v)", cmdLine)
 	cmd := exec.Command(cmdLine[0], cmdLine[1:]...)
 	cmd.Env = append(os.Environ(), "WI=plugin")
@@ -103,7 +114,7 @@ func loadPlugin(server *rpc.Server, cmdLine []string) (Plugin, error) {
 	wicore.Go("stdoutReader", func() {
 		// Before starting the RPC, ensures the version matches.
 		expectedVersion := wicore.CalculateVersion()
-		b := make([]byte, 40)
+		b := make([]byte, len(expectedVersion))
 		if _, err := stdout.Read(b); err != nil {
 			first <- err
 		}
@@ -119,12 +130,32 @@ func loadPlugin(server *rpc.Server, cmdLine []string) (Plugin, error) {
 		return nil, err
 	}
 
-	// Start the RPC server for this plugin.
-	wicore.Go("RPCserver", func() {
-		server.ServeConn(wicore.MakeReadWriteCloser(stdout, stdin))
-	})
+	conn := wicore.MakeReadWriteCloser(stdout, stdin)
+	client := rpc.NewClient(conn)
+	p := &pluginProcess{cmd.Process, client}
+	out := ""
+	if err = p.Funky("txt", &out); err != nil {
+		return nil, err
+	}
+	if out != "atxta" {
+		return nil, fmt.Errorf("failed: %s", out)
+	}
+	return p, nil
+}
 
-	return &pluginProcess{cmd.Process}, nil
+func parseDir(i string) (string, error) {
+	abs, err := filepath.Abs(i)
+	if err != nil {
+		return "", fmt.Errorf("invalid path %s: %s", i, err)
+	}
+	f, err := os.Stat(abs)
+	if err != nil {
+		return "", fmt.Errorf("could not stat %s: %s", i, err)
+	}
+	if !f.IsDir() {
+		return "", fmt.Errorf("%s is not a directory", i)
+	}
+	return abs, nil
 }
 
 // getPluginsPaths returns the search paths for plugins.
@@ -133,11 +164,22 @@ func loadPlugin(server *rpc.Server, cmdLine []string) (Plugin, error) {
 func getPluginsPaths() []string {
 	out := []string{}
 	for _, i := range filepath.SplitList(os.Getenv("GOPATH")) {
-		out = append(out, filepath.Join(i, "bin"))
+		abs, err := parseDir(filepath.Join(i, "bin"))
+		if err != nil {
+			log.Printf("GOPATH contains invalid %s: %s", i, err)
+			continue
+		}
+		out = append(out, abs)
 	}
 	for _, i := range filepath.SplitList(os.Getenv("WIPLUGINSPATH")) {
-		out = append(out, i)
+		abs, err := parseDir(i)
+		if err != nil {
+			log.Printf("WIPLUGINSPATH contains invalid %s: %s", i, err)
+			continue
+		}
+		out = append(out, abs)
 	}
+	log.Printf("getPluginsPaths() = %v", out)
 	return out
 }
 
@@ -177,7 +219,7 @@ func enumPlugins(searchDirs []string) ([][]string, error) {
 				}
 				i := []string{"go", "run"}
 				for _, t := range files {
-					i = append(i, filepath.Join(filePath, t))
+					i = append(i, t)
 				}
 				out = append(out, i)
 				continue
@@ -212,23 +254,19 @@ func loadPlugins(pluginExecutables [][]string) (Plugins, error) {
 		error
 	}
 	c := make(chan x)
-	server := rpc.NewServer()
-	// TODO(maruel): http://golang.org/pkg/net/rpc/#Server.RegisterName
-	// It should be an interface with methods of style DoStuff(Foo, Bar) Baz
-	//server.RegisterName("Editor", e)
 	wicore.Go("loadPlugins", func() {
 		var wg sync.WaitGroup
 		for _, cmd := range pluginExecutables {
 			wg.Add(1)
 			wicore.Go("loadPlugin", func() {
-				func(s *rpc.Server, n []string) {
+				func(n []string) {
 					defer wg.Done()
-					if p, err := loadPlugin(s, n); err != nil {
+					if p, err := loadPlugin(n); err != nil {
 						c <- x{error: fmt.Errorf("failed to load %v: %s", n, err)}
 					} else {
 						c <- x{Plugin: p}
 					}
-				}(server, cmd)
+				}(cmd)
 			})
 		}
 		// Wait for all the plugins to be loaded.

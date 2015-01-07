@@ -7,11 +7,30 @@ package plugin
 
 import (
 	"fmt"
+	"io"
 	"net/rpc"
 	"os"
 
 	"github.com/maruel/wi/wicore"
 )
+
+// pluginRPC implements wicore.PluginRPC.
+type pluginRPC struct {
+	conn io.Closer
+}
+
+func (p *pluginRPC) Funky(in string, out *string) error {
+	*out = "a" + in + "a"
+	return nil
+}
+
+func (p *pluginRPC) Quit(value int, _ *int) error {
+	if p.conn != nil {
+		_ = p.conn.Close()
+		p.conn = nil
+	}
+	return nil
+}
 
 // Main is the function to call from your plugin to initiate the communication
 // channel between wi and your plugin.
@@ -23,11 +42,9 @@ func Main() {
 	// TODO(maruel): Take garbage from os.Stdin, put garbage in os.Stdout.
 	fmt.Print(wicore.CalculateVersion())
 
-	client := rpc.NewClient(wicore.MakeReadWriteCloser(os.Stdin, os.Stdout))
-	// Do something with client.
-	err := client.Call("Editor", "Height", nil)
-	if err != nil {
-		panic(err)
-	}
+	conn := wicore.MakeReadWriteCloser(os.Stdin, os.Stdout)
+	server := rpc.NewServer()
+	_ = server.RegisterName("PluginRPC", &pluginRPC{os.Stdin})
+	server.ServeConn(conn)
 	os.Exit(0)
 }

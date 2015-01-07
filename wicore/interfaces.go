@@ -364,6 +364,12 @@ type KeyBindings interface {
 	GetAssigned(mode KeyboardMode) []key.Press
 }
 
+// PluginRPC is the interface exposed by the plugin.
+type PluginRPC interface {
+	Funky(in string, out *string) error
+	Quit(value int, _ *int) error
+}
+
 // Config
 
 // Config is the configuration manager.
