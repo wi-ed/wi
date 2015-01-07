@@ -9,5 +9,5 @@ set -e
 
 cd $(dirname $0)/..
 go build -race -tags debug
-./wi -c log_all editor_quit
+WIPLUGINSPATH=. ./wi -c log_all editor_quit
 cat wi.log

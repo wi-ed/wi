@@ -32,9 +32,12 @@ type Plugin interface {
 type pluginProcess struct {
 	proc   *os.Process
 	client *rpc.Client
+	pid    int    // Also stored here in case proc is nil. It is not reset even when the process is closed.
+	name   string // Self-published plugin name.
 }
 
 func (p *pluginProcess) Close() error {
+	var err error
 	if p.client != nil {
 		tmp := 0
 		_ = p.Quit(0, &tmp)
@@ -42,11 +45,11 @@ func (p *pluginProcess) Close() error {
 		p.client = nil
 	}
 	if p.proc != nil {
-		err := p.proc.Kill()
+		err = p.proc.Kill()
 		p.proc = nil
-		return err
 	}
-	return nil
+	log.Printf("Plugin(%s, %d).Close()", p.name, p.pid)
+	return err
 }
 
 func (p *pluginProcess) GetInfo(in int, out *wicore.PluginDetails) error {
@@ -128,12 +131,13 @@ func loadPlugin(cmdLine []string) (Plugin, error) {
 
 	conn := wicore.MakeReadWriteCloser(stdout, stdin)
 	client := rpc.NewClient(conn)
-	p := &pluginProcess{cmd.Process, client}
+	p := &pluginProcess{cmd.Process, client, cmd.Process.Pid, "<unknown>"}
 	out := wicore.PluginDetails{}
 	if err = p.GetInfo(0, &out); err != nil {
 		return nil, err
 	}
-	log.Printf("Plugin(%d) = %s", p.proc.Pid, out.Name)
+	p.name = out.Name
+	log.Printf("Plugin(%s, %d) is now functional", p.name, p.pid)
 	return p, nil
 }
 
