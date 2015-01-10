@@ -51,6 +51,15 @@ func makeDocument() *document {
 	}
 }
 
+func (d *document) ID() string {
+	// TODO(maruel): This implies the same document should never be loaded twice.
+	// It think it's a valid assumption, multiple DocumentView should be created
+	// instead.
+	// TODO(maruel): Implement uniqueness. And look at hardlinks and symlinks too
+	// to dedupe paths.
+	return fmt.Sprintf("document:%s", d.filePath)
+}
+
 func (d *document) String() string {
 	return fmt.Sprintf("Document(%s)", d.filePath)
 }

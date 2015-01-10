@@ -522,7 +522,9 @@ func cmdWindowNew(c *privilegedCommandImpl, e *editor, w *window, args ...string
 		}
 		return
 	}
-	view := viewFactory(e, args[3:]...)
+	// TODO(maruel): e.nextViewID is an implementation detail, it's wrong.
+	view := viewFactory(e, e.nextViewID, args[3:]...)
+	e.nextViewID++
 
 	child := makeWindow(parent, view, docking)
 	if docking == wicore.DockingFloating {

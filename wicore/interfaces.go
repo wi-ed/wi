@@ -77,11 +77,20 @@ const (
 	BorderDouble
 )
 
+// Proxyable represents an object that can be proxied to a plugin.
+type Proxyable interface {
+	// ID represents the unique object id. The IDs must be unique through the
+	// process lifetime of the editor.
+	ID() string
+}
+
 // EventsDefinition declares the valid events.
 //
 // Do not use this interface directly, use the automatically-generated
 // interface EventRegistry instead.
 type EventsDefinition interface {
+	Proxyable
+
 	// TriggerCommands dispatches one or multiple commands to the current active
 	// listener. Normally, it's the View contained to the active Window. Using
 	// this function guarantees that all the commands will be executed in order
@@ -113,20 +122,15 @@ type Editor interface {
 	//
 	// TODO(maruel): Remove?
 	ExecuteCommand(w Window, cmdName string, args ...string)
-
 	// ActiveWindow returns the current active Window.
 	ActiveWindow() Window
-
 	// RegisterViewFactory makes a new view available by name.
 	RegisterViewFactory(name string, viewFactory ViewFactory) bool
-
 	// ViewFactoryNames return the name of all the view factories.
 	ViewFactoryNames() []string
-
 	// AllDocuments returns all the active documents. Some of them may not be in
 	// a View.
 	AllDocuments() []Document
-
 	// KeyboardMode is global to the editor. It matches vim behavior. For example
 	// in a 2-window setup while in insert mode, using Ctrl-O, Ctrl-W, Down will
 	// move to the next window but will stay in insert mode.
@@ -134,7 +138,6 @@ type Editor interface {
 	// Technically, each View could have their own KeyboardMode but in practice
 	// it just creates a cognitive overhead without much benefit.
 	KeyboardMode() KeyboardMode
-
 	// Version returns the version number of this build of wi.
 	Version() string
 }
@@ -172,24 +175,18 @@ type Editor interface {
 // instances, designating the actual Window by its .ID() method.
 type Window interface {
 	fmt.Stringer
-
-	// ID returns the unique id for this Window. The id is guaranteed to be
-	// unique through the process lifetime of the editor.
-	ID() string
+	Proxyable
 
 	// Parent returns the parent Window.
 	Parent() Window
 	// ChildrenWindows returns a copy of the slice of children windows.
 	ChildrenWindows() []Window
-
 	// Rect returns the position based on the parent Window area, except if
 	// Docking() is DockingFloating.
 	Rect() raster.Rect
-
 	// Docking returns where this Window is docked relative to the parent Window.
 	// A DockingFloating window is effectively starting a new independent Rect.
 	Docking() DockingType
-
 	// View returns the View contained by this Window. There is exactly one.
 	View() View
 }
@@ -200,39 +197,33 @@ type Window interface {
 type View interface {
 	fmt.Stringer
 	io.Closer
+	Proxyable
 
 	// Commands returns the commands registered for this specific view. For
 	// example a text window will have commands specific to the file type
 	// enabled.
 	Commands() Commands
-
 	// KeyBindings returns the key bindings registered for this specific key. For
 	// example the 'command' view has different behavior on up/down arrow keys
 	// than a text editor view.
 	KeyBindings() KeyBindings
-
 	// Title is View's title, which can be the current file name or any other
 	// relevant detail.
 	Title() string
-
 	// IsDisabled returns false if the View can be activated to receive user
 	// inputs at all.
 	IsDisabled() bool
-
 	// Buffer returns the display buffer for this Window.
 	Buffer() *raster.Buffer
-
 	// NaturalSize returns the natural size of the content. It can be -1 for as
 	// long/large as possible, 0 if indeterminate. The return value of this
 	// function is not affected by SetSize().
 	NaturalSize() (width, height int)
 	// SetSize resets the View Buffer size.
 	SetSize(x, y int)
-
 	// OnAttach is called by the Window after it was attached.
 	// TODO(maruel): Maybe split in ViewFull?
 	OnAttach(w Window)
-
 	// DefaultFormat returns the default coloring for this View. If this View has
 	// an CellFormat.Empty()==true format, it will uses whatever parent Window's
 	// View DefaultFormat().
@@ -240,7 +231,7 @@ type View interface {
 }
 
 // ViewFactory returns a new View.
-type ViewFactory func(e Editor, args ...string) View
+type ViewFactory func(e Editor, id int, args ...string) View
 
 // Document represents an open document. It can be accessed by zero, one or
 // multiple View. For example the document may not be visible at all as a 'back
@@ -249,13 +240,13 @@ type ViewFactory func(e Editor, args ...string) View
 type Document interface {
 	fmt.Stringer
 	io.Closer
+	Proxyable
 
 	// RenderInto renders a view of a document.
 	//
 	// TODO(maruel): Likely return a new Buffer instance instead, for RPC
 	// friendlyness. To be decided.
 	RenderInto(buffer *raster.Buffer, view View, offsetColumn, offsetLine int)
-
 	// IsDirty is true if the content should be saved before quitting.
 	IsDirty() bool
 }
@@ -308,10 +299,8 @@ type Commands interface {
 	// commands should normally be registered on startup. Returns false if a
 	// command was already registered and was lost.
 	Register(cmd Command) bool
-
 	// Get returns a command if registered, nil otherwise.
 	Get(cmdName string) Command
-
 	// GetNames() return the name of all the commands.
 	GetNames() []string
 }
@@ -356,10 +345,8 @@ type KeyBindings interface {
 	// was already registered and was lost. Set cmdName to "" to remove a key
 	// binding.
 	Set(mode KeyboardMode, key key.Press, cmdName string) bool
-
 	// Get returns a command if registered, nil otherwise.
 	Get(mode KeyboardMode, key key.Press) string
-
 	// GetAssigned returns all the assigned keys for this mode.
 	GetAssigned(mode KeyboardMode) []key.Press
 }
@@ -372,17 +359,6 @@ type PluginDetails struct {
 type PluginRPC interface {
 	GetInfo(ignored int, out *PluginDetails) error
 	Quit(in int, ignored *int) error
-}
-
-// Config
-
-// Config is the configuration manager.
-//
-// TODO(maruel): It's not figured out yet.
-type Config interface {
-	GetInt(name string) int
-	GetString(name string) string
-	Save()
 }
 
 // Utility functions.

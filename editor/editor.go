@@ -50,6 +50,7 @@ type editor struct {
 	viewReady     chan bool                     // A View.Buffer() is ready to be drawn.
 	keyboardMode  wicore.KeyboardMode           // Global keyboard mode instead of per Window, it's more logical for users.
 	plugins       Plugins                       // All loaded plugin processes.
+	nextViewID    int
 }
 
 func (e *editor) Close() error {
@@ -59,6 +60,11 @@ func (e *editor) Close() error {
 	err := e.plugins.Close()
 	e.plugins = nil
 	return err
+}
+
+func (e *editor) ID() string {
+	// There shall be only one.
+	return "editor"
 }
 
 func (e *editor) Version() string {
@@ -294,12 +300,13 @@ func MakeEditor(terminal Terminal, noPlugin bool) (Editor, error) {
 		viewFactories: make(map[string]wicore.ViewFactory),
 		viewReady:     make(chan bool),
 		keyboardMode:  wicore.Normal,
+		nextViewID:    1,
 	}
 
 	// The root view is important, it defines all the global commands. It is
 	// pre-filled with the default native commands and keyboard mapping, and it's
 	// up to the plugins to add more global commands on startup.
-	rootView := makeStaticDisabledView(e, "Root", -1, -1)
+	rootView := makeStaticDisabledView(e, 0, "Root", -1, -1)
 
 	// These commands are generic commands, they do not require specific access.
 	RegisterCommandCommands(rootView.Commands())

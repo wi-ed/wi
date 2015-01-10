@@ -20,6 +20,7 @@ type view struct {
 	commands      wicore.Commands
 	keyBindings   wicore.KeyBindings
 	eventRegistry wicore.EventRegistry
+	id            int
 	title         string
 	isDisabled    bool
 	naturalX      int // Desired size.
@@ -34,6 +35,10 @@ type view struct {
 }
 
 // wicore.View interface.
+
+func (v *view) ID() string {
+	return fmt.Sprintf("view:%d", v.id)
+}
 
 func (v *view) String() string {
 	return fmt.Sprintf("View(%s)", v.title)
@@ -110,12 +115,13 @@ func (v *staticDisabledView) Buffer() *raster.Buffer {
 }
 
 // Empty non-editable window.
-func makeStaticDisabledView(e wicore.Editor, title string, naturalX, naturalY int) *staticDisabledView {
+func makeStaticDisabledView(e wicore.Editor, id int, title string, naturalX, naturalY int) *staticDisabledView {
 	return &staticDisabledView{
 		view{
 			commands:      makeCommands(),
 			keyBindings:   makeKeyBindings(),
 			eventRegistry: e,
+			id:            id,
 			title:         title,
 			isDisabled:    true,
 			naturalX:      naturalX,
@@ -128,11 +134,11 @@ func makeStaticDisabledView(e wicore.Editor, title string, naturalX, naturalY in
 
 // The status line is a hierarchy of Window, one for each element, each showing
 // a single item.
-func statusRootViewFactory(e wicore.Editor, args ...string) wicore.View {
+func statusRootViewFactory(e wicore.Editor, id int, args ...string) wicore.View {
 	// TODO(maruel): OnResize(), query the root Window size, if y<=5 or x<=15,
 	// set the root status Window to y=0, so that it becomes effectively
 	// invisible when the editor window is too small.
-	v := makeStaticDisabledView(e, "Status Root", 1, 1)
+	v := makeStaticDisabledView(e, id, "Status Root", 1, 1)
 	v.defaultFormat.Bg = colors.LightGray
 	v.onAttach = func(v *view, w wicore.Window) {
 		id := w.ID()
@@ -149,17 +155,17 @@ func statusRootViewFactory(e wicore.Editor, args ...string) wicore.View {
 	return v
 }
 
-func statusActiveWindowNameViewFactory(e wicore.Editor, args ...string) wicore.View {
+func statusActiveWindowNameViewFactory(e wicore.Editor, id int, args ...string) wicore.View {
 	// Active Window View name.
 	// TODO(maruel): Register events of Window activation, make itself Invalidate().
-	v := makeStaticDisabledView(e, "Status Name", 15, 1)
+	v := makeStaticDisabledView(e, id, "Status Name", 15, 1)
 	v.defaultFormat = raster.CellFormat{}
 	return v
 }
 
-func statusModeViewFactory(e wicore.Editor, args ...string) wicore.View {
+func statusModeViewFactory(e wicore.Editor, id int, args ...string) wicore.View {
 	// Mostly for testing purpose, will contain the current mode "Insert" or "Command".
-	v := makeStaticDisabledView(e, e.KeyboardMode().String(), 10, 1)
+	v := makeStaticDisabledView(e, id, e.KeyboardMode().String(), 10, 1)
 	v.defaultFormat = raster.CellFormat{}
 	event := e.RegisterEditorKeyboardModeChanged(func(mode wicore.KeyboardMode) {
 		v.title = mode.String()
@@ -168,10 +174,10 @@ func statusModeViewFactory(e wicore.Editor, args ...string) wicore.View {
 	return v
 }
 
-func statusPositionViewFactory(e wicore.Editor, args ...string) wicore.View {
+func statusPositionViewFactory(e wicore.Editor, id int, args ...string) wicore.View {
 	// Position, % of file.
 	// TODO(maruel): Register events of movement, make itself Invalidate().
-	v := makeStaticDisabledView(e, "Status Position", 15, 1)
+	v := makeStaticDisabledView(e, id, "Status Position", 15, 1)
 	v.defaultFormat = raster.CellFormat{}
 	event := e.RegisterDocumentCursorMoved(func(doc wicore.Document, col, row int) {
 		v.title = fmt.Sprintf("%d,%d", col, row)
@@ -180,10 +186,10 @@ func statusPositionViewFactory(e wicore.Editor, args ...string) wicore.View {
 	return v
 }
 
-func infobarAlertViewFactory(e wicore.Editor, args ...string) wicore.View {
+func infobarAlertViewFactory(e wicore.Editor, id int, args ...string) wicore.View {
 	out := "Alert: " + args[0]
 	l := utf8.RuneCountInString(out)
-	v := makeStaticDisabledView(e, out, l, 1)
+	v := makeStaticDisabledView(e, id, out, l, 1)
 	v.onAttach = func(v *view, w wicore.Window) {
 		wicore.Go("infobarAlert", func() {
 			// Dismiss after 5 seconds.

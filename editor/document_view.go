@@ -163,7 +163,7 @@ func cmdDocumentCursorEnd(v *documentView, e wicore.Editor) {
 	}
 }
 
-func documentViewFactory(e wicore.Editor, args ...string) wicore.View {
+func documentViewFactory(e wicore.Editor, id int, args ...string) wicore.View {
 	dispatcher := makeCommands()
 	cmds := []wicore.Command{
 		&wicore.CommandImpl{
@@ -262,6 +262,7 @@ func documentViewFactory(e wicore.Editor, args ...string) wicore.View {
 		view: view{
 			commands:      dispatcher,
 			keyBindings:   bindings,
+			id:            id,
 			title:         "<Empty document>", // TODO(maruel): Title == document.filePath ?
 			naturalX:      100,
 			naturalY:      100,
