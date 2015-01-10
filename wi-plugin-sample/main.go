@@ -19,7 +19,14 @@ import (
 	"github.com/maruel/wi/wicore/plugin"
 )
 
+func onStart() error {
+	// This is the place to do full initialization.
+	// TODO(maruel): At this point, the proxy wicore.Editor should be up and
+	// provided to this function.
+	return nil
+}
+
 func main() {
 	// This starts the control loop. See its doc for more up-to-date details.
-	plugin.Main("wi-plugin-sample")
+	plugin.Main("wi-plugin-sample", onStart)
 }

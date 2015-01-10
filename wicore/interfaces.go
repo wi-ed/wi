@@ -357,7 +357,14 @@ type PluginDetails struct {
 
 // PluginRPC is the interface exposed by the plugin.
 type PluginRPC interface {
+	// GetInfo is the fisrt function to be called synchronously. It must return
+	// immediately.
 	GetInfo(ignored int, out *PluginDetails) error
+	// OnStart is called on plugin startup. All initialization should be done
+	// there.
+	OnStart(int, *int) error
+	// Quit is called on editor termination. The editor waits for the function to
+	// return.
 	Quit(in int, ignored *int) error
 }
 

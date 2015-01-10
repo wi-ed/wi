@@ -30,10 +30,11 @@ type Plugin interface {
 
 // pluginProcess represents an out-of-process plugin.
 type pluginProcess struct {
-	proc   *os.Process
-	client *rpc.Client
-	pid    int    // Also stored here in case proc is nil. It is not reset even when the process is closed.
-	name   string // Self-published plugin name.
+	proc        *os.Process
+	client      *rpc.Client
+	pid         int    // Also stored here in case proc is nil. It is not reset even when the process is closed.
+	name        string // Self-published plugin name.
+	initialized bool
 }
 
 func (p *pluginProcess) Close() error {
@@ -54,6 +55,10 @@ func (p *pluginProcess) Close() error {
 
 func (p *pluginProcess) GetInfo(in int, out *wicore.PluginDetails) error {
 	return p.client.Call("PluginRPC.GetInfo", in, out)
+}
+
+func (p *pluginProcess) OnStart(in int, out *int) error {
+	return errors.New("unexpected sync call")
 }
 
 func (p *pluginProcess) Quit(in int, out *int) error {
@@ -131,13 +136,27 @@ func loadPlugin(cmdLine []string) (Plugin, error) {
 
 	conn := wicore.MakeReadWriteCloser(stdout, stdin)
 	client := rpc.NewClient(conn)
-	p := &pluginProcess{cmd.Process, client, cmd.Process.Pid, "<unknown>"}
+	p := &pluginProcess{
+		cmd.Process,
+		client,
+		cmd.Process.Pid,
+		"<unknown>",
+		false,
+	}
 	out := wicore.PluginDetails{}
 	if err = p.GetInfo(0, &out); err != nil {
 		return nil, err
 	}
 	p.name = out.Name
 	log.Printf("Plugin(%s, %d) is now functional", p.name, p.pid)
+	ignored := 0
+	call := p.client.Go("PluginRPC.OnStart", 0, &ignored, nil)
+	wicore.Go("PluginRPC.OnStart", func() {
+		// TODO(maruel): Handle error.
+		_ = <-call.Done
+		// TODO(maruel): Synchronization via lock.
+		p.initialized = true
+	})
 	return p, nil
 }
 
