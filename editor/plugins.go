@@ -24,6 +24,7 @@ import (
 // Plugin represents a live plugin process.
 type Plugin interface {
 	io.Closer
+	fmt.Stringer
 
 	wicore.PluginRPC
 }
@@ -49,8 +50,12 @@ func (p *pluginProcess) Close() error {
 		err = p.proc.Kill()
 		p.proc = nil
 	}
-	log.Printf("Plugin(%s, %d).Close()", p.name, p.pid)
+	log.Printf("%s.Close()", p)
 	return err
+}
+
+func (p *pluginProcess) String() string {
+	return fmt.Sprintf("Plugin(%s, %d)", p.name, p.pid)
 }
 
 func (p *pluginProcess) GetInfo(in int, out *wicore.PluginDetails) error {
@@ -148,7 +153,7 @@ func loadPlugin(cmdLine []string) (Plugin, error) {
 		return nil, err
 	}
 	p.name = out.Name
-	log.Printf("Plugin(%s, %d) is now functional", p.name, p.pid)
+	log.Printf("%s is now functional", p)
 	ignored := 0
 	call := p.client.Go("PluginRPC.OnStart", 0, &ignored, nil)
 	wicore.Go("PluginRPC.OnStart", func() {
@@ -156,6 +161,7 @@ func loadPlugin(cmdLine []string) (Plugin, error) {
 		_ = <-call.Done
 		// TODO(maruel): Synchronization via lock.
 		p.initialized = true
+		log.Printf("%s initialized", p)
 	})
 	return p, nil
 }

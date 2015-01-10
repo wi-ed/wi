@@ -7,6 +7,8 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/maruel/wi/editor"
 	"github.com/maruel/wi/wicore"
 	"github.com/maruel/wi/wicore/colors"
@@ -138,6 +140,7 @@ func termboxKeyToKeyPress(k termbox.Event) key.Press {
 		out.Ctrl = true
 		out.Ch = 'g'
 	case termbox.KeyBackspace: // KeyCtrlH
+	case termbox.KeyBackspace2:
 		out.Key = key.Backspace
 	case termbox.KeyTab: // KeyCtrlI
 		out.Key = key.Tab
@@ -208,7 +211,7 @@ func termboxKeyToKeyPress(k termbox.Event) key.Press {
 	case termbox.KeySpace:
 		out.Key = key.Space
 	default:
-		panic("Remove me")
+		panic(fmt.Sprintf("Unhandled key %x", k.Key))
 	}
 	return out
 }
