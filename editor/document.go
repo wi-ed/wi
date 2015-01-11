@@ -116,7 +116,7 @@ func cmdDocumentRun(c *wicore.CommandImpl, e wicore.EditorW, w wicore.Window, ar
 
 // RegisterDocumentCommands registers the top-level native commands to manage
 // documents.
-func RegisterDocumentCommands(dispatcher wicore.Commands) {
+func RegisterDocumentCommands(dispatcher wicore.CommandsW) {
 	cmds := []wicore.Command{
 		&wicore.CommandImpl{
 			"document_build",

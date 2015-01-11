@@ -318,11 +318,12 @@ func MakeEditor(terminal Terminal, noPlugin bool) (Editor, error) {
 	rootView := makeStaticDisabledView(e, 0, "Root", -1, -1)
 
 	// These commands are generic commands, they do not require specific access.
-	RegisterCommandCommands(rootView.Commands())
-	RegisterKeyBindingCommands(rootView.Commands())
-	RegisterViewCommands(rootView.Commands())
-	RegisterWindowCommands(rootView.Commands())
-	RegisterDocumentCommands(rootView.Commands())
+	cmds := rootView.CommandsW()
+	RegisterCommandCommands(cmds)
+	RegisterKeyBindingCommands(cmds)
+	RegisterViewCommands(cmds)
+	RegisterWindowCommands(cmds)
+	RegisterDocumentCommands(cmds)
 	RegisterEditorDefaults(rootView)
 
 	RegisterDefaultViewFactories(e)
@@ -467,7 +468,7 @@ func RegisterEditorDefaults(view wicore.ViewW) {
 		&wicore.CommandAlias{"q!", "editor_quit", []string{"force"}},
 		&wicore.CommandAlias{"quit", "editor_quit", nil},
 	}
-	commands := view.Commands()
+	commands := view.CommandsW()
 	for _, cmd := range cmds {
 		commands.Register(cmd)
 	}

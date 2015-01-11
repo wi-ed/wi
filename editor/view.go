@@ -17,7 +17,7 @@ import (
 
 // TODO(maruel): Likely move into wicore for reuse.
 type view struct {
-	commands      wicore.Commands
+	commands      wicore.CommandsW
 	keyBindings   wicore.KeyBindingsW
 	eventRegistry wicore.EventRegistry
 	id            int
@@ -56,6 +56,10 @@ func (v *view) Close() error {
 }
 
 func (v *view) Commands() wicore.Commands {
+	return v.commands
+}
+
+func (v *view) CommandsW() wicore.CommandsW {
 	return v.commands
 }
 
@@ -218,7 +222,7 @@ func RegisterDefaultViewFactories(e Editor) {
 // Commands
 
 // RegisterViewCommands registers view-related commands
-func RegisterViewCommands(dispatcher wicore.Commands) {
+func RegisterViewCommands(dispatcher wicore.CommandsW) {
 	cmds := []wicore.Command{}
 	for _, cmd := range cmds {
 		dispatcher.Register(cmd)

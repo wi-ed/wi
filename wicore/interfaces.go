@@ -237,6 +237,8 @@ type View interface {
 type ViewW interface {
 	View
 
+	// CommandsW returns the writeable interface of Commands.
+	CommandsW() CommandsW
 	// KeyBindingsW returns the writeable interface of KeyBindings.
 	KeyBindingsW() KeyBindingsW
 	// SetSize resets the View Buffer size.
@@ -314,14 +316,20 @@ type Command interface {
 // Commands stores the known commands. This is where plugins can add new
 // commands. Each View contains its own Commands.
 type Commands interface {
-	// Register registers a command so it can be executed later. In practice
-	// commands should normally be registered on startup. Returns false if a
-	// command was already registered and was lost.
-	Register(cmd Command) bool
 	// Get returns a command if registered, nil otherwise.
 	Get(cmdName string) Command
 	// GetNames() return the name of all the commands.
 	GetNames() []string
+}
+
+// CommandsW is the writable version of Commands.
+type CommandsW interface {
+	Commands
+
+	// Register registers a command so it can be executed later. In practice
+	// commands should normally be registered on startup. Returns false if a
+	// command was already registered and was lost.
+	Register(cmd Command) bool
 }
 
 // EnqueuedCommands is used internally to dispatch commands through

@@ -209,7 +209,12 @@ func debugHookEditor(e editor.Editor) {
 
 		// 'editor_screenshot', mainly for unit test; open a new buffer with the screenshot, so it can be saved with 'w'.
 	}
-	dispatcher := wicore.RootWindow(e.ActiveWindow()).View().Commands()
+	// TODO(maruel): Handle out of process view.
+	viewW, ok := wicore.RootWindow(e.ActiveWindow()).View().(wicore.ViewW)
+	if !ok {
+		panic("internal error")
+	}
+	dispatcher := viewW.CommandsW()
 	for _, cmd := range cmds {
 		dispatcher.Register(cmd)
 	}

@@ -33,7 +33,7 @@ func cmdShell(c *wicore.CommandImpl, e wicore.EditorW, w wicore.Window, args ...
 // be implemented.
 //
 // TODO(maruel): Implement these commands properly and move to the right place.
-func RegisterTodoCommands(dispatcher wicore.Commands) {
+func RegisterTodoCommands(dispatcher wicore.CommandsW) {
 	cmds := []wicore.Command{
 		&wicore.CommandImpl{
 			"doc",

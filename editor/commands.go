@@ -37,7 +37,7 @@ func (c *commands) GetNames() []string {
 	return c.names
 }
 
-func makeCommands() wicore.Commands {
+func makeCommands() wicore.CommandsW {
 	return &commands{make(map[string]wicore.Command), nil}
 }
 
@@ -99,11 +99,17 @@ func cmdCommandAlias(c *wicore.CommandImpl, e wicore.EditorW, w wicore.Window, a
 		return
 	}
 	alias := &wicore.CommandAlias{args[1], args[2], nil}
-	w.View().Commands().Register(alias)
+	// TODO(maruel): Handle views in different process?
+	viewW, ok := w.View().(wicore.ViewW)
+	if !ok {
+		e.ExecuteCommand(w, "alert", "internal failure")
+		return
+	}
+	viewW.CommandsW().Register(alias)
 }
 
 // RegisterCommandCommands registers the top-level native commands.
-func RegisterCommandCommands(dispatcher wicore.Commands) {
+func RegisterCommandCommands(dispatcher wicore.CommandsW) {
 	cmds := []wicore.Command{
 		&wicore.CommandImpl{
 			"command_alias",

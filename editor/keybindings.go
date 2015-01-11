@@ -107,7 +107,7 @@ func cmdKeyBind(c *wicore.CommandImpl, e wicore.EditorW, w wicore.Window, args .
 }
 
 // RegisterKeyBindingCommands registers the keyboard mapping related commands.
-func RegisterKeyBindingCommands(dispatcher wicore.Commands) {
+func RegisterKeyBindingCommands(dispatcher wicore.CommandsW) {
 	cmds := []wicore.Command{
 		&wicore.CommandImpl{
 			"key_bind",

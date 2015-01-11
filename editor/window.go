@@ -593,7 +593,7 @@ func cmdWindowSetRect(c *privilegedCommandImpl, e *editor, w *window, args ...st
 
 // RegisterWindowCommands registers all the commands relative to window
 // management.
-func RegisterWindowCommands(dispatcher wicore.Commands) {
+func RegisterWindowCommands(dispatcher wicore.CommandsW) {
 	cmds := []wicore.Command{
 		&privilegedCommandImpl{
 			"window_activate",
