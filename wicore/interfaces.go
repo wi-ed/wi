@@ -237,6 +237,8 @@ type View interface {
 type ViewW interface {
 	View
 
+	// KeyBindingsW returns the writeable interface of KeyBindings.
+	KeyBindingsW() KeyBindingsW
 	// SetSize resets the View Buffer size.
 	SetSize(x, y int)
 	// OnAttach is called by the Window after it was attached.
@@ -357,15 +359,21 @@ const (
 // TODO(maruel): Right now there's two ways to add bindings, either through
 // calls or through commands. Prefer one over the other.
 type KeyBindings interface {
+	// Get returns a command if registered, nil otherwise.
+	Get(mode KeyboardMode, key key.Press) string
+	// GetAssigned returns all the assigned keys for this mode.
+	GetAssigned(mode KeyboardMode) []key.Press
+}
+
+// KeyBindingsW is the writable version of KeyBindings.
+type KeyBindingsW interface {
+	KeyBindings
+
 	// Set registers a keyboard mapping. In practice keyboard mappings
 	// should normally be registered on startup. Returns false if a key mapping
 	// was already registered and was lost. Set cmdName to "" to remove a key
 	// binding.
 	Set(mode KeyboardMode, key key.Press, cmdName string) bool
-	// Get returns a command if registered, nil otherwise.
-	Get(mode KeyboardMode, key key.Press) string
-	// GetAssigned returns all the assigned keys for this mode.
-	GetAssigned(mode KeyboardMode) []key.Press
 }
 
 // PluginDetails is details for a plugin.

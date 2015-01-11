@@ -18,7 +18,7 @@ import (
 // TODO(maruel): Likely move into wicore for reuse.
 type view struct {
 	commands      wicore.Commands
-	keyBindings   wicore.KeyBindings
+	keyBindings   wicore.KeyBindingsW
 	eventRegistry wicore.EventRegistry
 	id            int
 	title         string
@@ -60,6 +60,10 @@ func (v *view) Commands() wicore.Commands {
 }
 
 func (v *view) KeyBindings() wicore.KeyBindings {
+	return v.keyBindings
+}
+
+func (v *view) KeyBindingsW() wicore.KeyBindingsW {
 	return v.keyBindings
 }
 

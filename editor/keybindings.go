@@ -63,7 +63,7 @@ func (k *keyBindings) GetAssigned(mode wicore.KeyboardMode) []key.Press {
 	return out
 }
 
-func makeKeyBindings() wicore.KeyBindings {
+func makeKeyBindings() wicore.KeyBindingsW {
 	return &keyBindings{make(map[key.Press]string), make(map[key.Press]string)}
 }
 
@@ -97,7 +97,13 @@ func cmdKeyBind(c *wicore.CommandImpl, e wicore.EditorW, w wicore.Window, args .
 	}
 	// TODO(maruel): Refuse invalid keyName.
 	k := key.StringToPress(keyName)
-	w.View().KeyBindings().Set(mode, k, cmdName)
+	// TODO(maruel): Handle views in different process?
+	viewW, ok := w.View().(wicore.ViewW)
+	if !ok {
+		e.ExecuteCommand(w, "alert", "internal failure")
+		return
+	}
+	viewW.KeyBindingsW().Set(mode, k, cmdName)
 }
 
 // RegisterKeyBindingCommands registers the keyboard mapping related commands.

@@ -401,7 +401,7 @@ func cmdEditorRedraw(c *privilegedCommandImpl, e *editor, w *window, args ...str
 
 // RegisterEditorDefaults registers the top-level native commands and key
 // bindings.
-func RegisterEditorDefaults(view wicore.View) {
+func RegisterEditorDefaults(view wicore.ViewW) {
 	cmds := []wicore.Command{
 		&wicore.CommandImpl{
 			"alert",
@@ -472,7 +472,7 @@ func RegisterEditorDefaults(view wicore.View) {
 		commands.Register(cmd)
 	}
 
-	bindings := view.KeyBindings()
+	bindings := view.KeyBindingsW()
 	bindings.Set(wicore.AllMode, key.Press{Key: key.F1}, "help")
 	bindings.Set(wicore.AllMode, key.Press{Ch: ':'}, "editor_command_window")
 	bindings.Set(wicore.AllMode, key.Press{Ctrl: true, Ch: 'c'}, "quit")
