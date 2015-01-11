@@ -291,6 +291,7 @@ func (e *editor) loadPlugins() {
 // It is fine to run it concurrently in unit test, as no global variable shall
 // be used by the object created by this function.
 func MakeEditor(terminal Terminal, noPlugin bool) (Editor, error) {
+	lang.Set(lang.En)
 	e := &editor{
 		eventRegistry: makeEventRegistry(),
 		terminal:      terminal,
@@ -331,8 +332,7 @@ func MakeEditor(terminal Terminal, noPlugin bool) (Editor, error) {
 	e.TriggerWindowCreated(e.rootWindow)
 	e.TriggerViewCreated(rootView)
 
-	lang.Set(lang.En)
-	e.TriggerEditorLanguage(lang.En)
+	e.TriggerEditorLanguage(lang.Active())
 	// This forces creating the default buffer.
 	e.TriggerTerminalResized()
 	wicore.Go("terminalLoop", func() { e.terminalLoop(terminal) })

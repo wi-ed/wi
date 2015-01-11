@@ -276,6 +276,9 @@ type CommandHandler func(e Editor, w Window, args ...string)
 
 // Command describes a registered command that can be triggered directly at the
 // command prompt, via a keybinding or a plugin.
+//
+// A Command is immutable once created either by the editor process or by a
+// plugin.
 type Command interface {
 	// Name is the name of the command.
 	Name() string
@@ -352,14 +355,15 @@ type KeyBindings interface {
 }
 
 type PluginDetails struct {
-	Name string
+	Name        string
+	Description string
 }
 
 // PluginRPC is the interface exposed by the plugin.
 type PluginRPC interface {
 	// GetInfo is the fisrt function to be called synchronously. It must return
 	// immediately.
-	GetInfo(ignored int, out *PluginDetails) error
+	GetInfo(ignored lang.Language, out *PluginDetails) error
 	// OnStart is called on plugin startup. All initialization should be done
 	// there.
 	OnStart(int, *int) error

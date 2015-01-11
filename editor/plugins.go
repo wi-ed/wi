@@ -19,6 +19,7 @@ import (
 	"sync"
 
 	"github.com/maruel/wi/wicore"
+	"github.com/maruel/wi/wicore/lang"
 )
 
 // Plugin represents a live plugin process.
@@ -58,7 +59,7 @@ func (p *pluginProcess) String() string {
 	return fmt.Sprintf("Plugin(%s, %d)", p.name, p.pid)
 }
 
-func (p *pluginProcess) GetInfo(in int, out *wicore.PluginDetails) error {
+func (p *pluginProcess) GetInfo(in lang.Language, out *wicore.PluginDetails) error {
 	return p.client.Call("PluginRPC.GetInfo", in, out)
 }
 
@@ -149,7 +150,7 @@ func loadPlugin(cmdLine []string) (Plugin, error) {
 		false,
 	}
 	out := wicore.PluginDetails{}
-	if err = p.GetInfo(0, &out); err != nil {
+	if err = p.GetInfo(lang.Active(), &out); err != nil {
 		return nil, err
 	}
 	p.name = out.Name

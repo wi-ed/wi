@@ -16,17 +16,31 @@
 package main
 
 import (
+	"github.com/maruel/wi/wicore"
 	"github.com/maruel/wi/wicore/plugin"
 )
 
-func onStart() error {
-	// This is the place to do full initialization.
-	// TODO(maruel): At this point, the proxy wicore.Editor should be up and
-	// provided to this function.
+type pluginImpl struct {
+	plugin.PluginImpl
+	e wicore.Editor
+}
+
+// This is the place to do full initialization. It is not required to implement
+// this function.
+func (p *pluginImpl) OnStart(e wicore.Editor) error {
+	p.e = e
+	return nil
+}
+
+// This is the place to do full shut down. It is not required to implement
+// this function.
+func (p *pluginImpl) OnQuit() error {
+	p.e = nil
 	return nil
 }
 
 func main() {
 	// This starts the control loop. See its doc for more up-to-date details.
-	plugin.Main("wi-plugin-sample", onStart)
+	p := &pluginImpl{plugin.PluginImpl{"wi-plugin-sample", nil}, nil}
+	plugin.Main(p)
 }
