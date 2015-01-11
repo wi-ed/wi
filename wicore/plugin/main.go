@@ -103,7 +103,7 @@ func Main(plugin Plugin) {
 		conn:   os.Stdin,
 		plugin: plugin,
 	}
-	// The reason is to statically assert the interface is correctly implemented.
+	// Statically assert the interface is correctly implemented.
 	var _ wicore.PluginRPC = p
 	_ = server.RegisterName("PluginRPC", p)
 	server.ServeConn(conn)

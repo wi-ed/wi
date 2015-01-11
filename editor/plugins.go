@@ -27,15 +27,15 @@ type Plugin interface {
 	io.Closer
 	fmt.Stringer
 
-	wicore.PluginRPC
+	Details() wicore.PluginDetails
 }
 
 // pluginProcess represents an out-of-process plugin.
 type pluginProcess struct {
 	proc        *os.Process
 	client      *rpc.Client
-	pid         int    // Also stored here in case proc is nil. It is not reset even when the process is closed.
-	name        string // Self-published plugin name.
+	pid         int // Also stored here in case proc is nil. It is not reset even when the process is closed.
+	details     wicore.PluginDetails
 	initialized bool
 }
 
@@ -56,7 +56,11 @@ func (p *pluginProcess) Close() error {
 }
 
 func (p *pluginProcess) String() string {
-	return fmt.Sprintf("Plugin(%s, %d)", p.name, p.pid)
+	return fmt.Sprintf("Plugin(%s, %d)", p.details.Name, p.pid)
+}
+
+func (p *pluginProcess) Details() wicore.PluginDetails {
+	return p.details
 }
 
 func (p *pluginProcess) GetInfo(in lang.Language, out *wicore.PluginDetails) error {
@@ -146,14 +150,15 @@ func loadPlugin(cmdLine []string) (Plugin, error) {
 		cmd.Process,
 		client,
 		cmd.Process.Pid,
-		"<unknown>",
+		wicore.PluginDetails{"<unknown>", "<unitialized>"},
 		false,
 	}
-	out := wicore.PluginDetails{}
-	if err = p.GetInfo(lang.Active(), &out); err != nil {
+	// Statically assert the interface is correctly implemented. It's to enforce
+	// correct types.
+	var _ wicore.PluginRPC = p
+	if err = p.GetInfo(lang.Active(), &p.details); err != nil {
 		return nil, err
 	}
-	p.name = out.Name
 	log.Printf("%s is now functional", p)
 	ignored := 0
 	call := p.client.Go("PluginRPC.OnStart", 0, &ignored, nil)

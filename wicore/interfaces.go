@@ -131,6 +131,8 @@ type Editor interface {
 	// AllDocuments returns all the active documents. Some of them may not be in
 	// a View.
 	AllDocuments() []Document
+	// AllPlugins returns details about all the loaded plugins.
+	AllPlugins() []PluginDetails
 	// KeyboardMode is global to the editor. It matches vim behavior. For example
 	// in a 2-window setup while in insert mode, using Ctrl-O, Ctrl-W, Down will
 	// move to the next window but will stay in insert mode.
@@ -354,6 +356,7 @@ type KeyBindings interface {
 	GetAssigned(mode KeyboardMode) []key.Press
 }
 
+// PluginDetails is details for a plugin.
 type PluginDetails struct {
 	Name        string
 	Description string

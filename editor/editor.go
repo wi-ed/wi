@@ -137,6 +137,14 @@ func (e *editor) AllDocuments() []wicore.Document {
 	return e.documents[:]
 }
 
+func (e *editor) AllPlugins() []wicore.PluginDetails {
+	out := make([]wicore.PluginDetails, len(e.plugins))
+	for i, v := range e.plugins {
+		out[i] = v.Details()
+	}
+	return out
+}
+
 func (e *editor) ActiveWindow() wicore.Window {
 	return e.lastActive[0]
 }
