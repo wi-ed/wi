@@ -44,7 +44,7 @@ type window struct {
 	rect            raster.Rect    // Window Rect as described in wicore.Window.Rect().
 	clientAreaRect  raster.Rect    // Usable area within the Window, the part not obscured by borders.
 	viewRect        raster.Rect    // Window View Rect, which is the client area not used by childrenWindows.
-	view            wicore.View    // View that renders the content. It may be nil if this Window has no content.
+	view            wicore.ViewW   // View that renders the content. It may be nil if this Window has no content.
 	docking         wicore.DockingType
 	border          wicore.BorderType
 	effectiveBorder drawnBorder       // effectiveBorder automatically collapses borders when the Window Rect is too small and is based on docking.
@@ -390,7 +390,7 @@ func (w *window) cell(r rune) raster.Cell {
 	return raster.Cell{r, w.getBorderFormat()}
 }
 
-func makeWindow(parent *window, view wicore.View, docking wicore.DockingType) *window {
+func makeWindow(parent *window, view wicore.ViewW, docking wicore.DockingType) *window {
 	log.Printf("makeWindow(%s, %s, %s)", parent, view.Title(), docking)
 	var e wicore.Editor
 	id := 0

@@ -47,7 +47,7 @@ func (v *commandView) onTerminalKeyPressed(k key.Press) {
 //
 // TODO(maruel): Position it 5 lines below the cursor in the parent Window's
 // View. Do this via onAttach.
-func commandViewFactory(e wicore.Editor, id int, args ...string) wicore.View {
+func commandViewFactory(e wicore.Editor, id int, args ...string) wicore.ViewW {
 	bindings := makeKeyBindings()
 	// Fill up the key bindings. This includes basic cursor movement, help, etc.
 	//bindings.Set(wicore.AllMode, key.Press{Key: key.Enter}, "execute_command")

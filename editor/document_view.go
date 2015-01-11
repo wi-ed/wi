@@ -163,7 +163,7 @@ func cmdDocumentCursorEnd(v *documentView, e wicore.EditorW) {
 	}
 }
 
-func documentViewFactory(e wicore.Editor, id int, args ...string) wicore.View {
+func documentViewFactory(e wicore.Editor, id int, args ...string) wicore.ViewW {
 	dispatcher := makeCommands()
 	cmds := []wicore.Command{
 		&wicore.CommandImpl{

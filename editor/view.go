@@ -134,7 +134,7 @@ func makeStaticDisabledView(e wicore.Editor, id int, title string, naturalX, nat
 
 // The status line is a hierarchy of Window, one for each element, each showing
 // a single item.
-func statusRootViewFactory(e wicore.Editor, id int, args ...string) wicore.View {
+func statusRootViewFactory(e wicore.Editor, id int, args ...string) wicore.ViewW {
 	// TODO(maruel): OnResize(), query the root Window size, if y<=5 or x<=15,
 	// set the root status Window to y=0, so that it becomes effectively
 	// invisible when the editor window is too small.
@@ -155,7 +155,7 @@ func statusRootViewFactory(e wicore.Editor, id int, args ...string) wicore.View 
 	return v
 }
 
-func statusActiveWindowNameViewFactory(e wicore.Editor, id int, args ...string) wicore.View {
+func statusActiveWindowNameViewFactory(e wicore.Editor, id int, args ...string) wicore.ViewW {
 	// Active Window View name.
 	// TODO(maruel): Register events of Window activation, make itself Invalidate().
 	v := makeStaticDisabledView(e, id, "Status Name", 15, 1)
@@ -163,7 +163,7 @@ func statusActiveWindowNameViewFactory(e wicore.Editor, id int, args ...string) 
 	return v
 }
 
-func statusModeViewFactory(e wicore.Editor, id int, args ...string) wicore.View {
+func statusModeViewFactory(e wicore.Editor, id int, args ...string) wicore.ViewW {
 	// Mostly for testing purpose, will contain the current mode "Insert" or "Command".
 	v := makeStaticDisabledView(e, id, e.KeyboardMode().String(), 10, 1)
 	v.defaultFormat = raster.CellFormat{}
@@ -174,7 +174,7 @@ func statusModeViewFactory(e wicore.Editor, id int, args ...string) wicore.View 
 	return v
 }
 
-func statusPositionViewFactory(e wicore.Editor, id int, args ...string) wicore.View {
+func statusPositionViewFactory(e wicore.Editor, id int, args ...string) wicore.ViewW {
 	// Position, % of file.
 	// TODO(maruel): Register events of movement, make itself Invalidate().
 	v := makeStaticDisabledView(e, id, "Status Position", 15, 1)
@@ -186,7 +186,7 @@ func statusPositionViewFactory(e wicore.Editor, id int, args ...string) wicore.V
 	return v
 }
 
-func infobarAlertViewFactory(e wicore.Editor, id int, args ...string) wicore.View {
+func infobarAlertViewFactory(e wicore.Editor, id int, args ...string) wicore.ViewW {
 	out := "Alert: " + args[0]
 	l := utf8.RuneCountInString(out)
 	v := makeStaticDisabledView(e, id, out, l, 1)

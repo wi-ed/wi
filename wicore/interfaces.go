@@ -227,19 +227,25 @@ type View interface {
 	// long/large as possible, 0 if indeterminate. The return value of this
 	// function is not affected by SetSize().
 	NaturalSize() (width, height int)
-	// SetSize resets the View Buffer size.
-	SetSize(x, y int)
-	// OnAttach is called by the Window after it was attached.
-	// TODO(maruel): Maybe split in ViewFull?
-	OnAttach(w Window)
 	// DefaultFormat returns the default coloring for this View. If this View has
 	// an CellFormat.Empty()==true format, it will uses whatever parent Window's
 	// View DefaultFormat().
 	DefaultFormat() raster.CellFormat
 }
 
+// ViewW is the writable version of View.
+type ViewW interface {
+	View
+
+	// SetSize resets the View Buffer size.
+	SetSize(x, y int)
+	// OnAttach is called by the Window after it was attached.
+	// TODO(maruel): Maybe split in ViewFull?
+	OnAttach(w Window)
+}
+
 // ViewFactory returns a new View.
-type ViewFactory func(e Editor, id int, args ...string) View
+type ViewFactory func(e Editor, id int, args ...string) ViewW
 
 // Document represents an open document. It can be accessed by zero, one or
 // multiple View. For example the document may not be visible at all as a 'back
