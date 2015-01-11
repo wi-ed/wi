@@ -80,8 +80,8 @@ func (v *documentView) onKeyPress(e wicore.Editor, k key.Press) {
 	e.TriggerTerminalResized()
 }
 
-func cmdToDoc(handler func(v *documentView, e wicore.Editor)) wicore.CommandImplHandler {
-	return func(c *wicore.CommandImpl, e wicore.Editor, w wicore.Window, args ...string) {
+func cmdToDoc(handler func(v *documentView, e wicore.EditorW)) wicore.CommandImplHandler {
+	return func(c *wicore.CommandImpl, e wicore.EditorW, w wicore.Window, args ...string) {
 		v, ok := w.View().(*documentView)
 		if !ok {
 			e.ExecuteCommand(w, "alert", "Internal error")
@@ -91,7 +91,7 @@ func cmdToDoc(handler func(v *documentView, e wicore.Editor)) wicore.CommandImpl
 	}
 }
 
-func cmdDocumentCursorLeft(v *documentView, e wicore.Editor) {
+func cmdDocumentCursorLeft(v *documentView, e wicore.EditorW) {
 	if v.cursorColumn == 0 {
 		// TODO(maruel): Make wrap behavior optional.
 		if v.cursorLine == 0 {
@@ -105,7 +105,7 @@ func cmdDocumentCursorLeft(v *documentView, e wicore.Editor) {
 	v.cursorMoved(e)
 }
 
-func cmdDocumentCursorRight(v *documentView, e wicore.Editor) {
+func cmdDocumentCursorRight(v *documentView, e wicore.EditorW) {
 	if v.cursorColumn == len(v.document.content[v.cursorLine])-1 {
 		// TODO(maruel): Make wrap behavior optional.
 		if v.cursorLine > len(v.document.content)-1 {
@@ -121,7 +121,7 @@ func cmdDocumentCursorRight(v *documentView, e wicore.Editor) {
 	v.cursorMoved(e)
 }
 
-func cmdDocumentCursorUp(v *documentView, e wicore.Editor) {
+func cmdDocumentCursorUp(v *documentView, e wicore.EditorW) {
 	if v.cursorLine == 0 {
 		// TODO(maruel): Beep.
 		return
@@ -133,7 +133,7 @@ func cmdDocumentCursorUp(v *documentView, e wicore.Editor) {
 	v.cursorMoved(e)
 }
 
-func cmdDocumentCursorDown(v *documentView, e wicore.Editor) {
+func cmdDocumentCursorDown(v *documentView, e wicore.EditorW) {
 	if v.cursorLine >= len(v.document.content)-1 {
 		// TODO(maruel): Beep.
 		return
@@ -145,7 +145,7 @@ func cmdDocumentCursorDown(v *documentView, e wicore.Editor) {
 	v.cursorMoved(e)
 }
 
-func cmdDocumentCursorHome(v *documentView, e wicore.Editor) {
+func cmdDocumentCursorHome(v *documentView, e wicore.EditorW) {
 	if v.cursorLine != 0 || v.cursorColumnMax != 0 {
 		v.cursorLine = 0
 		v.cursorColumn = 0
@@ -154,7 +154,7 @@ func cmdDocumentCursorHome(v *documentView, e wicore.Editor) {
 	}
 }
 
-func cmdDocumentCursorEnd(v *documentView, e wicore.Editor) {
+func cmdDocumentCursorEnd(v *documentView, e wicore.EditorW) {
 	if v.cursorLine != len(v.document.content)-1 || v.cursorColumnMax != len(v.document.content[v.cursorLine])-1 {
 		v.cursorLine = len(v.document.content) - 1
 		v.cursorColumn = len(v.document.content[v.cursorLine]) - 1

@@ -14,7 +14,7 @@ import (
 )
 
 // CommandImplHandler is the CommandHandler to use when coupled with CommandImpl.
-type CommandImplHandler func(c *CommandImpl, e Editor, w Window, args ...string)
+type CommandImplHandler func(c *CommandImpl, e EditorW, w Window, args ...string)
 
 // CommandImpl is the boilerplate Command implementation.
 type CommandImpl struct {
@@ -32,7 +32,7 @@ func (c *CommandImpl) Name() string {
 }
 
 // Handle implements Command.
-func (c *CommandImpl) Handle(e Editor, w Window, args ...string) {
+func (c *CommandImpl) Handle(e EditorW, w Window, args ...string) {
 	if c.ExpectedArgs != -1 && len(args) != c.ExpectedArgs {
 		e.ExecuteCommand(w, "alert", c.LongDesc())
 	}
@@ -69,7 +69,7 @@ func (c *CommandAlias) Name() string {
 }
 
 // Handle implements Command.
-func (c *CommandAlias) Handle(e Editor, w Window, args ...string) {
+func (c *CommandAlias) Handle(e EditorW, w Window, args ...string) {
 	// The alias is executed inline. This is important for command queue
 	// ordering.
 	cmd := GetCommand(e, w, c.CommandValue)

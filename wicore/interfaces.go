@@ -116,16 +116,8 @@ type EventsDefinition interface {
 type Editor interface {
 	EventRegistry
 
-	// ExecuteCommand executes a command now. This is only meant to run a command
-	// reentrantly; e.g. running a command triggers another one. This usually
-	// happens for key binding, command aliases, when a command triggers an error.
-	//
-	// TODO(maruel): Remove?
-	ExecuteCommand(w Window, cmdName string, args ...string)
 	// ActiveWindow returns the current active Window.
 	ActiveWindow() Window
-	// RegisterViewFactory makes a new view available by name.
-	RegisterViewFactory(name string, viewFactory ViewFactory) bool
 	// ViewFactoryNames return the name of all the view factories.
 	ViewFactoryNames() []string
 	// AllDocuments returns all the active documents. Some of them may not be in
@@ -142,6 +134,20 @@ type Editor interface {
 	KeyboardMode() KeyboardMode
 	// Version returns the version number of this build of wi.
 	Version() string
+}
+
+// EditorW is the writable version of Editor.
+type EditorW interface {
+	Editor
+
+	// ExecuteCommand executes a command now. This is only meant to run a command
+	// reentrantly; e.g. running a command triggers another one. This usually
+	// happens for key binding, command aliases, when a command triggers an error.
+	//
+	// TODO(maruel): Remove?
+	ExecuteCommand(w Window, cmdName string, args ...string)
+	// RegisterViewFactory makes a new view available by name.
+	RegisterViewFactory(name string, viewFactory ViewFactory) bool
 }
 
 // Window is a View container. It defines the position, Z-ordering via
@@ -274,7 +280,7 @@ const (
 )
 
 // CommandHandler executes the command cmd on the Window w.
-type CommandHandler func(e Editor, w Window, args ...string)
+type CommandHandler func(e EditorW, w Window, args ...string)
 
 // Command describes a registered command that can be triggered directly at the
 // command prompt, via a keybinding or a plugin.
@@ -285,7 +291,7 @@ type Command interface {
 	// Name is the name of the command.
 	Name() string
 	// Handle executes the command.
-	Handle(e Editor, w Window, args ...string)
+	Handle(e EditorW, w Window, args ...string)
 	// Category returns the category the command should be bucketed in, for help
 	// documentation purpose.
 	Category(e Editor, w Window) CommandCategory
@@ -384,7 +390,7 @@ type PluginRPC interface {
 // recursively. This data is used to generate an hash that represents the
 // "version" of this interface.
 func CalculateVersion() string {
-	return interfaceGUID.CalculateGUID(reflect.TypeOf((*Editor)(nil)).Elem())
+	return interfaceGUID.CalculateGUID(reflect.TypeOf((*EditorW)(nil)).Elem())
 }
 
 // GetKeyBindingCommand traverses the Editor's Window tree to find a View that

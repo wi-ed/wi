@@ -422,7 +422,7 @@ func windows(e wicore.Editor) interface{} {
 	return recurseTree(wicore.RootWindow(e.ActiveWindow()))
 }
 
-func cmdCommandLog(c *wicore.CommandImpl, e wicore.Editor, w wicore.Window, args ...string) {
+func cmdCommandLog(c *wicore.CommandImpl, e wicore.EditorW, w wicore.Window, args ...string) {
 	out := commandRecurse(wicore.RootWindow(e.ActiveWindow()), []string{})
 	sort.Strings(out)
 	for _, i := range out {
@@ -430,7 +430,7 @@ func cmdCommandLog(c *wicore.CommandImpl, e wicore.Editor, w wicore.Window, args
 	}
 }
 
-func keyLogRecurse(w wicore.Window, e wicore.Editor, mode wicore.KeyboardMode) {
+func keyLogRecurse(w wicore.Window, e wicore.EditorW, mode wicore.KeyboardMode) {
 	bindings := w.View().KeyBindings()
 	assigned := bindings.GetAssigned(mode)
 	names := make([]string, 0, len(assigned))
@@ -446,7 +446,7 @@ func keyLogRecurse(w wicore.Window, e wicore.Editor, mode wicore.KeyboardMode) {
 	}
 }
 
-func cmdKeyLog(c *wicore.CommandImpl, e wicore.Editor, w wicore.Window, args ...string) {
+func cmdKeyLog(c *wicore.CommandImpl, e wicore.EditorW, w wicore.Window, args ...string) {
 	log.Printf("Normal commands")
 	rootWindow := wicore.RootWindow(e.ActiveWindow())
 	keyLogRecurse(rootWindow, e, wicore.Normal)
@@ -454,14 +454,14 @@ func cmdKeyLog(c *wicore.CommandImpl, e wicore.Editor, w wicore.Window, args ...
 	keyLogRecurse(rootWindow, e, wicore.Insert)
 }
 
-func cmdLogAll(c *wicore.CommandImpl, e wicore.Editor, w wicore.Window, args ...string) {
+func cmdLogAll(c *wicore.CommandImpl, e wicore.EditorW, w wicore.Window, args ...string) {
 	e.ExecuteCommand(w, "command_log")
 	e.ExecuteCommand(w, "window_log")
 	e.ExecuteCommand(w, "view_log")
 	e.ExecuteCommand(w, "key_log")
 }
 
-func cmdViewLog(c *wicore.CommandImpl, e wicore.Editor, w wicore.Window, args ...string) {
+func cmdViewLog(c *wicore.CommandImpl, e wicore.EditorW, w wicore.Window, args ...string) {
 	names := e.ViewFactoryNames()
 	sort.Strings(names)
 	log.Printf("View factories:")
@@ -482,7 +482,7 @@ func tree(w wicore.Window) string {
 	return out
 }
 
-func cmdWindowLog(c *wicore.CommandImpl, e wicore.Editor, w wicore.Window, args ...string) {
+func cmdWindowLog(c *wicore.CommandImpl, e wicore.EditorW, w wicore.Window, args ...string) {
 	root := wicore.RootWindow(w)
 	log.Printf("Window tree:\n%s", tree(root))
 }

@@ -65,7 +65,7 @@ func (c *privilegedCommandImpl) Name() string {
 	return c.NameValue
 }
 
-func (c *privilegedCommandImpl) Handle(e wicore.Editor, w wicore.Window, args ...string) {
+func (c *privilegedCommandImpl) Handle(e wicore.EditorW, w wicore.Window, args ...string) {
 	if c.ExpectedArgs != -1 && len(args) != c.ExpectedArgs {
 		e.ExecuteCommand(w, "alert", c.LongDesc())
 	}
@@ -89,7 +89,7 @@ func (c *privilegedCommandImpl) LongDesc() string {
 
 // Commands
 
-func cmdCommandAlias(c *wicore.CommandImpl, e wicore.Editor, w wicore.Window, args ...string) {
+func cmdCommandAlias(c *wicore.CommandImpl, e wicore.EditorW, w wicore.Window, args ...string) {
 	if args[0] == "window" {
 	} else if args[0] == "global" {
 		w = wicore.RootWindow(w)

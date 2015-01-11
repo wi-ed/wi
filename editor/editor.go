@@ -31,7 +31,7 @@ const (
 type Editor interface {
 	io.Closer
 
-	wicore.Editor
+	wicore.EditorW
 
 	// EventLoop runs the event loop until the command "quit" executes
 	// successfully.
@@ -355,15 +355,15 @@ func MakeEditor(terminal Terminal, noPlugin bool) (Editor, error) {
 
 // Commands
 
-func cmdAlert(c *wicore.CommandImpl, e wicore.Editor, w wicore.Window, args ...string) {
+func cmdAlert(c *wicore.CommandImpl, e wicore.EditorW, w wicore.Window, args ...string) {
 	e.ExecuteCommand(w, "window_new", "0", "bottom", "infobar_alert", args[0])
 }
 
-func cmdEditorBootstrapUI(c *wicore.CommandImpl, e wicore.Editor, w wicore.Window, args ...string) {
+func cmdEditorBootstrapUI(c *wicore.CommandImpl, e wicore.EditorW, w wicore.Window, args ...string) {
 	e.ExecuteCommand(w, "window_new", "0", "bottom", "status_root")
 }
 
-func cmdEditorCommandWindow(c *wicore.CommandImpl, e wicore.Editor, w wicore.Window, args ...string) {
+func cmdEditorCommandWindow(c *wicore.CommandImpl, e wicore.EditorW, w wicore.Window, args ...string) {
 	// Create the Window with the command view and attach it to the currently
 	// focused Window.
 	e.ExecuteCommand(w, "window_new", w.ID(), "floating", "command")

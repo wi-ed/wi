@@ -69,7 +69,7 @@ func makeKeyBindings() wicore.KeyBindings {
 
 // Commands.
 
-func cmdKeyBind(c *wicore.CommandImpl, e wicore.Editor, w wicore.Window, args ...string) {
+func cmdKeyBind(c *wicore.CommandImpl, e wicore.EditorW, w wicore.Window, args ...string) {
 	location := args[0]
 	modeName := args[1]
 	keyName := args[2]
