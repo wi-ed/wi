@@ -27,13 +27,18 @@ type pluginProcess struct {
 	proc        *os.Process
 	client      *rpc.Client          // All communication goes through this object.
 	pid         int                  // Also stored here in case proc is nil. It is not reset even when the process is closed.
-	details     wicore.PluginDetails // Loaded at start.
-	initialized bool                 // Init() completed.
+	details     wicore.PluginDetails // Initialized early by sync call GetInfo().
+	initialized bool                 // Initialized late after async call Init() completed.
+	listeners   []wicore.EventListener
 }
 
 func (p *pluginProcess) Close() error {
 	p.lock.Lock()
 	defer p.lock.Unlock()
+	for _, l := range p.listeners {
+		_ = l.Close()
+	}
+	p.listeners = []wicore.EventListener{}
 	var err error
 	if p.client != nil {
 		tmp := 0
@@ -76,6 +81,7 @@ func (p *pluginProcess) Init(e wicore.Editor) {
 		e.ID(),
 		e.Version(),
 	}
+	// TODO(maruel): Register events, assign to p.listeners.
 	call := p.client.Go("PluginRPC.OnStart", details, &out, nil)
 	wicore.Go("PluginRPC.OnStart", func() {
 		// TODO(maruel): Handle error.
@@ -165,6 +171,7 @@ func loadPlugin(cmdLine []string) (wicore.Plugin, error) {
 		cmd.Process.Pid,
 		wicore.PluginDetails{"<unknown>", "<unitialized>"},
 		false,
+		make([]wicore.EventListener, 0, wicore.NumberEvents),
 	}
 	if err = p.client.Call("PluginRPC.GetInfo", lang.Active(), &p.details); err != nil {
 		return nil, err

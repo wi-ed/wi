@@ -438,6 +438,7 @@ type PluginRPC interface {
 // recursively. This data is used to generate an hash that represents the
 // "version" of this interface.
 func CalculateVersion() string {
+	// TODO(maruel): EditorW, Plugin and PluginRPC.
 	return interfaceGUID.CalculateGUID(reflect.TypeOf((*EditorW)(nil)).Elem())
 }
 

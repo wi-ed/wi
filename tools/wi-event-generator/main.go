@@ -148,6 +148,9 @@ type EventListener interface {
 	io.Closer
 }
 
+// NumberEvents is the number of known events.
+const NumberEvents = {{len .Events}}
+
 // EventRegistry permits to register callbacks that are called on events.
 //
 // When the callback returns false, the next registered events are not called.
