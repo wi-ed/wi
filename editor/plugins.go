@@ -67,7 +67,7 @@ func (p *pluginProcess) GetInfo(in lang.Language, out *wicore.PluginDetails) err
 	return p.client.Call("PluginRPC.GetInfo", in, out)
 }
 
-func (p *pluginProcess) OnStart(in int, out *int) error {
+func (p *pluginProcess) OnStart(in wicore.EditorDetails, out *int) error {
 	return errors.New("unexpected sync call")
 }
 
@@ -161,7 +161,12 @@ func loadPlugin(cmdLine []string) (Plugin, error) {
 	}
 	log.Printf("%s is now functional", p)
 	ignored := 0
-	call := p.client.Go("PluginRPC.OnStart", 0, &ignored, nil)
+	// TODO(maruel): Access to the editor object.
+	ed := wicore.EditorDetails{
+		"editor",
+		version,
+	}
+	call := p.client.Go("PluginRPC.OnStart", ed, &ignored, nil)
 	wicore.Go("PluginRPC.OnStart", func() {
 		// TODO(maruel): Handle error.
 		_ = <-call.Done

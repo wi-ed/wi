@@ -387,6 +387,12 @@ type KeyBindingsW interface {
 	Set(mode KeyboardMode, key key.Press, cmdName string) bool
 }
 
+// EditorDetails is sent over the wire to plugins.
+type EditorDetails struct {
+	ID      string
+	Version string
+}
+
 // PluginDetails is details for a plugin.
 type PluginDetails struct {
 	Name        string
@@ -400,7 +406,7 @@ type PluginRPC interface {
 	GetInfo(ignored lang.Language, out *PluginDetails) error
 	// OnStart is called on plugin startup. All initialization should be done
 	// there.
-	OnStart(int, *int) error
+	OnStart(ed EditorDetails, ignored *int) error
 	// Quit is called on editor termination. The editor waits for the function to
 	// return.
 	Quit(in int, ignored *int) error

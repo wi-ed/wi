@@ -59,17 +59,16 @@ func (p *pluginRPC) GetInfo(l lang.Language, out *wicore.PluginDetails) error {
 	return nil
 }
 
-func (p *pluginRPC) OnStart(int, *int) error {
-	// TODO(maruel): Create the proxy.
+func (p *pluginRPC) OnStart(ed wicore.EditorDetails, ignored *int) error {
 	reg, deferred := wicore.MakeEventRegistry()
 	p.e = &editorProxy{
 		reg,
 		deferred,
-		"editor",
+		ed.ID,
 		nil,
 		[]string{},
 		wicore.Normal,
-		"<TODO>",
+		ed.Version,
 	}
 	if p.e != nil {
 		p.langListener = p.e.RegisterEditorLanguage(func(l lang.Language) {
@@ -116,7 +115,11 @@ func (e *editorProxy) ActiveWindow() wicore.Window {
 }
 
 func (e *editorProxy) ViewFactoryNames() []string {
-	return e.factoryNames
+	out := make([]string, len(e.factoryNames))
+	for i, v := range e.factoryNames {
+		out[i] = v
+	}
+	return out
 }
 
 func (e *editorProxy) AllDocuments() []wicore.Document {

@@ -17,6 +17,7 @@ package main
 
 import (
 	"github.com/maruel/wi/wicore"
+	"github.com/maruel/wi/wicore/lang"
 	"github.com/maruel/wi/wicore/plugin"
 )
 
@@ -41,6 +42,15 @@ func (p *pluginImpl) OnQuit() error {
 
 func main() {
 	// This starts the control loop. See its doc for more up-to-date details.
-	p := &pluginImpl{plugin.PluginImpl{"wi-plugin-sample", nil}, nil}
+	p := &pluginImpl{
+		plugin.PluginImpl{
+			"wi-plugin-sample",
+			lang.Map{
+				lang.En: "Sample plugin to be used as a template",
+				lang.Fr: "Plugin exemple pour être utilisé comme modèle",
+			},
+		},
+		nil,
+	}
 	plugin.Main(p)
 }

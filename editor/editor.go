@@ -131,7 +131,11 @@ func (e *editor) draw() {
 }
 
 func (e *editor) AllDocuments() []wicore.Document {
-	return e.documents[:]
+	out := make([]wicore.Document, len(e.documents))
+	for i, v := range e.documents {
+		out[i] = v
+	}
+	return out
 }
 
 func (e *editor) AllPlugins() []wicore.PluginDetails {
