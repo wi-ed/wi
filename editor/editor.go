@@ -287,6 +287,15 @@ func (e *editor) loadPlugins() {
 			log.Printf("Failed to load plugins: %s", err)
 		}
 	}
+	details := wicore.EditorDetails{
+		e.ID(),
+		e.Version(),
+	}
+	for _, plugin := range e.plugins {
+		// TODO(maruel): Register it to EventRegistry.
+		// e.EventRegistry.RegisterAll(plugin)
+		plugin.Init(details)
+	}
 }
 
 // MakeEditor creates an object that implements the Editor interface. The root
@@ -341,19 +350,17 @@ func MakeEditor(terminal Terminal, noPlugin bool) (Editor, error) {
 	e.RegisterCommands(e.onCommands)
 	e.RegisterDocumentCursorMoved(e.onDocumentCursorMoved)
 
-	e.TriggerWindowCreated(e.rootWindow)
-	e.TriggerViewCreated(rootView)
-
-	e.TriggerEditorLanguage(lang.Active())
-	// This forces creating the default buffer.
-	e.TriggerTerminalResized()
-	wicore.Go("terminalLoop", func() { e.terminalLoop(terminal) })
-
-	e.TriggerEditorKeyboardModeChanged(e.keyboardMode)
-
 	if !noPlugin {
 		e.loadPlugins()
 	}
+
+	e.TriggerWindowCreated(e.rootWindow)
+	e.TriggerViewCreated(rootView)
+	// This forces creating the default buffer.
+	e.TriggerTerminalResized()
+	wicore.Go("terminalLoop", func() { e.terminalLoop(terminal) })
+	//e.TriggerEditorLanguage(lang.Active())
+	//e.TriggerEditorKeyboardModeChanged(e.keyboardMode)
 	return e, nil
 }
 

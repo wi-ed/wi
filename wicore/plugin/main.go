@@ -59,16 +59,16 @@ func (p *pluginRPC) GetInfo(l lang.Language, out *wicore.PluginDetails) error {
 	return nil
 }
 
-func (p *pluginRPC) OnStart(ed wicore.EditorDetails, ignored *int) error {
+func (p *pluginRPC) OnStart(details wicore.EditorDetails, ignored *int) error {
 	reg, deferred := wicore.MakeEventRegistry()
 	p.e = &editorProxy{
 		reg,
 		deferred,
-		ed.ID,
+		details.ID,
 		nil,
 		[]string{},
 		wicore.Normal,
-		ed.Version,
+		details.Version,
 	}
 	if p.e != nil {
 		p.langListener = p.e.RegisterEditorLanguage(func(l lang.Language) {
@@ -138,6 +138,26 @@ func (e *editorProxy) Version() string {
 	return e.version
 }
 
+/*
+type eventsAdaptor struct {
+}
+
+type Event struct {
+	Name string
+	Data interface{}
+}
+
+func (e *eventsAdaptor) Trigger(event Event, out *int) error {
+	switch event.Name {
+	case "Commands":
+		e.EventRegistry.TriggerCommands(event.Data)
+	default:
+		return fmt.Errorf("unknown event %s", event.Name)
+	}
+	return nil
+}
+*/
+
 // Main is the function to call from your plugin to initiate the communication
 // channel between wi and your plugin.
 func Main(plugin Plugin) {
@@ -156,7 +176,12 @@ func Main(plugin Plugin) {
 	}
 	// Statically assert the interface is correctly implemented.
 	var _ wicore.PluginRPC = p
-	_ = server.RegisterName("PluginRPC", p)
+	if err := server.RegisterName("PluginRPC", p); err != nil {
+		panic(err)
+	}
+	//if err := server.RegisterName("Events", p.eventsAdaptor); err != nil {
+	//	panic(err)
+	//}
 	server.ServeConn(conn)
 	os.Exit(0)
 }

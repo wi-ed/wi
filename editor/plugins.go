@@ -28,27 +28,37 @@ type Plugin interface {
 	fmt.Stringer
 
 	Details() wicore.PluginDetails
+	Init(details wicore.EditorDetails)
 }
 
 // pluginProcess represents an out-of-process plugin.
 type pluginProcess struct {
+	lock        sync.Mutex
 	proc        *os.Process
-	client      *rpc.Client
-	pid         int // Also stored here in case proc is nil. It is not reset even when the process is closed.
-	details     wicore.PluginDetails
-	initialized bool
+	client      *rpc.Client          // All communication goes through this object.
+	pid         int                  // Also stored here in case proc is nil. It is not reset even when the process is closed.
+	details     wicore.PluginDetails // Loaded at start.
+	initialized bool                 // Init() completed.
 }
 
 func (p *pluginProcess) Close() error {
+	p.lock.Lock()
+	defer p.lock.Unlock()
 	var err error
 	if p.client != nil {
 		tmp := 0
-		_ = p.Quit(0, &tmp)
-		_ = p.client.Close()
+		if err1 := p.client.Call("PluginRPC.Quit", 0, &tmp); err1 != nil {
+			err = err1
+		}
+		if err2 := p.client.Close(); err2 != nil {
+			err = err2
+		}
 		p.client = nil
 	}
 	if p.proc != nil {
-		err = p.proc.Kill()
+		if err1 := p.proc.Kill(); err1 != nil {
+			err = err1
+		}
 		p.proc = nil
 	}
 	log.Printf("%s.Close()", p)
@@ -56,23 +66,30 @@ func (p *pluginProcess) Close() error {
 }
 
 func (p *pluginProcess) String() string {
+	p.lock.Lock()
+	defer p.lock.Unlock()
 	return fmt.Sprintf("Plugin(%s, %d)", p.details.Name, p.pid)
 }
 
 func (p *pluginProcess) Details() wicore.PluginDetails {
+	p.lock.Lock()
+	defer p.lock.Unlock()
 	return p.details
 }
 
-func (p *pluginProcess) GetInfo(in lang.Language, out *wicore.PluginDetails) error {
-	return p.client.Call("PluginRPC.GetInfo", in, out)
-}
-
-func (p *pluginProcess) OnStart(in wicore.EditorDetails, out *int) error {
-	return errors.New("unexpected sync call")
-}
-
-func (p *pluginProcess) Quit(in int, out *int) error {
-	return p.client.Call("PluginRPC.Quit", in, out)
+func (p *pluginProcess) Init(in wicore.EditorDetails) {
+	p.lock.Lock()
+	defer p.lock.Unlock()
+	out := 0
+	call := p.client.Go("PluginRPC.OnStart", in, &out, nil)
+	wicore.Go("PluginRPC.OnStart", func() {
+		// TODO(maruel): Handle error.
+		_ = <-call.Done
+		p.lock.Lock()
+		defer p.lock.Unlock()
+		p.initialized = true
+		log.Printf("%s initialized", p)
+	})
 }
 
 // Plugins is the collection of Plugin instances, it represents all the live
@@ -147,33 +164,17 @@ func loadPlugin(cmdLine []string) (Plugin, error) {
 	conn := wicore.MakeReadWriteCloser(stdout, stdin)
 	client := rpc.NewClient(conn)
 	p := &pluginProcess{
+		sync.Mutex{},
 		cmd.Process,
 		client,
 		cmd.Process.Pid,
 		wicore.PluginDetails{"<unknown>", "<unitialized>"},
 		false,
 	}
-	// Statically assert the interface is correctly implemented. It's to enforce
-	// correct types.
-	var _ wicore.PluginRPC = p
-	if err = p.GetInfo(lang.Active(), &p.details); err != nil {
+	if err = p.client.Call("PluginRPC.GetInfo", lang.Active(), &p.details); err != nil {
 		return nil, err
 	}
 	log.Printf("%s is now functional", p)
-	ignored := 0
-	// TODO(maruel): Access to the editor object.
-	ed := wicore.EditorDetails{
-		"editor",
-		version,
-	}
-	call := p.client.Go("PluginRPC.OnStart", ed, &ignored, nil)
-	wicore.Go("PluginRPC.OnStart", func() {
-		// TODO(maruel): Handle error.
-		_ = <-call.Done
-		// TODO(maruel): Synchronization via lock.
-		p.initialized = true
-		log.Printf("%s initialized", p)
-	})
 	return p, nil
 }
 
@@ -282,6 +283,10 @@ func enumPlugins(searchDirs []string) ([][]string, error) {
 	return out, err
 }
 
+// loadPlugins loads all plugins simultaneously and only returns once they are
+// all loaded. At that point a single RPC call (GetInfo()) was done so they are
+// not yet fully initialized. It's up to the caller to call Init() on each
+// plugin.
 func loadPlugins(pluginExecutables [][]string) (Plugins, error) {
 	type x struct {
 		Plugin
