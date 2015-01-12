@@ -15,19 +15,15 @@ import (
 	"github.com/maruel/wi/wicore/lang"
 )
 
-// Plugin is a simplified interface that a plugin exposes so the common plugin
-// framework can efficiently communicate with the editor process.
-type Plugin interface {
-	Details() wicore.PluginDetails
-	OnStart(e wicore.Editor) error
-	OnQuit() error
-}
-
-// PluginImpl is the base implementation of interface Plugin. Embed this
+// PluginImpl is the base implementation of interface wicore.Plugin. Embed this
 // structure and override the functions desired.
 type PluginImpl struct {
 	Name        string
 	Description lang.Map
+}
+
+func (p *PluginImpl) String() string {
+	return fmt.Sprintf("Plugin(%s, %d)", p.Name, os.Getpid())
 }
 
 func (p *PluginImpl) Details() wicore.PluginDetails {
@@ -37,11 +33,10 @@ func (p *PluginImpl) Details() wicore.PluginDetails {
 	}
 }
 
-func (p *PluginImpl) OnStart(e wicore.Editor) error {
-	return nil
+func (p *PluginImpl) Init(e wicore.Editor) {
 }
 
-func (p *PluginImpl) OnQuit() error {
+func (p *PluginImpl) Close() error {
 	return nil
 }
 
@@ -49,7 +44,7 @@ func (p *PluginImpl) OnQuit() error {
 type pluginRPC struct {
 	conn         io.Closer
 	langListener wicore.EventListener
-	plugin       Plugin
+	plugin       wicore.Plugin
 	e            wicore.Editor
 }
 
@@ -76,7 +71,8 @@ func (p *pluginRPC) OnStart(details wicore.EditorDetails, ignored *int) error {
 			lang.Set(l)
 		})
 	}
-	return p.plugin.OnStart(p.e)
+	p.plugin.Init(p.e)
+	return nil
 }
 
 func (p *pluginRPC) Quit(int, *int) error {
@@ -87,7 +83,7 @@ func (p *pluginRPC) Quit(int, *int) error {
 		p.langListener = nil
 	}
 	p.e = nil
-	err := p.plugin.OnQuit()
+	err := p.plugin.Close()
 	if p.conn != nil {
 		_ = p.conn.Close()
 		p.conn = nil
@@ -160,7 +156,7 @@ func (e *eventsAdaptor) Trigger(event Event, out *int) error {
 
 // Main is the function to call from your plugin to initiate the communication
 // channel between wi and your plugin.
-func Main(plugin Plugin) {
+func Main(plugin wicore.Plugin) {
 	if os.ExpandEnv("${WI}") != "plugin" {
 		fmt.Fprint(os.Stderr, "This is a wi plugin. This program is only meant to be run through wi itself.\n")
 		os.Exit(1)

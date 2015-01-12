@@ -26,16 +26,15 @@ type pluginImpl struct {
 	e wicore.Editor
 }
 
-// This is the place to do full initialization. It is not required to implement
+// Init is the place to do full initialization. It is not required to implement
 // this function.
-func (p *pluginImpl) OnStart(e wicore.Editor) error {
+func (p *pluginImpl) Init(e wicore.Editor) {
 	p.e = e
-	return nil
 }
 
-// This is the place to do full shut down. It is not required to implement
+// Close is the place to do full shut down. It is not required to implement
 // this function.
-func (p *pluginImpl) OnQuit() error {
+func (p *pluginImpl) Close() error {
 	p.e = nil
 	return nil
 }

@@ -7,7 +7,6 @@ package editor
 import (
 	"errors"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"log"
 	"net/rpc"
@@ -21,15 +20,6 @@ import (
 	"github.com/maruel/wi/wicore"
 	"github.com/maruel/wi/wicore/lang"
 )
-
-// Plugin represents a live plugin process.
-type Plugin interface {
-	io.Closer
-	fmt.Stringer
-
-	Details() wicore.PluginDetails
-	Init(details wicore.EditorDetails)
-}
 
 // pluginProcess represents an out-of-process plugin.
 type pluginProcess struct {
@@ -77,11 +67,16 @@ func (p *pluginProcess) Details() wicore.PluginDetails {
 	return p.details
 }
 
-func (p *pluginProcess) Init(in wicore.EditorDetails) {
+// Init asynchronously initializes the plugin.
+func (p *pluginProcess) Init(e wicore.Editor) {
 	p.lock.Lock()
 	defer p.lock.Unlock()
 	out := 0
-	call := p.client.Go("PluginRPC.OnStart", in, &out, nil)
+	details := wicore.EditorDetails{
+		e.ID(),
+		e.Version(),
+	}
+	call := p.client.Go("PluginRPC.OnStart", details, &out, nil)
 	wicore.Go("PluginRPC.OnStart", func() {
 		// TODO(maruel): Handle error.
 		_ = <-call.Done
@@ -94,7 +89,7 @@ func (p *pluginProcess) Init(in wicore.EditorDetails) {
 
 // Plugins is the collection of Plugin instances, it represents all the live
 // plugin processes.
-type Plugins []Plugin
+type Plugins []wicore.Plugin
 
 // Close implements io.Closer.
 func (p Plugins) Close() error {
@@ -108,7 +103,7 @@ func (p Plugins) Close() error {
 }
 
 // loadPlugin starts a plugin and returns the process.
-func loadPlugin(cmdLine []string) (Plugin, error) {
+func loadPlugin(cmdLine []string) (wicore.Plugin, error) {
 	log.Printf("loadPlugin(%v)", cmdLine)
 	cmd := exec.Command(cmdLine[0], cmdLine[1:]...)
 	cmd.Env = append(os.Environ(), "WI=plugin")
@@ -289,7 +284,7 @@ func enumPlugins(searchDirs []string) ([][]string, error) {
 // plugin.
 func loadPlugins(pluginExecutables [][]string) (Plugins, error) {
 	type x struct {
-		Plugin
+		wicore.Plugin
 		error
 	}
 	c := make(chan x)

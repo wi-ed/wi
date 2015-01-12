@@ -287,14 +287,10 @@ func (e *editor) loadPlugins() {
 			log.Printf("Failed to load plugins: %s", err)
 		}
 	}
-	details := wicore.EditorDetails{
-		e.ID(),
-		e.Version(),
-	}
 	for _, plugin := range e.plugins {
 		// TODO(maruel): Register it to EventRegistry.
 		// e.EventRegistry.RegisterAll(plugin)
-		plugin.Init(details)
+		plugin.Init(e)
 	}
 }
 

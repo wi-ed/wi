@@ -399,7 +399,24 @@ type PluginDetails struct {
 	Description string
 }
 
-// PluginRPC is the interface exposed by the plugin.
+// Plugin is a simplified interface that represents a live plugin process.
+// It's the high level object.
+//
+// Communication flow goes this way:
+//   Editor -> Plugin -> PluginRPC -> net/rpc -> <process boundary> -> net/rpc -> PluginRPC -> Plugin
+//
+// The Plugin implementation in the editor process is a stub. Execution
+// eventually flows up to the plugin process' Plugin instance.
+type Plugin interface {
+	io.Closer
+	fmt.Stringer
+
+	Details() PluginDetails
+	Init(e Editor)
+}
+
+// PluginRPC is the low-level interface exposed by the plugin for use by
+// net/rpc. net/rpc forces the interface to be in a rigid format.
 type PluginRPC interface {
 	// GetInfo is the fisrt function to be called synchronously. It must return
 	// immediately.
