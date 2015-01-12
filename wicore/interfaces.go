@@ -5,8 +5,12 @@
 // This file defines all the interfaces to be used by the wi editor and to be
 // accessable by plugins.
 
+// "stringer" can be installed with "go get golang.org/x/tools/cmd/stringer"
 //go:generate stringer -output=interfaces_string.go -type=BorderType,CommandCategory,DockingType,KeyboardMode
 //go:generate go run ../tools/wi-event-generator/main.go -output event_registry_decl.go
+
+// This command generates the struct EventRegistry based on EventRegistry.
+//go:generate go run ../tools/wi-event-generator/main.go -output event_registry_impl.go -impl
 
 package wicore
 
@@ -89,8 +93,6 @@ type Proxyable interface {
 // Do not use this interface directly, use the automatically-generated
 // interface EventRegistry instead.
 type EventsDefinition interface {
-	Proxyable
-
 	// TriggerCommands dispatches one or multiple commands to the current active
 	// listener. Normally, it's the View contained to the active Window. Using
 	// this function guarantees that all the commands will be executed in order
@@ -114,6 +116,7 @@ type EventsDefinition interface {
 // Editor is the output device and the main process context. It shows the root
 // window which covers the whole screen estate.
 type Editor interface {
+	Proxyable
 	EventRegistry
 
 	// ActiveWindow returns the current active Window.

@@ -61,7 +61,16 @@ func (p *pluginRPC) GetInfo(l lang.Language, out *wicore.PluginDetails) error {
 
 func (p *pluginRPC) OnStart(int, *int) error {
 	// TODO(maruel): Create the proxy.
-	p.e = nil
+	reg, deferred := wicore.MakeEventRegistry()
+	p.e = &editorProxy{
+		reg,
+		deferred,
+		"editor",
+		nil,
+		[]string{},
+		wicore.Normal,
+		"<TODO>",
+	}
 	if p.e != nil {
 		p.langListener = p.e.RegisterEditorLanguage(func(l lang.Language) {
 			// Propagate the information.
@@ -85,6 +94,45 @@ func (p *pluginRPC) Quit(int, *int) error {
 		p.conn = nil
 	}
 	return err
+}
+
+// editorProxy is an experimentation.
+type editorProxy struct {
+	wicore.EventRegistry
+	deferred     chan func()
+	id           string
+	activeWindow wicore.Window
+	factoryNames []string
+	keyboardMode wicore.KeyboardMode
+	version      string
+}
+
+func (e *editorProxy) ID() string {
+	return e.id
+}
+
+func (e *editorProxy) ActiveWindow() wicore.Window {
+	return e.activeWindow
+}
+
+func (e *editorProxy) ViewFactoryNames() []string {
+	return e.factoryNames
+}
+
+func (e *editorProxy) AllDocuments() []wicore.Document {
+	return nil
+}
+
+func (e *editorProxy) AllPlugins() []wicore.PluginDetails {
+	return nil
+}
+
+func (e *editorProxy) KeyboardMode() wicore.KeyboardMode {
+	return e.keyboardMode
+}
+
+func (e *editorProxy) Version() string {
+	return e.version
 }
 
 // Main is the function to call from your plugin to initiate the communication
