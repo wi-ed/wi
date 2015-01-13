@@ -10,62 +10,62 @@ import (
 	"github.com/maruel/wi/wicore/lang"
 )
 
-type eventCommands struct {
+type listenerCommands struct {
 	id       int
 	callback func(a EnqueuedCommands)
 }
 
-type eventDocumentCreated struct {
+type listenerDocumentCreated struct {
 	id       int
 	callback func(a Document)
 }
 
-type eventDocumentCursorMoved struct {
+type listenerDocumentCursorMoved struct {
 	id       int
 	callback func(a Document, b int, c int)
 }
 
-type eventEditorKeyboardModeChanged struct {
+type listenerEditorKeyboardModeChanged struct {
 	id       int
 	callback func(a KeyboardMode)
 }
 
-type eventEditorLanguage struct {
+type listenerEditorLanguage struct {
 	id       int
 	callback func(a lang.Language)
 }
 
-type eventTerminalKeyPressed struct {
+type listenerTerminalKeyPressed struct {
 	id       int
 	callback func(a key.Press)
 }
 
-type eventTerminalMetaKeyPressed struct {
+type listenerTerminalMetaKeyPressed struct {
 	id       int
 	callback func(a key.Press)
 }
 
-type eventTerminalResized struct {
+type listenerTerminalResized struct {
 	id       int
 	callback func()
 }
 
-type eventViewActivated struct {
+type listenerViewActivated struct {
 	id       int
 	callback func(a View)
 }
 
-type eventViewCreated struct {
+type listenerViewCreated struct {
 	id       int
 	callback func(a View)
 }
 
-type eventWindowCreated struct {
+type listenerWindowCreated struct {
 	id       int
 	callback func(a Window)
 }
 
-type eventWindowResized struct {
+type listenerWindowResized struct {
 	id       int
 	callback func(a Window)
 }
@@ -77,18 +77,18 @@ type eventRegistry struct {
 	nextID   int
 	deferred chan<- func()
 
-	commands                  []eventCommands
-	documentCreated           []eventDocumentCreated
-	documentCursorMoved       []eventDocumentCursorMoved
-	editorKeyboardModeChanged []eventEditorKeyboardModeChanged
-	editorLanguage            []eventEditorLanguage
-	terminalKeyPressed        []eventTerminalKeyPressed
-	terminalMetaKeyPressed    []eventTerminalMetaKeyPressed
-	terminalResized           []eventTerminalResized
-	viewActivated             []eventViewActivated
-	viewCreated               []eventViewCreated
-	windowCreated             []eventWindowCreated
-	windowResized             []eventWindowResized
+	commands                  []listenerCommands
+	documentCreated           []listenerDocumentCreated
+	documentCursorMoved       []listenerDocumentCursorMoved
+	editorKeyboardModeChanged []listenerEditorKeyboardModeChanged
+	editorLanguage            []listenerEditorLanguage
+	terminalKeyPressed        []listenerTerminalKeyPressed
+	terminalMetaKeyPressed    []listenerTerminalMetaKeyPressed
+	terminalResized           []listenerTerminalResized
+	viewActivated             []listenerViewActivated
+	viewCreated               []listenerViewCreated
+	windowCreated             []listenerWindowCreated
+	windowResized             []listenerWindowResized
 }
 
 func MakeEventRegistry() (EventRegistry, chan func()) {
@@ -97,18 +97,18 @@ func MakeEventRegistry() (EventRegistry, chan func()) {
 	c := make(chan func(), 2048)
 	e := &eventRegistry{
 		deferred:                  c,
-		commands:                  make([]eventCommands, 0, 64),
-		documentCreated:           make([]eventDocumentCreated, 0, 64),
-		documentCursorMoved:       make([]eventDocumentCursorMoved, 0, 64),
-		editorKeyboardModeChanged: make([]eventEditorKeyboardModeChanged, 0, 64),
-		editorLanguage:            make([]eventEditorLanguage, 0, 64),
-		terminalKeyPressed:        make([]eventTerminalKeyPressed, 0, 64),
-		terminalMetaKeyPressed:    make([]eventTerminalMetaKeyPressed, 0, 64),
-		terminalResized:           make([]eventTerminalResized, 0, 64),
-		viewActivated:             make([]eventViewActivated, 0, 64),
-		viewCreated:               make([]eventViewCreated, 0, 64),
-		windowCreated:             make([]eventWindowCreated, 0, 64),
-		windowResized:             make([]eventWindowResized, 0, 64),
+		commands:                  make([]listenerCommands, 0, 64),
+		documentCreated:           make([]listenerDocumentCreated, 0, 64),
+		documentCursorMoved:       make([]listenerDocumentCursorMoved, 0, 64),
+		editorKeyboardModeChanged: make([]listenerEditorKeyboardModeChanged, 0, 64),
+		editorLanguage:            make([]listenerEditorLanguage, 0, 64),
+		terminalKeyPressed:        make([]listenerTerminalKeyPressed, 0, 64),
+		terminalMetaKeyPressed:    make([]listenerTerminalMetaKeyPressed, 0, 64),
+		terminalResized:           make([]listenerTerminalResized, 0, 64),
+		viewActivated:             make([]listenerViewActivated, 0, 64),
+		viewCreated:               make([]listenerViewCreated, 0, 64),
+		windowCreated:             make([]listenerWindowCreated, 0, 64),
+		windowResized:             make([]listenerWindowResized, 0, 64),
 	}
 	return e, c
 }
@@ -223,7 +223,7 @@ func (er *eventRegistry) RegisterCommands(callback func(a EnqueuedCommands)) Eve
 	defer er.lock.Unlock()
 	i := er.nextID
 	er.nextID++
-	er.commands = append(er.commands, eventCommands{i, callback})
+	er.commands = append(er.commands, listenerCommands{i, callback})
 	return &eventListener{er, i | 0x1000000}
 }
 
@@ -249,7 +249,7 @@ func (er *eventRegistry) RegisterDocumentCreated(callback func(a Document)) Even
 	defer er.lock.Unlock()
 	i := er.nextID
 	er.nextID++
-	er.documentCreated = append(er.documentCreated, eventDocumentCreated{i, callback})
+	er.documentCreated = append(er.documentCreated, listenerDocumentCreated{i, callback})
 	return &eventListener{er, i | 0x2000000}
 }
 
@@ -275,7 +275,7 @@ func (er *eventRegistry) RegisterDocumentCursorMoved(callback func(a Document, b
 	defer er.lock.Unlock()
 	i := er.nextID
 	er.nextID++
-	er.documentCursorMoved = append(er.documentCursorMoved, eventDocumentCursorMoved{i, callback})
+	er.documentCursorMoved = append(er.documentCursorMoved, listenerDocumentCursorMoved{i, callback})
 	return &eventListener{er, i | 0x3000000}
 }
 
@@ -301,7 +301,7 @@ func (er *eventRegistry) RegisterEditorKeyboardModeChanged(callback func(a Keybo
 	defer er.lock.Unlock()
 	i := er.nextID
 	er.nextID++
-	er.editorKeyboardModeChanged = append(er.editorKeyboardModeChanged, eventEditorKeyboardModeChanged{i, callback})
+	er.editorKeyboardModeChanged = append(er.editorKeyboardModeChanged, listenerEditorKeyboardModeChanged{i, callback})
 	return &eventListener{er, i | 0x4000000}
 }
 
@@ -327,7 +327,7 @@ func (er *eventRegistry) RegisterEditorLanguage(callback func(a lang.Language)) 
 	defer er.lock.Unlock()
 	i := er.nextID
 	er.nextID++
-	er.editorLanguage = append(er.editorLanguage, eventEditorLanguage{i, callback})
+	er.editorLanguage = append(er.editorLanguage, listenerEditorLanguage{i, callback})
 	return &eventListener{er, i | 0x5000000}
 }
 
@@ -353,7 +353,7 @@ func (er *eventRegistry) RegisterTerminalKeyPressed(callback func(a key.Press)) 
 	defer er.lock.Unlock()
 	i := er.nextID
 	er.nextID++
-	er.terminalKeyPressed = append(er.terminalKeyPressed, eventTerminalKeyPressed{i, callback})
+	er.terminalKeyPressed = append(er.terminalKeyPressed, listenerTerminalKeyPressed{i, callback})
 	return &eventListener{er, i | 0x6000000}
 }
 
@@ -379,7 +379,7 @@ func (er *eventRegistry) RegisterTerminalMetaKeyPressed(callback func(a key.Pres
 	defer er.lock.Unlock()
 	i := er.nextID
 	er.nextID++
-	er.terminalMetaKeyPressed = append(er.terminalMetaKeyPressed, eventTerminalMetaKeyPressed{i, callback})
+	er.terminalMetaKeyPressed = append(er.terminalMetaKeyPressed, listenerTerminalMetaKeyPressed{i, callback})
 	return &eventListener{er, i | 0x7000000}
 }
 
@@ -405,7 +405,7 @@ func (er *eventRegistry) RegisterTerminalResized(callback func()) EventListener 
 	defer er.lock.Unlock()
 	i := er.nextID
 	er.nextID++
-	er.terminalResized = append(er.terminalResized, eventTerminalResized{i, callback})
+	er.terminalResized = append(er.terminalResized, listenerTerminalResized{i, callback})
 	return &eventListener{er, i | 0x8000000}
 }
 
@@ -431,7 +431,7 @@ func (er *eventRegistry) RegisterViewActivated(callback func(a View)) EventListe
 	defer er.lock.Unlock()
 	i := er.nextID
 	er.nextID++
-	er.viewActivated = append(er.viewActivated, eventViewActivated{i, callback})
+	er.viewActivated = append(er.viewActivated, listenerViewActivated{i, callback})
 	return &eventListener{er, i | 0x9000000}
 }
 
@@ -457,7 +457,7 @@ func (er *eventRegistry) RegisterViewCreated(callback func(a View)) EventListene
 	defer er.lock.Unlock()
 	i := er.nextID
 	er.nextID++
-	er.viewCreated = append(er.viewCreated, eventViewCreated{i, callback})
+	er.viewCreated = append(er.viewCreated, listenerViewCreated{i, callback})
 	return &eventListener{er, i | 0xa000000}
 }
 
@@ -483,7 +483,7 @@ func (er *eventRegistry) RegisterWindowCreated(callback func(a Window)) EventLis
 	defer er.lock.Unlock()
 	i := er.nextID
 	er.nextID++
-	er.windowCreated = append(er.windowCreated, eventWindowCreated{i, callback})
+	er.windowCreated = append(er.windowCreated, listenerWindowCreated{i, callback})
 	return &eventListener{er, i | 0xb000000}
 }
 
@@ -509,7 +509,7 @@ func (er *eventRegistry) RegisterWindowResized(callback func(a Window)) EventLis
 	defer er.lock.Unlock()
 	i := er.nextID
 	er.nextID++
-	er.windowResized = append(er.windowResized, eventWindowResized{i, callback})
+	er.windowResized = append(er.windowResized, listenerWindowResized{i, callback})
 	return &eventListener{er, i | 0xc000000}
 }
 

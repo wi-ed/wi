@@ -44,7 +44,7 @@ import (
   "github.com/maruel/wi/wicore/lang"
 )
 {{range .Events}}
-type event{{.Name}} struct{
+type listener{{.Name}} struct{
 	id       int
 	callback func({{.Args}}) {{.Result}}
 }
@@ -56,7 +56,7 @@ type eventRegistry struct {
   nextID   int
 	deferred chan<- func()
 {{range .Events}}
-	{{.Lower}} []event{{.Name}}{{end}}
+	{{.Lower}} []listener{{.Name}}{{end}}
 }
 
 func MakeEventRegistry() (EventRegistry, chan func()) {
@@ -65,7 +65,7 @@ func MakeEventRegistry() (EventRegistry, chan func()) {
 	c := make(chan func(), 2048)
 	e := &eventRegistry{
 		deferred: c,{{range .Events}}
-		{{.Lower}}: make([]event{{.Name}}, 0, 64),{{end}}
+		{{.Lower}}: make([]listener{{.Name}}, 0, 64),{{end}}
 	}
 	return e, c
 }
@@ -92,7 +92,7 @@ func (er *eventRegistry) Register{{.Name}}(callback func({{.Args}}) {{.Result}})
   defer er.lock.Unlock()
   i := er.nextID
   er.nextID++
-  er.{{.Lower}} = append(er.{{.Lower}}, event{{.Name}}{i, callback})
+  er.{{.Lower}} = append(er.{{.Lower}}, listener{{.Name}}{i, callback})
   return &eventListener{er, i | {{.BitValue}}}
 }
 
