@@ -12,37 +12,37 @@ import (
 
 type listenerCommands struct {
 	id       int
-	callback func(a EnqueuedCommands)
+	callback func(cmds EnqueuedCommands)
 }
 
 type listenerDocumentCreated struct {
 	id       int
-	callback func(a Document)
+	callback func(doc Document)
 }
 
 type listenerDocumentCursorMoved struct {
 	id       int
-	callback func(a Document, b int, c int)
+	callback func(doc Document, col int, row int)
 }
 
 type listenerEditorKeyboardModeChanged struct {
 	id       int
-	callback func(a KeyboardMode)
+	callback func(mode KeyboardMode)
 }
 
 type listenerEditorLanguage struct {
 	id       int
-	callback func(a lang.Language)
+	callback func(l lang.Language)
 }
 
 type listenerTerminalKeyPressed struct {
 	id       int
-	callback func(a key.Press)
+	callback func(k key.Press)
 }
 
 type listenerTerminalMetaKeyPressed struct {
 	id       int
-	callback func(a key.Press)
+	callback func(k key.Press)
 }
 
 type listenerTerminalResized struct {
@@ -52,22 +52,22 @@ type listenerTerminalResized struct {
 
 type listenerViewActivated struct {
 	id       int
-	callback func(a View)
+	callback func(view View)
 }
 
 type listenerViewCreated struct {
 	id       int
-	callback func(a View)
+	callback func(view View)
 }
 
 type listenerWindowCreated struct {
 	id       int
-	callback func(a Window)
+	callback func(window Window)
 }
 
 type listenerWindowResized struct {
 	id       int
-	callback func(a Window)
+	callback func(window Window)
 }
 
 // eventRegistry is automatically generated via wi-event-generator from the
@@ -218,7 +218,7 @@ func (er *eventRegistry) unregister(eventID int) {
 	}
 }
 
-func (er *eventRegistry) RegisterCommands(callback func(a EnqueuedCommands)) EventListener {
+func (er *eventRegistry) RegisterCommands(callback func(cmds EnqueuedCommands)) EventListener {
 	er.lock.Lock()
 	defer er.lock.Unlock()
 	i := er.nextID
@@ -227,24 +227,24 @@ func (er *eventRegistry) RegisterCommands(callback func(a EnqueuedCommands)) Eve
 	return &eventListener{er, i | 0x1000000}
 }
 
-func (er *eventRegistry) TriggerCommands(a EnqueuedCommands) {
+func (er *eventRegistry) TriggerCommands(cmds EnqueuedCommands) {
 	er.deferred <- func() {
-		items := func() []func(a EnqueuedCommands) {
+		items := func() []func(cmds EnqueuedCommands) {
 			er.lock.Lock()
 			defer er.lock.Unlock()
-			items := make([]func(a EnqueuedCommands), 0, len(er.commands))
+			items := make([]func(cmds EnqueuedCommands), 0, len(er.commands))
 			for _, item := range er.commands {
 				items = append(items, item.callback)
 			}
 			return items
 		}()
 		for _, item := range items {
-			item(a)
+			item(cmds)
 		}
 	}
 }
 
-func (er *eventRegistry) RegisterDocumentCreated(callback func(a Document)) EventListener {
+func (er *eventRegistry) RegisterDocumentCreated(callback func(doc Document)) EventListener {
 	er.lock.Lock()
 	defer er.lock.Unlock()
 	i := er.nextID
@@ -253,24 +253,24 @@ func (er *eventRegistry) RegisterDocumentCreated(callback func(a Document)) Even
 	return &eventListener{er, i | 0x2000000}
 }
 
-func (er *eventRegistry) TriggerDocumentCreated(a Document) {
+func (er *eventRegistry) TriggerDocumentCreated(doc Document) {
 	er.deferred <- func() {
-		items := func() []func(a Document) {
+		items := func() []func(doc Document) {
 			er.lock.Lock()
 			defer er.lock.Unlock()
-			items := make([]func(a Document), 0, len(er.documentCreated))
+			items := make([]func(doc Document), 0, len(er.documentCreated))
 			for _, item := range er.documentCreated {
 				items = append(items, item.callback)
 			}
 			return items
 		}()
 		for _, item := range items {
-			item(a)
+			item(doc)
 		}
 	}
 }
 
-func (er *eventRegistry) RegisterDocumentCursorMoved(callback func(a Document, b int, c int)) EventListener {
+func (er *eventRegistry) RegisterDocumentCursorMoved(callback func(doc Document, col int, row int)) EventListener {
 	er.lock.Lock()
 	defer er.lock.Unlock()
 	i := er.nextID
@@ -279,24 +279,24 @@ func (er *eventRegistry) RegisterDocumentCursorMoved(callback func(a Document, b
 	return &eventListener{er, i | 0x3000000}
 }
 
-func (er *eventRegistry) TriggerDocumentCursorMoved(a Document, b int, c int) {
+func (er *eventRegistry) TriggerDocumentCursorMoved(doc Document, col int, row int) {
 	er.deferred <- func() {
-		items := func() []func(a Document, b int, c int) {
+		items := func() []func(doc Document, col int, row int) {
 			er.lock.Lock()
 			defer er.lock.Unlock()
-			items := make([]func(a Document, b int, c int), 0, len(er.documentCursorMoved))
+			items := make([]func(doc Document, col int, row int), 0, len(er.documentCursorMoved))
 			for _, item := range er.documentCursorMoved {
 				items = append(items, item.callback)
 			}
 			return items
 		}()
 		for _, item := range items {
-			item(a, b, c)
+			item(doc, col, row)
 		}
 	}
 }
 
-func (er *eventRegistry) RegisterEditorKeyboardModeChanged(callback func(a KeyboardMode)) EventListener {
+func (er *eventRegistry) RegisterEditorKeyboardModeChanged(callback func(mode KeyboardMode)) EventListener {
 	er.lock.Lock()
 	defer er.lock.Unlock()
 	i := er.nextID
@@ -305,24 +305,24 @@ func (er *eventRegistry) RegisterEditorKeyboardModeChanged(callback func(a Keybo
 	return &eventListener{er, i | 0x4000000}
 }
 
-func (er *eventRegistry) TriggerEditorKeyboardModeChanged(a KeyboardMode) {
+func (er *eventRegistry) TriggerEditorKeyboardModeChanged(mode KeyboardMode) {
 	er.deferred <- func() {
-		items := func() []func(a KeyboardMode) {
+		items := func() []func(mode KeyboardMode) {
 			er.lock.Lock()
 			defer er.lock.Unlock()
-			items := make([]func(a KeyboardMode), 0, len(er.editorKeyboardModeChanged))
+			items := make([]func(mode KeyboardMode), 0, len(er.editorKeyboardModeChanged))
 			for _, item := range er.editorKeyboardModeChanged {
 				items = append(items, item.callback)
 			}
 			return items
 		}()
 		for _, item := range items {
-			item(a)
+			item(mode)
 		}
 	}
 }
 
-func (er *eventRegistry) RegisterEditorLanguage(callback func(a lang.Language)) EventListener {
+func (er *eventRegistry) RegisterEditorLanguage(callback func(l lang.Language)) EventListener {
 	er.lock.Lock()
 	defer er.lock.Unlock()
 	i := er.nextID
@@ -331,24 +331,24 @@ func (er *eventRegistry) RegisterEditorLanguage(callback func(a lang.Language)) 
 	return &eventListener{er, i | 0x5000000}
 }
 
-func (er *eventRegistry) TriggerEditorLanguage(a lang.Language) {
+func (er *eventRegistry) TriggerEditorLanguage(l lang.Language) {
 	er.deferred <- func() {
-		items := func() []func(a lang.Language) {
+		items := func() []func(l lang.Language) {
 			er.lock.Lock()
 			defer er.lock.Unlock()
-			items := make([]func(a lang.Language), 0, len(er.editorLanguage))
+			items := make([]func(l lang.Language), 0, len(er.editorLanguage))
 			for _, item := range er.editorLanguage {
 				items = append(items, item.callback)
 			}
 			return items
 		}()
 		for _, item := range items {
-			item(a)
+			item(l)
 		}
 	}
 }
 
-func (er *eventRegistry) RegisterTerminalKeyPressed(callback func(a key.Press)) EventListener {
+func (er *eventRegistry) RegisterTerminalKeyPressed(callback func(k key.Press)) EventListener {
 	er.lock.Lock()
 	defer er.lock.Unlock()
 	i := er.nextID
@@ -357,24 +357,24 @@ func (er *eventRegistry) RegisterTerminalKeyPressed(callback func(a key.Press)) 
 	return &eventListener{er, i | 0x6000000}
 }
 
-func (er *eventRegistry) TriggerTerminalKeyPressed(a key.Press) {
+func (er *eventRegistry) TriggerTerminalKeyPressed(k key.Press) {
 	er.deferred <- func() {
-		items := func() []func(a key.Press) {
+		items := func() []func(k key.Press) {
 			er.lock.Lock()
 			defer er.lock.Unlock()
-			items := make([]func(a key.Press), 0, len(er.terminalKeyPressed))
+			items := make([]func(k key.Press), 0, len(er.terminalKeyPressed))
 			for _, item := range er.terminalKeyPressed {
 				items = append(items, item.callback)
 			}
 			return items
 		}()
 		for _, item := range items {
-			item(a)
+			item(k)
 		}
 	}
 }
 
-func (er *eventRegistry) RegisterTerminalMetaKeyPressed(callback func(a key.Press)) EventListener {
+func (er *eventRegistry) RegisterTerminalMetaKeyPressed(callback func(k key.Press)) EventListener {
 	er.lock.Lock()
 	defer er.lock.Unlock()
 	i := er.nextID
@@ -383,19 +383,19 @@ func (er *eventRegistry) RegisterTerminalMetaKeyPressed(callback func(a key.Pres
 	return &eventListener{er, i | 0x7000000}
 }
 
-func (er *eventRegistry) TriggerTerminalMetaKeyPressed(a key.Press) {
+func (er *eventRegistry) TriggerTerminalMetaKeyPressed(k key.Press) {
 	er.deferred <- func() {
-		items := func() []func(a key.Press) {
+		items := func() []func(k key.Press) {
 			er.lock.Lock()
 			defer er.lock.Unlock()
-			items := make([]func(a key.Press), 0, len(er.terminalMetaKeyPressed))
+			items := make([]func(k key.Press), 0, len(er.terminalMetaKeyPressed))
 			for _, item := range er.terminalMetaKeyPressed {
 				items = append(items, item.callback)
 			}
 			return items
 		}()
 		for _, item := range items {
-			item(a)
+			item(k)
 		}
 	}
 }
@@ -426,7 +426,7 @@ func (er *eventRegistry) TriggerTerminalResized() {
 	}
 }
 
-func (er *eventRegistry) RegisterViewActivated(callback func(a View)) EventListener {
+func (er *eventRegistry) RegisterViewActivated(callback func(view View)) EventListener {
 	er.lock.Lock()
 	defer er.lock.Unlock()
 	i := er.nextID
@@ -435,24 +435,24 @@ func (er *eventRegistry) RegisterViewActivated(callback func(a View)) EventListe
 	return &eventListener{er, i | 0x9000000}
 }
 
-func (er *eventRegistry) TriggerViewActivated(a View) {
+func (er *eventRegistry) TriggerViewActivated(view View) {
 	er.deferred <- func() {
-		items := func() []func(a View) {
+		items := func() []func(view View) {
 			er.lock.Lock()
 			defer er.lock.Unlock()
-			items := make([]func(a View), 0, len(er.viewActivated))
+			items := make([]func(view View), 0, len(er.viewActivated))
 			for _, item := range er.viewActivated {
 				items = append(items, item.callback)
 			}
 			return items
 		}()
 		for _, item := range items {
-			item(a)
+			item(view)
 		}
 	}
 }
 
-func (er *eventRegistry) RegisterViewCreated(callback func(a View)) EventListener {
+func (er *eventRegistry) RegisterViewCreated(callback func(view View)) EventListener {
 	er.lock.Lock()
 	defer er.lock.Unlock()
 	i := er.nextID
@@ -461,24 +461,24 @@ func (er *eventRegistry) RegisterViewCreated(callback func(a View)) EventListene
 	return &eventListener{er, i | 0xa000000}
 }
 
-func (er *eventRegistry) TriggerViewCreated(a View) {
+func (er *eventRegistry) TriggerViewCreated(view View) {
 	er.deferred <- func() {
-		items := func() []func(a View) {
+		items := func() []func(view View) {
 			er.lock.Lock()
 			defer er.lock.Unlock()
-			items := make([]func(a View), 0, len(er.viewCreated))
+			items := make([]func(view View), 0, len(er.viewCreated))
 			for _, item := range er.viewCreated {
 				items = append(items, item.callback)
 			}
 			return items
 		}()
 		for _, item := range items {
-			item(a)
+			item(view)
 		}
 	}
 }
 
-func (er *eventRegistry) RegisterWindowCreated(callback func(a Window)) EventListener {
+func (er *eventRegistry) RegisterWindowCreated(callback func(window Window)) EventListener {
 	er.lock.Lock()
 	defer er.lock.Unlock()
 	i := er.nextID
@@ -487,24 +487,24 @@ func (er *eventRegistry) RegisterWindowCreated(callback func(a Window)) EventLis
 	return &eventListener{er, i | 0xb000000}
 }
 
-func (er *eventRegistry) TriggerWindowCreated(a Window) {
+func (er *eventRegistry) TriggerWindowCreated(window Window) {
 	er.deferred <- func() {
-		items := func() []func(a Window) {
+		items := func() []func(window Window) {
 			er.lock.Lock()
 			defer er.lock.Unlock()
-			items := make([]func(a Window), 0, len(er.windowCreated))
+			items := make([]func(window Window), 0, len(er.windowCreated))
 			for _, item := range er.windowCreated {
 				items = append(items, item.callback)
 			}
 			return items
 		}()
 		for _, item := range items {
-			item(a)
+			item(window)
 		}
 	}
 }
 
-func (er *eventRegistry) RegisterWindowResized(callback func(a Window)) EventListener {
+func (er *eventRegistry) RegisterWindowResized(callback func(window Window)) EventListener {
 	er.lock.Lock()
 	defer er.lock.Unlock()
 	i := er.nextID
@@ -513,19 +513,19 @@ func (er *eventRegistry) RegisterWindowResized(callback func(a Window)) EventLis
 	return &eventListener{er, i | 0xc000000}
 }
 
-func (er *eventRegistry) TriggerWindowResized(a Window) {
+func (er *eventRegistry) TriggerWindowResized(window Window) {
 	er.deferred <- func() {
-		items := func() []func(a Window) {
+		items := func() []func(window Window) {
 			er.lock.Lock()
 			defer er.lock.Unlock()
-			items := make([]func(a Window), 0, len(er.windowResized))
+			items := make([]func(window Window), 0, len(er.windowResized))
 			for _, item := range er.windowResized {
 				items = append(items, item.callback)
 			}
 			return items
 		}()
 		for _, item := range items {
-			item(a)
+			item(window)
 		}
 	}
 }

@@ -25,16 +25,16 @@ const NumberEvents = 12
 type EventRegistry interface {
 	EventsDefinition
 
-	RegisterCommands(callback func(a EnqueuedCommands)) EventListener
-	RegisterDocumentCreated(callback func(a Document)) EventListener
-	RegisterDocumentCursorMoved(callback func(a Document, b int, c int)) EventListener
-	RegisterEditorKeyboardModeChanged(callback func(a KeyboardMode)) EventListener
-	RegisterEditorLanguage(callback func(a lang.Language)) EventListener
-	RegisterTerminalKeyPressed(callback func(a key.Press)) EventListener
-	RegisterTerminalMetaKeyPressed(callback func(a key.Press)) EventListener
+	RegisterCommands(callback func(cmds EnqueuedCommands)) EventListener
+	RegisterDocumentCreated(callback func(doc Document)) EventListener
+	RegisterDocumentCursorMoved(callback func(doc Document, col int, row int)) EventListener
+	RegisterEditorKeyboardModeChanged(callback func(mode KeyboardMode)) EventListener
+	RegisterEditorLanguage(callback func(l lang.Language)) EventListener
+	RegisterTerminalKeyPressed(callback func(k key.Press)) EventListener
+	RegisterTerminalMetaKeyPressed(callback func(k key.Press)) EventListener
 	RegisterTerminalResized(callback func()) EventListener
-	RegisterViewActivated(callback func(a View)) EventListener
-	RegisterViewCreated(callback func(a View)) EventListener
-	RegisterWindowCreated(callback func(a Window)) EventListener
-	RegisterWindowResized(callback func(a Window)) EventListener
+	RegisterViewActivated(callback func(view View)) EventListener
+	RegisterViewCreated(callback func(view View)) EventListener
+	RegisterWindowCreated(callback func(window Window)) EventListener
+	RegisterWindowResized(callback func(window Window)) EventListener
 }

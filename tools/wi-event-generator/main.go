@@ -10,14 +10,15 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"go/ast"
 	"go/format"
+	"go/parser"
+	"go/token"
 	"io/ioutil"
 	"os"
-	"reflect"
+	"sort"
 	"strings"
 	"text/template"
-
-	"github.com/maruel/wi/wicore"
 )
 
 func formatSource(buf []byte) ([]byte, error) {
@@ -46,7 +47,7 @@ import (
 {{range .Events}}
 type listener{{.Name}} struct{
 	id       int
-	callback func({{.Args}}) {{.Result}}
+	callback func({{.ParamsAsString}})
 }
 {{end}}
 // eventRegistry is automatically generated via wi-event-generator from the
@@ -87,7 +88,7 @@ func (er *eventRegistry) unregister(eventID int) {
   }
 }{{range .Events}}
 
-func (er *eventRegistry) Register{{.Name}}(callback func({{.Args}}) {{.Result}}) EventListener {
+func (er *eventRegistry) Register{{.Name}}(callback func({{.ParamsAsString}})) EventListener {
   er.lock.Lock()
   defer er.lock.Unlock()
   i := er.nextID
@@ -96,19 +97,19 @@ func (er *eventRegistry) Register{{.Name}}(callback func({{.Args}}) {{.Result}})
   return &eventListener{er, i | {{.BitValue}}}
 }
 
-func (er *eventRegistry) Trigger{{.Name}}({{.Args}}) {
+func (er *eventRegistry) Trigger{{.Name}}({{.ParamsAsString}}) {
 	er.deferred <- func() {
-		items := func() []func({{.Args}}) {{.Result}} {
+		items := func() []func({{.ParamsAsString}}) {
 			er.lock.Lock()
 			defer er.lock.Unlock()
-			items := make([]func({{.Args}}) {{.Result}}, 0, len(er.{{.Lower}}))
+			items := make([]func({{.ParamsAsString}}), 0, len(er.{{.Lower}}))
 			for _, item := range er.{{.Lower}} {
 				items = append(items, item.callback)
 			}
 			return items
 		}()
 		for _, item := range items {
-			item({{.ArgsNames}})
+			item({{.ParamsNames}})
 		}
 	}
 }{{end}}
@@ -160,18 +161,17 @@ type EventRegistry interface {
 	EventsDefinition
 
 {{range .Events}}
-  Register{{.Name}}(callback func({{.Args}}) {{.Result}}) EventListener{{end}}
+  Register{{.Name}}(callback func({{.ParamsAsString}})) EventListener{{end}}
 }
 `))
 
 type Event struct {
-	Name      string
-	Lower     string
-	Index     int
-	BitValue  string
-	Args      string
-	ArgsNames string
-	Result    string
+	Name           string
+	Lower          string
+	Index          int
+	BitValue       string
+	ParamsAsString string // "a int, b string"
+	ParamsNames    string // "a, b"
 }
 
 type tmplData struct {
@@ -180,58 +180,169 @@ type tmplData struct {
 	Events  []Event
 }
 
-//func extractEvents(inputFile, inputType string, impl bool, bitmask uint) []Event {
-func extractEvents(impl bool, bitmask uint) ([]Event, error) {
-	// TODO(maruel): Use go/parser.
-	t := reflect.TypeOf((*wicore.EventsDefinition)(nil)).Elem()
-	prefix := "Trigger"
-	events := make([]Event, 0, t.NumMethod())
-	for i := 0; i < t.NumMethod(); i++ {
-		m := t.Method(i)
-		if !strings.HasPrefix(m.Name, prefix) {
-			return nil, fmt.Errorf("unexpected method %s", m.Name)
+// Parser code.
+
+type Arg struct {
+	Name string
+	Type string
+}
+
+// Method is a simplification of ast.FuncType using only strings.
+type Method struct {
+	Name    string
+	Params  []Arg
+	Results []Arg
+}
+
+// findType finds a file level type declaration and returns it if found.
+func findType(f *ast.File, inputType string) *ast.TypeSpec {
+	// Look at all file level declarations.
+	for _, decl := range f.Decls {
+		y, ok := decl.(*ast.GenDecl)
+		if !ok {
+			continue
 		}
-		// That is *very* cheezy. The right way would be to use go/parser to
-		// extract the argument names. For now, it's "good enough".
-		argsStr := m.Type.String()[5:]
-		argsStr = argsStr[:strings.LastIndex(argsStr, ")")]
-		//if i := strings.LastIndex(argsStr, ")"); i != len(argsStr)-1 {
-		//	return nil, fmt.Errorf("unexpected return type for method %s: %s", m.Name, m.Type)
-		//}
-		argsStr = strings.Replace(argsStr, "wicore.", "", -1)
-		argsItems := strings.Split(argsStr, ", ")
-		args := make([]string, 0, len(argsItems))
-		argsNames := make([]string, 0, len(argsItems))
-		if len(argsStr) > 0 {
-			// Insert names 'a', 'b', ...
-			for i, s := range argsItems {
-				args = append(args, fmt.Sprintf("%c %s", i+'a', s))
-				argsNames = append(argsNames, fmt.Sprintf("%c", i+'a'))
+		// Search for a type specification.
+		for _, s := range y.Specs {
+			t, ok := s.(*ast.TypeSpec)
+			if !ok {
+				continue
 			}
+			if inputType != t.Name.Name {
+				continue
+			}
+			return t
 		}
-		name := m.Name[len(prefix):]
+	}
+	return nil
+}
+
+// processFieldList processes params or results of a method.
+func processFieldList(list *ast.FieldList) ([]Arg, error) {
+	if list == nil || len(list.List) == 0 {
+		return []Arg{}, nil
+	}
+	out := make([]Arg, 0, len(list.List))
+	for _, param := range list.List {
+		typeName := ""
+		selector, ok := param.Type.(*ast.SelectorExpr)
+		if ok {
+			ident, ok := selector.X.(*ast.Ident)
+			if !ok {
+				return out, errors.New("failed to process field")
+			}
+			typeName = ident.Name + "." + selector.Sel.Name
+		} else {
+			ident, ok := param.Type.(*ast.Ident)
+			if !ok {
+				return out, errors.New("failed to process field")
+			}
+			typeName = ident.Name
+		}
+		for _, name := range param.Names {
+			arg := Arg{
+				Name: name.Name,
+				Type: typeName,
+			}
+			out = append(out, arg)
+		}
+	}
+	return out, nil
+}
+
+// enumInterface enumerates all the methods of an interface.
+func enumInterface(t *ast.TypeSpec) ([]Method, error) {
+	typeName := t.Name.Name
+	i, ok := t.Type.(*ast.InterfaceType)
+	if !ok {
+		return nil, fmt.Errorf("expected %s to be an interface", typeName)
+	}
+	out := make([]Method, 0, len(i.Methods.List))
+	for _, m := range i.Methods.List {
+		methodName := m.Names[0].Name
+		methodFunc, ok := m.Type.(*ast.FuncType)
+		if !ok {
+			return out, fmt.Errorf("expected %s.%s to be a method", typeName, methodName)
+		}
+		params, err := processFieldList(methodFunc.Params)
+		if err != nil {
+			return out, fmt.Errorf("%s.%s: params %s", i, typeName, methodName, err)
+		}
+		results, err := processFieldList(methodFunc.Results)
+		if err != nil {
+			return out, fmt.Errorf("%s.%s: results %s", i, typeName, methodName, err)
+		}
+		method := Method{
+			Name:    methodName,
+			Params:  params,
+			Results: results,
+		}
+		out = append(out, method)
+	}
+	return out, nil
+}
+
+// Generation code.
+
+func extractEvents(inputFile, inputType string, impl bool, bitmask uint) ([]Event, error) {
+	fset := token.NewFileSet()
+	f, err := parser.ParseFile(fset, inputFile, nil, 0)
+	if err != nil {
+		return nil, err
+	}
+	prefix := "Trigger"
+	events := []Event{}
+	inputT := findType(f, inputType)
+	if inputT == nil {
+		return nil, fmt.Errorf("failed to find type %s", inputType)
+	}
+	methods, err := enumInterface(inputT)
+	if err != nil {
+		return nil, err
+	}
+	methodNames := make([]string, len(methods))
+	for i, m := range methods {
+		methodNames[i] = m.Name
+	}
+	if !sort.StringsAreSorted(methodNames) {
+		return nil, fmt.Errorf("methods of %s must be sorted by name", inputType)
+	}
+	for _, method := range methods {
+		if !strings.HasPrefix(method.Name, prefix) {
+			return nil, fmt.Errorf("method %s.%s doesn't have prefix %s", inputType, method.Name, prefix)
+		}
+		if len(method.Results) != 0 {
+			return nil, fmt.Errorf("unexpected result on method %s.%s", inputType, method.Name)
+		}
+		name := method.Name[len(prefix):]
 		lower := strings.ToLower(name[0:1]) + name[1:]
+		names := make([]string, len(method.Params))
+		full := make([]string, len(method.Params))
+		for i, arg := range method.Params {
+			if len(arg.Name) == 0 {
+				return nil, fmt.Errorf("argument %d must be named on method %s.%s", i, inputType, method.Name)
+			}
+			names[i] = arg.Name
+			full[i] = fmt.Sprintf("%s %s", arg.Name, arg.Type)
+		}
 		// TODO(maruel): It creates an artificial limit of 2^23 event listener and
 		// 2^8 event types on 32 bits systems.
 		events = append(events, Event{
-			Name:      name,
-			Lower:     lower,
-			Index:     len(events),
-			BitValue:  fmt.Sprintf("0x%x", (len(events)+1)<<bitmask),
-			Args:      strings.Join(args, ", "),
-			ArgsNames: strings.Join(argsNames, ", "),
-			Result:    "",
+			Name:           name,
+			Lower:          lower,
+			Index:          len(events),
+			BitValue:       fmt.Sprintf("0x%x", (len(events)+1)<<bitmask),
+			ParamsAsString: strings.Join(full, ", "),
+			ParamsNames:    strings.Join(names, ", "),
 		})
 	}
 	return events, nil
 }
 
-//func generate(inputFile string, inputType string, impl bool) ([]byte, error) {
-func generate(impl bool) ([]byte, error) {
-	// TODO(maruel): Make this seamless instead of hardcoded.
+func generate(inputFile string, inputType string, impl bool) ([]byte, error) {
+	// TODO(maruel): Make the bitmask seamless instead of hardcoded.
 	bitmask := uint(24)
-	//events, err := extractEvents(inputFile, inputType, impl, bitmask)
-	events, err := extractEvents(impl, bitmask)
+	events, err := extractEvents(inputFile, inputType, impl, bitmask)
 	if err != nil {
 		return nil, err
 	}
@@ -253,9 +364,6 @@ func generate(impl bool) ([]byte, error) {
 }
 
 func mainImpl() error {
-	// TODO(maruel): Use go/parser.
-	//inputFile := flag.String("decl", "", "Declaration file, defaults to the source file")
-	//inputType := flag.String("type", "", "Type to implement")
 	impl := flag.Bool("impl", false, "Generates the implementation, otherwise it generates the interface")
 	outputFile := flag.String("output", "", "Output file")
 	flag.Parse()
@@ -263,17 +371,10 @@ func mainImpl() error {
 	if len(flag.Args()) != 0 {
 		return fmt.Errorf("unexpected argument: %s", flag.Args())
 	}
-	//if len(*inputFile) == 0 {
-	//	*inputFile = flag.Args()[0]
-	//}
-	//if len(*inputType) == 0 {
-	//	return errors.New("-type is required")
-	//}
 	if len(*outputFile) == 0 {
 		return errors.New("-output is required")
 	}
-	//src, err := generate(*inputFile, *inputType, *impl)
-	src, err := generate(*impl)
+	src, err := generate("interfaces.go", "EventsDefinition", *impl)
 	if err != nil {
 		return err
 	}
