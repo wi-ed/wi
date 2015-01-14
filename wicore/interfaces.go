@@ -421,9 +421,8 @@ type PluginRPC interface {
 	// GetInfo is the fisrt function to be called synchronously. It must return
 	// immediately.
 	GetInfo(ignored lang.Language, out *PluginDetails) error
-	// OnStart is called on plugin startup. All initialization should be done
-	// there.
-	OnStart(in EditorDetails, ignored *int) error
+	// Init is called on plugin startup. All initialization should be done there.
+	Init(in EditorDetails, ignored *int) error
 	// Quit is called on editor termination. The editor waits for the function to
 	// return.
 	Quit(in int, ignored *int) error

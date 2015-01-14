@@ -54,7 +54,7 @@ func (p *pluginRPC) GetInfo(l lang.Language, out *wicore.PluginDetails) error {
 	return nil
 }
 
-func (p *pluginRPC) OnStart(details wicore.EditorDetails, ignored *int) error {
+func (p *pluginRPC) Init(details wicore.EditorDetails, ignored *int) error {
 	p.e.id = details.ID
 	p.e.version = details.Version
 	p.langListener = p.e.RegisterEditorLanguage(func(l lang.Language) {
@@ -134,6 +134,8 @@ func Main(plugin wicore.Plugin) {
 	// TODO(maruel): Take garbage from os.Stdin, put garbage in os.Stdout.
 	fmt.Print(wicore.CalculateVersion())
 
+	// TODO(maruel): Pipe logs into os.Stderr and not have the editor process
+	// kill the plugin process in this case.
 	conn := wicore.MakeReadWriteCloser(os.Stdin, os.Stdout)
 	server := rpc.NewServer()
 	reg, deferred := wicore.MakeEventRegistry()

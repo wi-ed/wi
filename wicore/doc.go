@@ -62,17 +62,12 @@
 //       +-->|Command|
 //           +-------+
 //
-// Objects in wi main process:
+// Objects living exclusively in wi main process:
 //
 //  - Editor
 //  - Window
 //
 // Objects that can be in either in the wi main process or implemented (and
-// brokered to the main process) in a plugin process:
-//
-//  - View
-//  - Document
-//  - KeyBindings
-//  - Commands
-//  - Command
+// brokered to the main process) in a plugin process implement the Proxyable
+// interface.
 package wicore

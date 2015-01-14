@@ -30,17 +30,18 @@ type pluginProcess struct {
 	pid         int                  // Also stored here in case proc is nil. It is not reset even when the process is closed.
 	details     wicore.PluginDetails // Initialized early by sync call GetInfo().
 	initialized bool                 // Initialized late after async call Init() completed.
-	listeners   []wicore.EventListener
+	err         error                // If set, the plugin had an error and is quarantined.
+	listener    wicore.EventListener
 }
 
 func (p *pluginProcess) Close() error {
 	p.lock.Lock()
 	defer p.lock.Unlock()
-	for _, l := range p.listeners {
-		_ = l.Close()
-	}
-	p.listeners = []wicore.EventListener{}
 	var err error
+	if p.listener != nil {
+		err = p.listener.Close()
+		p.listener = nil
+	}
 	if p.client != nil {
 		tmp := 0
 		call := p.client.Go("PluginRPC.Quit", 0, &tmp, nil)
@@ -64,6 +65,9 @@ func (p *pluginProcess) Close() error {
 		p.proc = nil
 	}
 	log.Printf("%s.Close()", p)
+	if err != nil && p.err == nil {
+		p.err = err
+	}
 	return err
 }
 
@@ -84,15 +88,20 @@ func (p *pluginProcess) Init(e wicore.Editor) {
 		e.ID(),
 		e.Version(),
 	}
-	// TODO(maruel): Register events, assign to p.listeners.
-	call := p.client.Go("PluginRPC.OnStart", details, &out, nil)
-	wicore.Go("PluginRPC.OnStart", func() {
+	call := p.client.Go("PluginRPC.Init", details, &out, nil)
+	wicore.Go("PluginRPC.Init", func() {
 		// TODO(maruel): Handle error.
 		_ = <-call.Done
 		p.lock.Lock()
 		defer p.lock.Unlock()
 		p.initialized = true
-		log.Printf("%s initialized", p)
+		if call.Error != nil && p.err == nil {
+			p.err = call.Error
+			log.Printf("%s failed initialization: %s", p, p.err)
+		} else {
+			log.Printf("%s initialized", p)
+			p.listener = wicore.RegisterPluginEvents(p.client, e)
+		}
 	})
 }
 
@@ -174,7 +183,8 @@ func loadPlugin(cmdLine []string) (wicore.Plugin, error) {
 		cmd.Process.Pid,
 		wicore.PluginDetails{"<unknown>", "<unitialized>"},
 		false,
-		make([]wicore.EventListener, 0, wicore.NumberEvents),
+		nil,
+		nil,
 	}
 	if err = p.client.Call("PluginRPC.GetInfo", lang.Active(), &p.details); err != nil {
 		return nil, err

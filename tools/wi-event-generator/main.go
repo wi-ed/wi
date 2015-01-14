@@ -73,6 +73,8 @@ package wicore
 
 import (
   "errors"
+	"log"
+	"net/rpc"
   "sync"
 
   "github.com/maruel/wi/wicore/key"
@@ -169,6 +171,20 @@ func (e *eventListener) Close() error {
 	e.unregister.unregister(e.id)
 	e.id = 0
 	return nil
+}
+
+// RegisterPluginEvents registers all the events to be forwarded to the plugin
+// through the interface EventRegistryRPC.
+func RegisterPluginEvents(client *rpc.Client, e EventRegistry) EventListener {
+	return multiCloser{ {{range .Events}}
+		e.Register{{.Name}}(func({{.ParamsAsString}}) {
+			packet := Packet{{.Name}} { {{.ParamsNames}} }
+			out := 0
+			if err := client.Call("EventRegistryRPC.Trigger{{.Name}}RPC", packet, &out); err != nil {
+				log.Printf("RPC call failure: %s", err)
+			}
+		}),{{end}}
+	}
 }
 `))
 
