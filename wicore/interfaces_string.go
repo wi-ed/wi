@@ -6,65 +6,45 @@ import "fmt"
 
 const _BorderType_name = "BorderNoneBorderSingleBorderDouble"
 
-var _BorderType_index = [...]uint8{10, 22, 34}
+var _BorderType_index = [...]uint8{0, 10, 22, 34}
 
 func (i BorderType) String() string {
-	if i < 0 || i >= BorderType(len(_BorderType_index)) {
+	if i < 0 || i+1 >= BorderType(len(_BorderType_index)) {
 		return fmt.Sprintf("BorderType(%d)", i)
 	}
-	hi := _BorderType_index[i]
-	lo := uint8(0)
-	if i > 0 {
-		lo = _BorderType_index[i-1]
-	}
-	return _BorderType_name[lo:hi]
+	return _BorderType_name[_BorderType_index[i]:_BorderType_index[i+1]]
 }
 
 const _CommandCategory_name = "UnknownCategoryWindowCategoryCommandsCategoryEditorCategoryDebugCategory"
 
-var _CommandCategory_index = [...]uint8{15, 29, 45, 59, 72}
+var _CommandCategory_index = [...]uint8{0, 15, 29, 45, 59, 72}
 
 func (i CommandCategory) String() string {
-	if i < 0 || i >= CommandCategory(len(_CommandCategory_index)) {
+	if i < 0 || i+1 >= CommandCategory(len(_CommandCategory_index)) {
 		return fmt.Sprintf("CommandCategory(%d)", i)
 	}
-	hi := _CommandCategory_index[i]
-	lo := uint8(0)
-	if i > 0 {
-		lo = _CommandCategory_index[i-1]
-	}
-	return _CommandCategory_name[lo:hi]
+	return _CommandCategory_name[_CommandCategory_index[i]:_CommandCategory_index[i+1]]
 }
 
 const _DockingType_name = "DockingUnknownDockingFillDockingFloatingDockingLeftDockingRightDockingTopDockingBottom"
 
-var _DockingType_index = [...]uint8{14, 25, 40, 51, 63, 73, 86}
+var _DockingType_index = [...]uint8{0, 14, 25, 40, 51, 63, 73, 86}
 
 func (i DockingType) String() string {
-	if i < 0 || i >= DockingType(len(_DockingType_index)) {
+	if i < 0 || i+1 >= DockingType(len(_DockingType_index)) {
 		return fmt.Sprintf("DockingType(%d)", i)
 	}
-	hi := _DockingType_index[i]
-	lo := uint8(0)
-	if i > 0 {
-		lo = _DockingType_index[i-1]
-	}
-	return _DockingType_name[lo:hi]
+	return _DockingType_name[_DockingType_index[i]:_DockingType_index[i+1]]
 }
 
 const _KeyboardMode_name = "NormalInsertAllMode"
 
-var _KeyboardMode_index = [...]uint8{6, 12, 19}
+var _KeyboardMode_index = [...]uint8{0, 6, 12, 19}
 
 func (i KeyboardMode) String() string {
 	i -= 1
-	if i < 0 || i >= KeyboardMode(len(_KeyboardMode_index)) {
+	if i < 0 || i+1 >= KeyboardMode(len(_KeyboardMode_index)) {
 		return fmt.Sprintf("KeyboardMode(%d)", i+1)
 	}
-	hi := _KeyboardMode_index[i]
-	lo := uint8(0)
-	if i > 0 {
-		lo = _KeyboardMode_index[i-1]
-	}
-	return _KeyboardMode_name[lo:hi]
+	return _KeyboardMode_name[_KeyboardMode_index[i]:_KeyboardMode_index[i+1]]
 }
