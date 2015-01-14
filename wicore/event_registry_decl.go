@@ -38,3 +38,80 @@ type EventRegistry interface {
 	RegisterWindowCreated(callback func(window Window)) EventListener
 	RegisterWindowResized(callback func(window Window)) EventListener
 }
+
+// EventRegistryRPC is the low level interface to propagate events to plugins.
+type EventRegistryRPC interface {
+	PropagateCommands(packet PacketCommands, ignored *int)
+	PropagateDocumentCreated(packet PacketDocumentCreated, ignored *int)
+	PropagateDocumentCursorMoved(packet PacketDocumentCursorMoved, ignored *int)
+	PropagateEditorKeyboardModeChanged(packet PacketEditorKeyboardModeChanged, ignored *int)
+	PropagateEditorLanguage(packet PacketEditorLanguage, ignored *int)
+	PropagateTerminalKeyPressed(packet PacketTerminalKeyPressed, ignored *int)
+	PropagateTerminalMetaKeyPressed(packet PacketTerminalMetaKeyPressed, ignored *int)
+	PropagateTerminalResized(packet PacketTerminalResized, ignored *int)
+	PropagateViewActivated(packet PacketViewActivated, ignored *int)
+	PropagateViewCreated(packet PacketViewCreated, ignored *int)
+	PropagateWindowCreated(packet PacketWindowCreated, ignored *int)
+	PropagateWindowResized(packet PacketWindowResized, ignored *int)
+}
+
+// PacketCommands is for internal RPC use.
+type PacketCommands struct {
+	Cmds EnqueuedCommands
+}
+
+// PacketDocumentCreated is for internal RPC use.
+type PacketDocumentCreated struct {
+	Doc Document
+}
+
+// PacketDocumentCursorMoved is for internal RPC use.
+type PacketDocumentCursorMoved struct {
+	Doc Document
+	Col int
+	Row int
+}
+
+// PacketEditorKeyboardModeChanged is for internal RPC use.
+type PacketEditorKeyboardModeChanged struct {
+	Mode KeyboardMode
+}
+
+// PacketEditorLanguage is for internal RPC use.
+type PacketEditorLanguage struct {
+	L lang.Language
+}
+
+// PacketTerminalKeyPressed is for internal RPC use.
+type PacketTerminalKeyPressed struct {
+	K key.Press
+}
+
+// PacketTerminalMetaKeyPressed is for internal RPC use.
+type PacketTerminalMetaKeyPressed struct {
+	K key.Press
+}
+
+// PacketTerminalResized is for internal RPC use.
+type PacketTerminalResized struct {
+}
+
+// PacketViewActivated is for internal RPC use.
+type PacketViewActivated struct {
+	View View
+}
+
+// PacketViewCreated is for internal RPC use.
+type PacketViewCreated struct {
+	View View
+}
+
+// PacketWindowCreated is for internal RPC use.
+type PacketWindowCreated struct {
+	Window Window
+}
+
+// PacketWindowResized is for internal RPC use.
+type PacketWindowResized struct {
+	Window Window
+}

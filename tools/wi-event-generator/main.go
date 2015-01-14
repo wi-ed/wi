@@ -163,15 +163,30 @@ type EventRegistry interface {
 {{range .Events}}
   Register{{.Name}}(callback func({{.ParamsAsString}})) EventListener{{end}}
 }
+
+// EventRegistryRPC is the low level interface to propagate events to plugins.
+type EventRegistryRPC interface {
+	{{range .Events}}
+	Propagate{{.Name}}(packet Packet{{.Name}}, ignored *int){{end}}
+}
+
+{{range .Events}}
+// Packet{{.Name}} is for internal RPC use.
+type Packet{{.Name}} struct {
+{{range .ParamsUpperCase}}  {{.Name}} {{.Type}}
+{{end}} }
+{{end}}
 `))
 
 type Event struct {
-	Name           string
-	Lower          string
-	Index          int
-	BitValue       string
-	ParamsAsString string // "a int, b string"
-	ParamsNames    string // "a, b"
+	Name            string
+	Lower           string
+	Index           int
+	BitValue        string
+	ParamsAsString  string // "a int, b string"
+	ParamsNames     string // "a, b"
+	Params          []Arg
+	ParamsUpperCase []Arg
 }
 
 type tmplData struct {
@@ -318,22 +333,27 @@ func extractEvents(inputFile, inputType string, impl bool, bitmask uint) ([]Even
 		lower := strings.ToLower(name[0:1]) + name[1:]
 		names := make([]string, len(method.Params))
 		full := make([]string, len(method.Params))
+		paramsUpper := make([]Arg, len(method.Params))
 		for i, arg := range method.Params {
 			if len(arg.Name) == 0 {
 				return nil, fmt.Errorf("argument %d must be named on method %s.%s", i, inputType, method.Name)
 			}
 			names[i] = arg.Name
 			full[i] = fmt.Sprintf("%s %s", arg.Name, arg.Type)
+			paramsUpper[i] = arg
+			paramsUpper[i].Name = strings.ToUpper(paramsUpper[i].Name[0:1]) + paramsUpper[i].Name[1:]
 		}
 		// TODO(maruel): It creates an artificial limit of 2^23 event listener and
 		// 2^8 event types on 32 bits systems.
 		events = append(events, Event{
-			Name:           name,
-			Lower:          lower,
-			Index:          len(events),
-			BitValue:       fmt.Sprintf("0x%x", (len(events)+1)<<bitmask),
-			ParamsAsString: strings.Join(full, ", "),
-			ParamsNames:    strings.Join(names, ", "),
+			Name:            name,
+			Lower:           lower,
+			Index:           len(events),
+			BitValue:        fmt.Sprintf("0x%x", (len(events)+1)<<bitmask),
+			ParamsAsString:  strings.Join(full, ", "),
+			ParamsNames:     strings.Join(names, ", "),
+			Params:          method.Params,
+			ParamsUpperCase: paramsUpper,
 		})
 	}
 	return events, nil
