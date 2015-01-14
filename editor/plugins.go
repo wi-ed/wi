@@ -16,6 +16,7 @@ import (
 	"runtime"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/maruel/wi/wicore"
 	"github.com/maruel/wi/wicore/lang"
@@ -42,8 +43,14 @@ func (p *pluginProcess) Close() error {
 	var err error
 	if p.client != nil {
 		tmp := 0
-		if err1 := p.client.Call("PluginRPC.Quit", 0, &tmp); err1 != nil {
-			err = err1
+		call := p.client.Go("PluginRPC.Quit", 0, &tmp, nil)
+		select {
+		case <-call.Done:
+			if call.Error != nil {
+				err = call.Error
+			}
+		case <-time.After(time.Second):
+			err = fmt.Errorf("%s timed out", p)
 		}
 		if err2 := p.client.Close(); err2 != nil {
 			err = err2
@@ -61,14 +68,10 @@ func (p *pluginProcess) Close() error {
 }
 
 func (p *pluginProcess) String() string {
-	p.lock.Lock()
-	defer p.lock.Unlock()
 	return fmt.Sprintf("Plugin(%s, %d)", p.details.Name, p.pid)
 }
 
 func (p *pluginProcess) Details() wicore.PluginDetails {
-	p.lock.Lock()
-	defer p.lock.Unlock()
 	return p.details
 }
 
