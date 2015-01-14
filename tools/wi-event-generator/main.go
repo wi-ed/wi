@@ -112,6 +112,11 @@ func (er *eventRegistry) Trigger{{.Name}}({{.ParamsAsString}}) {
 			item({{.ParamsNames}})
 		}
 	}
+}
+
+func (er *eventRegistry) Trigger{{.Name}}RPC(packet Packet{{.Name}}, ignored *int) error {
+	er.Trigger{{.Name}}({{.PacketParams}})
+	return nil
 }{{end}}
 
 type unregister interface {
@@ -152,6 +157,12 @@ type EventListener interface {
 // NumberEvents is the number of known events.
 const NumberEvents = {{len .Events}}
 
+// EventRegistryRPC is the low level interface to propagate events to plugins.
+type EventRegistryRPC interface {
+	{{range .Events}}
+	Trigger{{.Name}}RPC(packet Packet{{.Name}}, ignored *int) error{{end}}
+}
+
 // EventRegistry permits to register callbacks that are called on events.
 //
 // When the callback returns false, the next registered events are not called.
@@ -159,15 +170,10 @@ const NumberEvents = {{len .Events}}
 // Warning: This interface is automatically generated.
 type EventRegistry interface {
 	EventsDefinition
+	EventRegistryRPC
 
 {{range .Events}}
   Register{{.Name}}(callback func({{.ParamsAsString}})) EventListener{{end}}
-}
-
-// EventRegistryRPC is the low level interface to propagate events to plugins.
-type EventRegistryRPC interface {
-	{{range .Events}}
-	Propagate{{.Name}}(packet Packet{{.Name}}, ignored *int){{end}}
 }
 
 {{range .Events}}
@@ -183,10 +189,11 @@ type Event struct {
 	Lower           string
 	Index           int
 	BitValue        string
-	ParamsAsString  string // "a int, b string"
-	ParamsNames     string // "a, b"
-	Params          []Arg
-	ParamsUpperCase []Arg
+	ParamsAsString  string // "foo int, bar string"
+	ParamsNames     string // "foo, bar"
+	Params          []Arg  // []Arg{{"foo", "int"}, {"bar", "string"}}
+	ParamsUpperCase []Arg  // []Arg{{"Foo", "int"}, {"Bar", "string"}}
+	PacketParams    string // "packet.foo, packet.bar"
 }
 
 type tmplData struct {
@@ -334,6 +341,7 @@ func extractEvents(inputFile, inputType string, impl bool, bitmask uint) ([]Even
 		names := make([]string, len(method.Params))
 		full := make([]string, len(method.Params))
 		paramsUpper := make([]Arg, len(method.Params))
+		packetParams := make([]string, len(method.Params))
 		for i, arg := range method.Params {
 			if len(arg.Name) == 0 {
 				return nil, fmt.Errorf("argument %d must be named on method %s.%s", i, inputType, method.Name)
@@ -342,6 +350,7 @@ func extractEvents(inputFile, inputType string, impl bool, bitmask uint) ([]Even
 			full[i] = fmt.Sprintf("%s %s", arg.Name, arg.Type)
 			paramsUpper[i] = arg
 			paramsUpper[i].Name = strings.ToUpper(paramsUpper[i].Name[0:1]) + paramsUpper[i].Name[1:]
+			packetParams[i] = "packet." + paramsUpper[i].Name
 		}
 		// TODO(maruel): It creates an artificial limit of 2^23 event listener and
 		// 2^8 event types on 32 bits systems.
@@ -354,6 +363,7 @@ func extractEvents(inputFile, inputType string, impl bool, bitmask uint) ([]Even
 			ParamsNames:     strings.Join(names, ", "),
 			Params:          method.Params,
 			ParamsUpperCase: paramsUpper,
+			PacketParams:    strings.Join(packetParams, ", "),
 		})
 	}
 	return events, nil

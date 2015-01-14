@@ -17,6 +17,22 @@ type EventListener interface {
 // NumberEvents is the number of known events.
 const NumberEvents = 12
 
+// EventRegistryRPC is the low level interface to propagate events to plugins.
+type EventRegistryRPC interface {
+	TriggerCommandsRPC(packet PacketCommands, ignored *int) error
+	TriggerDocumentCreatedRPC(packet PacketDocumentCreated, ignored *int) error
+	TriggerDocumentCursorMovedRPC(packet PacketDocumentCursorMoved, ignored *int) error
+	TriggerEditorKeyboardModeChangedRPC(packet PacketEditorKeyboardModeChanged, ignored *int) error
+	TriggerEditorLanguageRPC(packet PacketEditorLanguage, ignored *int) error
+	TriggerTerminalKeyPressedRPC(packet PacketTerminalKeyPressed, ignored *int) error
+	TriggerTerminalMetaKeyPressedRPC(packet PacketTerminalMetaKeyPressed, ignored *int) error
+	TriggerTerminalResizedRPC(packet PacketTerminalResized, ignored *int) error
+	TriggerViewActivatedRPC(packet PacketViewActivated, ignored *int) error
+	TriggerViewCreatedRPC(packet PacketViewCreated, ignored *int) error
+	TriggerWindowCreatedRPC(packet PacketWindowCreated, ignored *int) error
+	TriggerWindowResizedRPC(packet PacketWindowResized, ignored *int) error
+}
+
 // EventRegistry permits to register callbacks that are called on events.
 //
 // When the callback returns false, the next registered events are not called.
@@ -24,6 +40,7 @@ const NumberEvents = 12
 // Warning: This interface is automatically generated.
 type EventRegistry interface {
 	EventsDefinition
+	EventRegistryRPC
 
 	RegisterCommands(callback func(cmds EnqueuedCommands)) EventListener
 	RegisterDocumentCreated(callback func(doc Document)) EventListener
@@ -37,22 +54,6 @@ type EventRegistry interface {
 	RegisterViewCreated(callback func(view View)) EventListener
 	RegisterWindowCreated(callback func(window Window)) EventListener
 	RegisterWindowResized(callback func(window Window)) EventListener
-}
-
-// EventRegistryRPC is the low level interface to propagate events to plugins.
-type EventRegistryRPC interface {
-	PropagateCommands(packet PacketCommands, ignored *int)
-	PropagateDocumentCreated(packet PacketDocumentCreated, ignored *int)
-	PropagateDocumentCursorMoved(packet PacketDocumentCursorMoved, ignored *int)
-	PropagateEditorKeyboardModeChanged(packet PacketEditorKeyboardModeChanged, ignored *int)
-	PropagateEditorLanguage(packet PacketEditorLanguage, ignored *int)
-	PropagateTerminalKeyPressed(packet PacketTerminalKeyPressed, ignored *int)
-	PropagateTerminalMetaKeyPressed(packet PacketTerminalMetaKeyPressed, ignored *int)
-	PropagateTerminalResized(packet PacketTerminalResized, ignored *int)
-	PropagateViewActivated(packet PacketViewActivated, ignored *int)
-	PropagateViewCreated(packet PacketViewCreated, ignored *int)
-	PropagateWindowCreated(packet PacketWindowCreated, ignored *int)
-	PropagateWindowResized(packet PacketWindowResized, ignored *int)
 }
 
 // PacketCommands is for internal RPC use.

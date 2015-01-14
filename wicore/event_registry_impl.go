@@ -244,6 +244,11 @@ func (er *eventRegistry) TriggerCommands(cmds EnqueuedCommands) {
 	}
 }
 
+func (er *eventRegistry) TriggerCommandsRPC(packet PacketCommands, ignored *int) error {
+	er.TriggerCommands(packet.Cmds)
+	return nil
+}
+
 func (er *eventRegistry) RegisterDocumentCreated(callback func(doc Document)) EventListener {
 	er.lock.Lock()
 	defer er.lock.Unlock()
@@ -268,6 +273,11 @@ func (er *eventRegistry) TriggerDocumentCreated(doc Document) {
 			item(doc)
 		}
 	}
+}
+
+func (er *eventRegistry) TriggerDocumentCreatedRPC(packet PacketDocumentCreated, ignored *int) error {
+	er.TriggerDocumentCreated(packet.Doc)
+	return nil
 }
 
 func (er *eventRegistry) RegisterDocumentCursorMoved(callback func(doc Document, col int, row int)) EventListener {
@@ -296,6 +306,11 @@ func (er *eventRegistry) TriggerDocumentCursorMoved(doc Document, col int, row i
 	}
 }
 
+func (er *eventRegistry) TriggerDocumentCursorMovedRPC(packet PacketDocumentCursorMoved, ignored *int) error {
+	er.TriggerDocumentCursorMoved(packet.Doc, packet.Col, packet.Row)
+	return nil
+}
+
 func (er *eventRegistry) RegisterEditorKeyboardModeChanged(callback func(mode KeyboardMode)) EventListener {
 	er.lock.Lock()
 	defer er.lock.Unlock()
@@ -320,6 +335,11 @@ func (er *eventRegistry) TriggerEditorKeyboardModeChanged(mode KeyboardMode) {
 			item(mode)
 		}
 	}
+}
+
+func (er *eventRegistry) TriggerEditorKeyboardModeChangedRPC(packet PacketEditorKeyboardModeChanged, ignored *int) error {
+	er.TriggerEditorKeyboardModeChanged(packet.Mode)
+	return nil
 }
 
 func (er *eventRegistry) RegisterEditorLanguage(callback func(l lang.Language)) EventListener {
@@ -348,6 +368,11 @@ func (er *eventRegistry) TriggerEditorLanguage(l lang.Language) {
 	}
 }
 
+func (er *eventRegistry) TriggerEditorLanguageRPC(packet PacketEditorLanguage, ignored *int) error {
+	er.TriggerEditorLanguage(packet.L)
+	return nil
+}
+
 func (er *eventRegistry) RegisterTerminalKeyPressed(callback func(k key.Press)) EventListener {
 	er.lock.Lock()
 	defer er.lock.Unlock()
@@ -372,6 +397,11 @@ func (er *eventRegistry) TriggerTerminalKeyPressed(k key.Press) {
 			item(k)
 		}
 	}
+}
+
+func (er *eventRegistry) TriggerTerminalKeyPressedRPC(packet PacketTerminalKeyPressed, ignored *int) error {
+	er.TriggerTerminalKeyPressed(packet.K)
+	return nil
 }
 
 func (er *eventRegistry) RegisterTerminalMetaKeyPressed(callback func(k key.Press)) EventListener {
@@ -400,6 +430,11 @@ func (er *eventRegistry) TriggerTerminalMetaKeyPressed(k key.Press) {
 	}
 }
 
+func (er *eventRegistry) TriggerTerminalMetaKeyPressedRPC(packet PacketTerminalMetaKeyPressed, ignored *int) error {
+	er.TriggerTerminalMetaKeyPressed(packet.K)
+	return nil
+}
+
 func (er *eventRegistry) RegisterTerminalResized(callback func()) EventListener {
 	er.lock.Lock()
 	defer er.lock.Unlock()
@@ -424,6 +459,11 @@ func (er *eventRegistry) TriggerTerminalResized() {
 			item()
 		}
 	}
+}
+
+func (er *eventRegistry) TriggerTerminalResizedRPC(packet PacketTerminalResized, ignored *int) error {
+	er.TriggerTerminalResized()
+	return nil
 }
 
 func (er *eventRegistry) RegisterViewActivated(callback func(view View)) EventListener {
@@ -452,6 +492,11 @@ func (er *eventRegistry) TriggerViewActivated(view View) {
 	}
 }
 
+func (er *eventRegistry) TriggerViewActivatedRPC(packet PacketViewActivated, ignored *int) error {
+	er.TriggerViewActivated(packet.View)
+	return nil
+}
+
 func (er *eventRegistry) RegisterViewCreated(callback func(view View)) EventListener {
 	er.lock.Lock()
 	defer er.lock.Unlock()
@@ -476,6 +521,11 @@ func (er *eventRegistry) TriggerViewCreated(view View) {
 			item(view)
 		}
 	}
+}
+
+func (er *eventRegistry) TriggerViewCreatedRPC(packet PacketViewCreated, ignored *int) error {
+	er.TriggerViewCreated(packet.View)
+	return nil
 }
 
 func (er *eventRegistry) RegisterWindowCreated(callback func(window Window)) EventListener {
@@ -504,6 +554,11 @@ func (er *eventRegistry) TriggerWindowCreated(window Window) {
 	}
 }
 
+func (er *eventRegistry) TriggerWindowCreatedRPC(packet PacketWindowCreated, ignored *int) error {
+	er.TriggerWindowCreated(packet.Window)
+	return nil
+}
+
 func (er *eventRegistry) RegisterWindowResized(callback func(window Window)) EventListener {
 	er.lock.Lock()
 	defer er.lock.Unlock()
@@ -528,6 +583,11 @@ func (er *eventRegistry) TriggerWindowResized(window Window) {
 			item(window)
 		}
 	}
+}
+
+func (er *eventRegistry) TriggerWindowResizedRPC(packet PacketWindowResized, ignored *int) error {
+	er.TriggerWindowResized(packet.Window)
+	return nil
 }
 
 type unregister interface {

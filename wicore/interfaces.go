@@ -4,13 +4,13 @@
 
 // This file defines all the interfaces to be used by the wi editor and to be
 // accessable by plugins.
-
-// "stringer" can be installed with "go get golang.org/x/tools/cmd/stringer"
-//go:generate stringer -output=interfaces_string.go -type=BorderType,CommandCategory,DockingType,KeyboardMode
 //go:generate go run ../tools/wi-event-generator/main.go -output event_registry_decl.go
 
 // This command generates the struct EventRegistry based on EventRegistry.
 //go:generate go run ../tools/wi-event-generator/main.go -output event_registry_impl.go -impl
+
+// "stringer" can be installed with "go get golang.org/x/tools/cmd/stringer"
+//go:generate stringer -output=interfaces_string.go -type=BorderType,CommandCategory,DockingType,KeyboardMode
 
 package wicore
 

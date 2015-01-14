@@ -45,7 +45,7 @@ type pluginRPC struct {
 	conn         io.Closer
 	langListener wicore.EventListener
 	plugin       wicore.Plugin
-	e            wicore.Editor
+	e            *editorProxy
 }
 
 func (p *pluginRPC) GetInfo(l lang.Language, out *wicore.PluginDetails) error {
@@ -55,22 +55,12 @@ func (p *pluginRPC) GetInfo(l lang.Language, out *wicore.PluginDetails) error {
 }
 
 func (p *pluginRPC) OnStart(details wicore.EditorDetails, ignored *int) error {
-	reg, deferred := wicore.MakeEventRegistry()
-	p.e = &editorProxy{
-		reg,
-		deferred,
-		details.ID,
-		nil,
-		[]string{},
-		wicore.Normal,
-		details.Version,
-	}
-	if p.e != nil {
-		p.langListener = p.e.RegisterEditorLanguage(func(l lang.Language) {
-			// Propagate the information.
-			lang.Set(l)
-		})
-	}
+	p.e.id = details.ID
+	p.e.version = details.Version
+	p.langListener = p.e.RegisterEditorLanguage(func(l lang.Language) {
+		// Propagate the information.
+		lang.Set(l)
+	})
 	p.plugin.Init(p.e)
 	return nil
 }
@@ -134,26 +124,6 @@ func (e *editorProxy) Version() string {
 	return e.version
 }
 
-/*
-type eventsAdaptor struct {
-}
-
-type Event struct {
-	Name string
-	Data interface{}
-}
-
-func (e *eventsAdaptor) Trigger(event Event, out *int) error {
-	switch event.Name {
-	case "Commands":
-		e.EventRegistry.TriggerCommands(event.Data)
-	default:
-		return fmt.Errorf("unknown event %s", event.Name)
-	}
-	return nil
-}
-*/
-
 // Main is the function to call from your plugin to initiate the communication
 // channel between wi and your plugin.
 func Main(plugin wicore.Plugin) {
@@ -166,18 +136,30 @@ func Main(plugin wicore.Plugin) {
 
 	conn := wicore.MakeReadWriteCloser(os.Stdin, os.Stdout)
 	server := rpc.NewServer()
+	reg, deferred := wicore.MakeEventRegistry()
+	e := &editorProxy{
+		reg,
+		deferred,
+		"",
+		nil,
+		[]string{},
+		wicore.Normal,
+		"",
+	}
 	p := &pluginRPC{
+		e:      e,
 		conn:   os.Stdin,
 		plugin: plugin,
 	}
 	// Statically assert the interface is correctly implemented.
 	var _ wicore.PluginRPC = p
+	var _ wicore.EventRegistryRPC = e
 	if err := server.RegisterName("PluginRPC", p); err != nil {
 		panic(err)
 	}
-	//if err := server.RegisterName("Events", p.eventsAdaptor); err != nil {
-	//	panic(err)
-	//}
+	if err := server.RegisterName("EventRegistryRPC", p.e); err != nil {
+		panic(err)
+	}
 	server.ServeConn(conn)
 	os.Exit(0)
 }
