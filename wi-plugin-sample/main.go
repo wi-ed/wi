@@ -16,7 +16,11 @@
 package main
 
 import (
+	"log"
+	"os"
+
 	"github.com/maruel/wi/wicore"
+	"github.com/maruel/wi/wicore/key"
 	"github.com/maruel/wi/wicore/lang"
 	"github.com/maruel/wi/wicore/plugin"
 )
@@ -30,6 +34,38 @@ type pluginImpl struct {
 // this function.
 func (p *pluginImpl) Init(e wicore.Editor) {
 	p.e = e
+
+	// TODO(maruel): Generate automatically?
+	e.RegisterCommands(func(cmds wicore.EnqueuedCommands) {
+		//log.Printf("Commands(%v)", cmds)
+	})
+	e.RegisterDocumentCreated(func(doc wicore.Document) {
+		log.Printf("DocumentCreated(%s)", doc)
+	})
+	e.RegisterDocumentCursorMoved(func(doc wicore.Document, col, row int) {
+		log.Printf("DocumentCursorMoved(%s, %d, %d)", doc, col, row)
+	})
+	e.RegisterEditorKeyboardModeChanged(func(mode wicore.KeyboardMode) {
+		log.Printf("EditorKeyboardModeChanged(%s)", mode)
+	})
+	e.RegisterEditorLanguage(func(l lang.Language) {
+		log.Printf("EditorLanguage(%s)", l)
+	})
+	e.RegisterTerminalResized(func() {
+		log.Printf("TerminalResized()")
+	})
+	e.RegisterTerminalKeyPressed(func(k key.Press) {
+		log.Printf("TerminalKeyPressed(%s)", k)
+	})
+	e.RegisterViewCreated(func(view wicore.View) {
+		log.Printf("ViewCreated(%s)", view)
+	})
+	e.RegisterWindowCreated(func(window wicore.Window) {
+		log.Printf("WindowCreated(%s)", window)
+	})
+	e.RegisterWindowResized(func(window wicore.Window) {
+		log.Printf("WindowResized(%s)", window)
+	})
 }
 
 // Close is the place to do full shut down. It is not required to implement
@@ -39,7 +75,14 @@ func (p *pluginImpl) Close() error {
 	return nil
 }
 
-func main() {
+func mainImpl() int {
+	log.SetFlags(log.Lmicroseconds | log.Lshortfile)
+	if f, err := os.OpenFile("wi-plugin-sample.log", os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0666); err == nil {
+		log.SetOutput(f)
+		defer func() {
+			_ = f.Close()
+		}()
+	}
 	// This starts the control loop. See its doc for more up-to-date details.
 	p := &pluginImpl{
 		plugin.PluginImpl{
@@ -51,5 +94,9 @@ func main() {
 		},
 		nil,
 	}
-	plugin.Main(p)
+	return plugin.Main(p)
+}
+
+func main() {
+	os.Exit(mainImpl())
 }

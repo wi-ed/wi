@@ -126,10 +126,12 @@ func (e *editorProxy) Version() string {
 
 // Main is the function to call from your plugin to initiate the communication
 // channel between wi and your plugin.
-func Main(plugin wicore.Plugin) {
+//
+// Returns the exit code that should be passed to os.Exit().
+func Main(plugin wicore.Plugin) int {
 	if os.ExpandEnv("${WI}") != "plugin" {
 		fmt.Fprint(os.Stderr, "This is a wi plugin. This program is only meant to be run through wi itself.\n")
-		os.Exit(1)
+		return 1
 	}
 	// TODO(maruel): Take garbage from os.Stdin, put garbage in os.Stdout.
 	fmt.Print(wicore.CalculateVersion())
@@ -156,12 +158,17 @@ func Main(plugin wicore.Plugin) {
 	// Statically assert the interface is correctly implemented.
 	var _ wicore.PluginRPC = p
 	var _ wicore.EventRegistryRPC = e
+
+	// TODO(maruel): Expose an object which doesn't have any method beside the
+	// ones exposed. Otherwise it spew the logs with noise.
 	if err := server.RegisterName("PluginRPC", p); err != nil {
-		panic(err)
+		fmt.Fprintf(os.Stderr, "%s\n", err)
+		return 1
 	}
 	if err := server.RegisterName("EventRegistryRPC", p.e); err != nil {
-		panic(err)
+		fmt.Fprintf(os.Stderr, "%s\n", err)
+		return 1
 	}
 	server.ServeConn(conn)
-	os.Exit(0)
+	return 0
 }

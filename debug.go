@@ -218,38 +218,6 @@ func debugHookEditor(e editor.Editor) {
 	for _, cmd := range cmds {
 		dispatcher.Register(cmd)
 	}
-
-	// TODO(maruel): Generate automatically?
-	e.RegisterCommands(func(cmds wicore.EnqueuedCommands) {
-		//log.Printf("Commands(%v)", cmds)
-	})
-	e.RegisterDocumentCreated(func(doc wicore.Document) {
-		log.Printf("DocumentCreated(%s)", doc)
-	})
-	e.RegisterDocumentCursorMoved(func(doc wicore.Document, col, row int) {
-		log.Printf("DocumentCursorMoved(%s, %d, %d)", doc, col, row)
-	})
-	e.RegisterEditorKeyboardModeChanged(func(mode wicore.KeyboardMode) {
-		log.Printf("EditorKeyboardModeChanged(%s)", mode)
-	})
-	e.RegisterEditorLanguage(func(l lang.Language) {
-		log.Printf("EditorLanguage(%s)", l)
-	})
-	e.RegisterTerminalResized(func() {
-		log.Printf("TerminalResized()")
-	})
-	e.RegisterTerminalKeyPressed(func(key key.Press) {
-		log.Printf("TerminalKeyPressed(%s)", key)
-	})
-	e.RegisterViewCreated(func(view wicore.View) {
-		log.Printf("ViewCreated(%s)", view)
-	})
-	e.RegisterWindowCreated(func(window wicore.Window) {
-		log.Printf("WindowCreated(%s)", window)
-	})
-	e.RegisterWindowResized(func(window wicore.Window) {
-		log.Printf("WindowResized(%s)", window)
-	})
 }
 
 // prettyPrintJSON pretty-prints a JSON buffer. Accepts list and dict.
