@@ -96,6 +96,8 @@ type eventRegistry struct {
 	{{.Lower}} []listener{{.Name}}{{end}}
 }
 
+// MakeEventRegistry returns an EventRegistry and the channel to read from to
+// run the events piped in.
 func MakeEventRegistry() (EventRegistry, chan func()) {
 	// Reduce the odds of allocation within RegistryXXX() by using relatively
 	// large buffers.
@@ -188,6 +190,8 @@ func RegisterPluginEvents(client *rpc.Client, e EventRegistry) EventListener {
 }
 `))
 
+// Event describes one parsed event from the interface that will be used to
+// generate the code.
 type Event struct {
 	Name            string
 	Lower           string
@@ -208,6 +212,7 @@ type tmplData struct {
 
 // Parser code.
 
+// Arg is one parameter or return value.
 type Arg struct {
 	Name string
 	Type string

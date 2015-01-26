@@ -84,6 +84,10 @@ func (d *document) RenderInto(buffer *raster.Buffer, view wicore.View, offsetCol
 	}
 }
 
+func (d *document) FileType() wicore.FileType {
+	return wicore.Scanning
+}
+
 func (d *document) IsDirty() bool {
 	return d.isDirty
 }

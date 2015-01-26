@@ -331,7 +331,7 @@ func loadPlugins(pluginExecutables [][]string) (Plugins, error) {
 	// Convert to a slice.
 	var wg sync.WaitGroup
 	out := make(Plugins, 0, len(pluginExecutables))
-	errs := make([]error, 0)
+	var errs []error
 	wg.Add(1)
 	wicore.Go("pluginReaper", func() {
 		defer wg.Done()

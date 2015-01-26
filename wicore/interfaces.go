@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"io"
 	"reflect"
+	"strings"
 
 	"github.com/maruel/interfaceGUID"
 	"github.com/maruel/wi/wicore/key"
@@ -268,6 +269,8 @@ type Document interface {
 	// TODO(maruel): Likely return a new Buffer instance instead, for RPC
 	// friendlyness. To be decided.
 	RenderInto(buffer *raster.Buffer, view View, offsetColumn, offsetLine int)
+	// FileType returns the file type as determined by the scanners.
+	FileType() FileType
 	// IsDirty is true if the content should be saved before quitting.
 	IsDirty() bool
 }
@@ -426,6 +429,29 @@ type PluginRPC interface {
 	// Quit is called on editor termination. The editor waits for the function to
 	// return.
 	Quit(in int, ignored *int) error
+}
+
+// FileType is the type as determined by the scanner. It uses a hierarchical
+// categorization of file formats.
+type FileType string
+
+// New types can safely be defined by a plugin.
+const (
+	Scanning       = FileType("Scanning")
+	Code           = FileType("Code")   // All files that can be considered "source code" in its broadest meaning.
+	CodeCFamily    = FileType("Code.C") // C covers all C derivatives.
+	CodeCC         = FileType("Code.C.C")
+	CodeCCSource   = FileType("Code.C.C.Source")
+	CodeCCHeader   = FileType("Code.C.C.Header")
+	CodeCCPP       = FileType("Code.C.C++")
+	CodeCCPPSource = FileType("Code.C.C++.Source")
+	CodeCCPPHeader = FileType("Code.C.C++.Header")
+	CodeGo         = FileType("Code.Go")
+)
+
+// Base returns the base file type for this file type
+func (f FileType) Base() FileType {
+	return FileType(strings.SplitN(string(f), ".", 2)[0])
 }
 
 // Utility functions.

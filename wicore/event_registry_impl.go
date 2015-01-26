@@ -93,6 +93,8 @@ type eventRegistry struct {
 	windowResized             []listenerWindowResized
 }
 
+// MakeEventRegistry returns an EventRegistry and the channel to read from to
+// run the events piped in.
 func MakeEventRegistry() (EventRegistry, chan func()) {
 	// Reduce the odds of allocation within RegistryXXX() by using relatively
 	// large buffers.

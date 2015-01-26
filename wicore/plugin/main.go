@@ -26,6 +26,7 @@ func (p *PluginImpl) String() string {
 	return fmt.Sprintf("Plugin(%s, %d)", p.Name, os.Getpid())
 }
 
+// Details implements wicore.Plugin.
 func (p *PluginImpl) Details() wicore.PluginDetails {
 	return wicore.PluginDetails{
 		p.Name,
@@ -33,9 +34,11 @@ func (p *PluginImpl) Details() wicore.PluginDetails {
 	}
 }
 
+// Init implements wicore.Plugin.
 func (p *PluginImpl) Init(e wicore.Editor) {
 }
 
+// Close implements wicore.Plugin.
 func (p *PluginImpl) Close() error {
 	return nil
 }

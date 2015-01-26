@@ -289,7 +289,7 @@ func (t TermBox) Blit(b *raster.Buffer) {
 	}
 }
 
-// SetCursor() moves the terminal cursor.
+// SetCursor moves the terminal cursor.
 func (t TermBox) SetCursor(col, line int) {
 	termbox.SetCursor(col, line)
 }
