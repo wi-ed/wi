@@ -10,7 +10,6 @@
 package main
 
 import (
-	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"expvar"
@@ -25,8 +24,8 @@ import (
 	"runtime/pprof"
 	"sort"
 	"strings"
-	"sync"
 
+	"github.com/maruel/circular"
 	"github.com/maruel/wi/editor"
 	"github.com/maruel/wi/wicore"
 	"github.com/maruel/wi/wicore/key"
@@ -40,76 +39,33 @@ var (
 )
 
 type debugData struct {
-	wg        sync.WaitGroup
-	lock      sync.Mutex
-	newData   *sync.Cond
-	quit      bool
-	logBuffer bytes.Buffer // Memory leak containing the process buffer. TODO(maruel): limit its size.
+	logBuffer *circular.Buffer
 	logFile   io.Closer
 	profFile  io.Closer
 }
 
 func (d *debugData) Close() error {
-	d.lock.Lock()
-	d.quit = true
-	d.lock.Unlock()
-	d.newData.Broadcast()
-	if d.logFile != nil {
-		d.logFile.Close()
-		d.logFile = nil
-	}
 	if d.profFile != nil {
 		pprof.StopCPUProfile()
 		d.profFile.Close()
 		d.profFile = nil
 	}
-	d.wg.Wait()
+	log.Printf("Closing log")
+	d.logBuffer.Flush()
+	d.logBuffer.Close()
+	if d.logFile != nil {
+		d.logFile.Close()
+		d.logFile = nil
+	}
 	return nil
 }
 
-func (d *debugData) Write(p []byte) (int, error) {
-	d.lock.Lock()
-	defer d.lock.Unlock()
-	d.newData.Broadcast()
-	return d.logBuffer.Write(p)
-}
-
-// streamTo doesn't update b.lastRead so multiple calls can happen
-// simultaneously. It forcibly flushes the output so it is sent to the
-// underlying TCP connection.
-func (d *debugData) streamTo(w io.Writer) (int, error) {
-	d.wg.Add(1)
-	defer d.wg.Done()
-	f, ok := w.(http.Flusher)
-	offset := 0
-	var err error
-	d.lock.Lock()
-	defer d.lock.Unlock()
-	for !d.quit {
-		buf := d.logBuffer.Bytes()
-		if len(buf) != offset {
-			var n int
-			n, err = w.Write(buf[offset:])
-			offset += n
-			if ok && n != 0 {
-				f.Flush()
-			}
-		}
-		if err != nil {
-			break
-		}
-		d.newData.Wait()
-	}
-	return offset, err
-}
-
 func debugHook() io.Closer {
-	data.newData = sync.NewCond(&data.lock)
 	log.SetFlags(log.Lmicroseconds | log.Lshortfile)
-	log.SetOutput(&data)
+	data.logBuffer = circular.MakeBuffer(10 * 1024 * 1024)
+	log.SetOutput(data.logBuffer)
 	if f, err := os.OpenFile("wi.log", os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0666); err == nil {
-		data.logFile = f
-		log.SetOutput(io.MultiWriter(&data, f))
+		wicore.Go("Log flusher", func() { data.logBuffer.WriteTo(f) })
 	}
 
 	if *cpuprofile != "" {
@@ -323,7 +279,7 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 
 func logHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-	data.streamTo(w)
+	data.logBuffer.WriteTo(w)
 }
 
 func faviconHandler(w http.ResponseWriter, r *http.Request) {
