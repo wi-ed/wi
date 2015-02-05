@@ -8,6 +8,7 @@ package plugin
 import (
 	"fmt"
 	"io"
+	"log"
 	"net/rpc"
 	"os"
 
@@ -159,19 +160,19 @@ func Main(plugin wicore.Plugin) int {
 		plugin: plugin,
 	}
 	// Statically assert the interface is correctly implemented.
-	var _ wicore.PluginRPC = p
-	var _ wicore.EventRegistryRPC = e
-
-	// TODO(maruel): Expose an object which doesn't have any method beside the
-	// ones exposed. Otherwise it spew the logs with noise.
-	if err := server.RegisterName("PluginRPC", p); err != nil {
+	var objPluginRPC wicore.PluginRPC = p
+	if err := server.RegisterName("PluginRPC", objPluginRPC); err != nil {
 		fmt.Fprintf(os.Stderr, "%s\n", err)
 		return 1
 	}
-	if err := server.RegisterName("EventRegistryRPC", p.e); err != nil {
+	// Expose an object which doesn't have any method beside the ones exposed.
+	// Otherwise it spew the logs with noise.
+	objEventRegistryRPC := struct{ wicore.EventRegistryRPC }{p.e}
+	if err := server.RegisterName("EventRegistryRPC", objEventRegistryRPC); err != nil {
 		fmt.Fprintf(os.Stderr, "%s\n", err)
 		return 1
 	}
+	log.Printf("wicore.plugin.Main() now serving")
 	server.ServeConn(conn)
 	return 0
 }
