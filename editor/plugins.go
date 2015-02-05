@@ -81,8 +81,14 @@ func (p *pluginProcess) Details() wicore.PluginDetails {
 
 // Init asynchronously initializes the plugin.
 func (p *pluginProcess) Init(e wicore.Editor) {
+	log.Printf("%s.Init()", p)
 	p.lock.Lock()
 	defer p.lock.Unlock()
+
+	// Make sure all plugins have their event registry properly registered
+	// before doing anything silly. This is purely a process-local setup.
+	p.listener = wicore.RegisterPluginEvents(p.client, e)
+
 	out := 0
 	details := wicore.EditorDetails{
 		e.ID(),
@@ -90,17 +96,17 @@ func (p *pluginProcess) Init(e wicore.Editor) {
 	}
 	call := p.client.Go("PluginRPC.Init", details, &out, nil)
 	wicore.Go("PluginRPC.Init", func() {
-		// TODO(maruel): Handle error.
 		_ = <-call.Done
 		p.lock.Lock()
 		defer p.lock.Unlock()
 		p.initialized = true
 		if call.Error != nil && p.err == nil {
 			p.err = call.Error
-			log.Printf("%s failed initialization: %s", p, p.err)
+			log.Printf("%s.Init() failed: %s", p, p.err)
+			_ = p.listener.Close()
+			p.listener = nil
 		} else {
-			log.Printf("%s initialized", p)
-			p.listener = wicore.RegisterPluginEvents(p.client, e)
+			log.Printf("%s.Init() done", p)
 		}
 	})
 }

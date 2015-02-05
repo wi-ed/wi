@@ -73,7 +73,7 @@ type listenerWindowResized struct {
 }
 
 // eventRegistry is automatically generated via wi-event-generator from the
-// interface EventRegistry. It completely implemented EventRegistry.
+// interface EventRegistry. It completely implements EventRegistry.
 type eventRegistry struct {
 	lock     sync.Mutex
 	nextID   int

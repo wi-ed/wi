@@ -414,8 +414,20 @@ type Plugin interface {
 	io.Closer
 	fmt.Stringer
 
+	// Details returns the plugin details for UI purposes. It's the first
+	// function called and it is called synchronously. wicore/plugin provides a
+	// trivial implementation.
 	Details() PluginDetails
+
+	// Init is called to do slower initialization part and is called
+	// asynchronously as the editor process is started. When this function is
+	// called, events are already registered and can fire simultaneously. It's up
+	// to the plugin to handle these events properly.
 	Init(e Editor)
+
+	// TODO(maruel): Split InitSync() + InitAsync() when needed to force
+	// synchronous (fast part) then asynchronous (slow delayed part)
+	// initialization.
 }
 
 // PluginRPC is the low-level interface exposed by the plugin for use by

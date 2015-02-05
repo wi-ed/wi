@@ -287,9 +287,9 @@ func (e *editor) loadPlugins() {
 			log.Printf("Failed to load plugins: %s", err)
 		}
 	}
+	// Trigger the RPC to initialize each plugin concurrently. Init() does not
+	// wait for the plugin to be fully initialized.
 	for _, plugin := range e.plugins {
-		// TODO(maruel): Register it to EventRegistry.
-		// e.EventRegistry.RegisterAll(plugin)
 		plugin.Init(e)
 	}
 }
