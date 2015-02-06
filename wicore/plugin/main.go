@@ -167,8 +167,8 @@ func Main(plugin wicore.Plugin) int {
 	}
 	// Expose an object which doesn't have any method beside the ones exposed.
 	// Otherwise it spew the logs with noise.
-	objEventRegistryRPC := struct{ wicore.EventRegistryRPC }{p.e}
-	if err := server.RegisterName("EventRegistryRPC", objEventRegistryRPC); err != nil {
+	objEventTriggerRPC := struct{ wicore.EventTriggerRPC }{p.e}
+	if err := server.RegisterName("EventTriggerRPC", objEventTriggerRPC); err != nil {
 		fmt.Fprintf(os.Stderr, "%s\n", err)
 		return 1
 	}

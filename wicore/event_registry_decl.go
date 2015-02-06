@@ -17,8 +17,8 @@ type EventListener interface {
 // NumberEvents is the number of known events.
 const NumberEvents = 12
 
-// EventRegistryRPC is the low level interface to propagate events to plugins.
-type EventRegistryRPC interface {
+// EventTriggerRPC is the low level interface to propagate events to plugins.
+type EventTriggerRPC interface {
 	TriggerCommandsRPC(packet PacketCommands, ignored *int) error
 	TriggerDocumentCreatedRPC(packet PacketDocumentCreated, ignored *int) error
 	TriggerDocumentCursorMovedRPC(packet PacketDocumentCursorMoved, ignored *int) error
@@ -39,8 +39,8 @@ type EventRegistryRPC interface {
 //
 // Warning: This interface is automatically generated.
 type EventRegistry interface {
-	EventsDefinition
-	EventRegistryRPC
+	EventTrigger
+	EventTriggerRPC
 
 	RegisterCommands(callback func(cmds EnqueuedCommands)) EventListener
 	RegisterDocumentCreated(callback func(doc Document)) EventListener

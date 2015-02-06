@@ -89,11 +89,11 @@ type Proxyable interface {
 	ID() string
 }
 
-// EventsDefinition declares the valid events.
+// EventTrigger declares the valid events that can be triggered.
 //
 // Do not use this interface directly, use the automatically-generated
 // interface EventRegistry instead.
-type EventsDefinition interface {
+type EventTrigger interface {
 	// TriggerCommands dispatches one or multiple commands to the current active
 	// listener. Normally, it's the View contained to the active Window. Using
 	// this function guarantees that all the commands will be executed in order

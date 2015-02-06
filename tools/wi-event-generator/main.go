@@ -43,8 +43,8 @@ type EventListener interface {
 // NumberEvents is the number of known events.
 const NumberEvents = {{len .Events}}
 
-// EventRegistryRPC is the low level interface to propagate events to plugins.
-type EventRegistryRPC interface {
+// EventTriggerRPC is the low level interface to propagate events to plugins.
+type EventTriggerRPC interface {
 	{{range .Events}}
 	Trigger{{.Name}}RPC(packet Packet{{.Name}}, ignored *int) error{{end}}
 }
@@ -55,11 +55,11 @@ type EventRegistryRPC interface {
 //
 // Warning: This interface is automatically generated.
 type EventRegistry interface {
-	EventsDefinition
-	EventRegistryRPC
+	EventTrigger
+	EventTriggerRPC
 
 {{range .Events}}
-  Register{{.Name}}(callback func({{.ParamsAsString}})) EventListener{{end}}
+	Register{{.Name}}(callback func({{.ParamsAsString}})) EventListener{{end}}
 }
 
 {{range .Events}}
@@ -179,13 +179,13 @@ func (e *eventListener) Close() error {
 }
 
 // RegisterPluginEvents registers all the events to be forwarded to the plugin
-// through the interface EventRegistryRPC.
+// through the interface EventTriggerRPC.
 func RegisterPluginEvents(client *rpc.Client, e EventRegistry) EventListener {
 	return multiCloser{ {{range .Events}}
 		e.Register{{.Name}}(func({{.ParamsAsString}}) {
 			packet := Packet{{.Name}} { {{.ParamsNames}} }
 			out := 0
-			if err := client.Call("EventRegistryRPC.Trigger{{.Name}}RPC", packet, &out); err != nil {
+			if err := client.Call("EventTriggerRPC.Trigger{{.Name}}RPC", packet, &out); err != nil {
 				log.Printf("RPC call failure: %s", err)
 			}
 		}),{{end}}
@@ -313,7 +313,7 @@ func mainImpl() error {
 	if len(*outputFile) == 0 {
 		return errors.New("-output is required")
 	}
-	src, err := generate("interfaces.go", "EventsDefinition", *impl)
+	src, err := generate("interfaces.go", "EventTrigger", *impl)
 	if err != nil {
 		return err
 	}
