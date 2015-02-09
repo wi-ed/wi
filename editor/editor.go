@@ -306,7 +306,7 @@ func (e *editor) loadPlugins() {
 // be used by the object created by this function.
 func MakeEditor(terminal Terminal, noPlugin bool) (Editor, error) {
 	lang.Set(lang.En)
-	reg, deferred := wicore.MakeEventRegistry()
+	reg, deferred := makeEventRegistry()
 	e := &editor{
 		EventRegistry: reg,
 		deferred:      deferred,

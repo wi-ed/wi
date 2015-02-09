@@ -87,7 +87,7 @@ func (p *pluginProcess) Init(e wicore.Editor) {
 
 	// Make sure all plugins have their event registry properly registered
 	// before doing anything silly. This is purely a process-local setup.
-	p.listener = wicore.RegisterPluginEvents(p.client, e)
+	p.listener = registerPluginEvents(p.client, e)
 
 	out := 0
 	details := wicore.EditorDetails{

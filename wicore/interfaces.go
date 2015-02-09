@@ -2,12 +2,9 @@
 // Use of this source code is governed under the Apache License, Version 2.0
 // that can be found in the LICENSE file.
 
-// This file defines all the interfaces to be used by the wi editor and to be
+// This file defines all the code to be used by the wi editor and to be
 // accessable by plugins.
-//go:generate go run ../tools/wi-event-generator/main.go -output event_registry_decl.go
-
-// This command generates the struct EventRegistry based on EventRegistry.
-//go:generate go run ../tools/wi-event-generator/main.go -output event_registry_impl.go -impl
+//go:generate go run ../tools/wi-event-generator/main.go
 
 // "stringer" can be installed with "go get golang.org/x/tools/cmd/stringer"
 //go:generate stringer -output=interfaces_string.go -type=BorderType,CommandCategory,DockingType,KeyboardMode
@@ -527,9 +524,10 @@ func PositionOnScreen(w Window) raster.Rect {
 	return out
 }
 
-type multiCloser []io.Closer
+// MultiCloser closes multiple io.Closer at once.
+type MultiCloser []io.Closer
 
-func (m multiCloser) Close() (err error) {
+func (m MultiCloser) Close() (err error) {
 	for _, i := range m {
 		err1 := i.Close()
 		if err1 != nil {
@@ -546,5 +544,5 @@ func MakeReadWriteCloser(reader io.ReadCloser, writer io.WriteCloser) io.ReadWri
 		io.Reader
 		io.Writer
 		io.Closer
-	}{reader, writer, multiCloser{reader, writer}}
+	}{reader, writer, MultiCloser{reader, writer}}
 }

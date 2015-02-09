@@ -12,12 +12,44 @@ import (
 	"fmt"
 	"go/ast"
 	"go/format"
+	"strings"
 )
 
 // Arg is one parameter or return value.
 type Arg struct {
 	Name string
+	Pkg  string
 	Type string
+}
+
+func (a *Arg) FullType(curPkg string) string {
+	if a.Pkg == "" || a.Pkg == curPkg {
+		return fmt.Sprintf("%s", a.Type)
+	}
+	return fmt.Sprintf("%s.%s", a.Pkg, a.Type)
+}
+
+type Args []Arg
+
+func (a Args) Names() string {
+	out := make([]string, len(a))
+	for i, arg := range a {
+		out[i] = arg.Name
+	}
+	return strings.Join(out, ", ")
+}
+
+func (a Args) Flat(curPkg string) string {
+	out := make([]string, len(a))
+	for i, arg := range a {
+		if i < len(a)-1 && a[+1].Pkg == arg.Pkg && a[i+1].Type == arg.Type {
+			// Skip redundant names.
+			out[i] = arg.Name
+		} else {
+			out[i] = fmt.Sprintf("%s %s", arg.Name, arg.FullType(curPkg))
+		}
+	}
+	return strings.Join(out, ", ")
 }
 
 // Method is a simplification of ast.FuncType using only strings.
@@ -50,31 +82,72 @@ func FindType(f *ast.File, inputType string) *ast.TypeSpec {
 	return nil
 }
 
+var intrinsicTypes = []string{
+	"bool",
+	"uint8",
+	"uint16",
+	"uint32",
+	"uint64",
+	"int8",
+	"int16",
+	"int32",
+	"int64",
+	"float",
+	"float32",
+	"float64",
+	"complex",
+	"complex64",
+	"complex128",
+	"byte",
+	"rune",
+	"uint",
+	"int",
+	"uintptr",
+	"string",
+	"interface{}",
+}
+
 // processFieldList processes params or results of a method.
-func processFieldList(list *ast.FieldList) ([]Arg, error) {
+func processFieldList(currentPkg string, list *ast.FieldList) ([]Arg, error) {
 	if list == nil || len(list.List) == 0 {
 		return []Arg{}, nil
 	}
 	out := make([]Arg, 0, len(list.List))
 	for _, param := range list.List {
 		typeName := ""
+		pkg := ""
+		// TODO(maruel): Handle map, slice, channels, etc.
 		selector, ok := param.Type.(*ast.SelectorExpr)
 		if ok {
+			// A fully qualified reference to an external package.
 			ident, ok := selector.X.(*ast.Ident)
 			if !ok {
 				return out, errors.New("failed to process field")
 			}
-			typeName = ident.Name + "." + selector.Sel.Name
+			pkg = ident.Name
+			typeName = selector.Sel.Name
 		} else {
 			ident, ok := param.Type.(*ast.Ident)
 			if !ok {
 				return out, errors.New("failed to process field")
 			}
 			typeName = ident.Name
+			// If not a basic type, set the package to the current package name.
+			instrinsic := false
+			for _, t := range intrinsicTypes {
+				if typeName == t {
+					instrinsic = true
+					break
+				}
+			}
+			if !instrinsic {
+				pkg = currentPkg
+			}
 		}
 		for _, name := range param.Names {
 			arg := Arg{
 				Name: name.Name,
+				Pkg:  pkg,
 				Type: typeName,
 			}
 			out = append(out, arg)
@@ -86,7 +159,7 @@ func processFieldList(list *ast.FieldList) ([]Arg, error) {
 // EnumInterface enumerates all the methods of an interface.
 //
 // Useful to generate code from an interface.
-func EnumInterface(t *ast.TypeSpec) ([]Method, error) {
+func EnumInterface(pkgName string, t *ast.TypeSpec) ([]Method, error) {
 	typeName := t.Name.Name
 	i, ok := t.Type.(*ast.InterfaceType)
 	if !ok {
@@ -99,11 +172,11 @@ func EnumInterface(t *ast.TypeSpec) ([]Method, error) {
 		if !ok {
 			return out, fmt.Errorf("expected %s.%s to be a method", typeName, methodName)
 		}
-		params, err := processFieldList(methodFunc.Params)
+		params, err := processFieldList(pkgName, methodFunc.Params)
 		if err != nil {
 			return out, fmt.Errorf("%s.%s: params %s", i, typeName, methodName, err)
 		}
-		results, err := processFieldList(methodFunc.Results)
+		results, err := processFieldList(pkgName, methodFunc.Results)
 		if err != nil {
 			return out, fmt.Errorf("%s.%s: results %s", i, typeName, methodName, err)
 		}

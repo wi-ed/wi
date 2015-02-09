@@ -144,7 +144,7 @@ func Main(plugin wicore.Plugin) int {
 	// kill the plugin process in this case.
 	conn := wicore.MakeReadWriteCloser(os.Stdin, os.Stdout)
 	server := rpc.NewServer()
-	reg, deferred := wicore.MakeEventRegistry()
+	reg, rpc, deferred := makeEventRegistry()
 	e := &editorProxy{
 		reg,
 		deferred,
@@ -167,7 +167,7 @@ func Main(plugin wicore.Plugin) int {
 	}
 	// Expose an object which doesn't have any method beside the ones exposed.
 	// Otherwise it spew the logs with noise.
-	objEventTriggerRPC := struct{ wicore.EventTriggerRPC }{p.e}
+	objEventTriggerRPC := struct{ wicore.EventTriggerRPC }{rpc}
 	if err := server.RegisterName("EventTriggerRPC", objEventTriggerRPC); err != nil {
 		fmt.Fprintf(os.Stderr, "%s\n", err)
 		return 1
