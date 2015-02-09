@@ -403,7 +403,7 @@ type PluginDetails struct {
 // It's the high level object.
 //
 // Communication flow goes this way:
-//   Editor -> Plugin -> PluginRPC -> net/rpc -> <process boundary> -> net/rpc -> PluginRPC -> Plugin
+//   Editor -> Plugin -> internal.PluginRPC -> net/rpc -> <process boundary> -> net/rpc -> internal.PluginRPC -> Plugin
 //
 // The Plugin implementation in the editor process is a stub. Execution
 // eventually flows up to the plugin process' Plugin instance.
@@ -425,19 +425,6 @@ type Plugin interface {
 	// TODO(maruel): Split InitSync() + InitAsync() when needed to force
 	// synchronous (fast part) then asynchronous (slow delayed part)
 	// initialization.
-}
-
-// PluginRPC is the low-level interface exposed by the plugin for use by
-// net/rpc. net/rpc forces the interface to be in a rigid format.
-type PluginRPC interface {
-	// GetInfo is the fisrt function to be called synchronously. It must return
-	// immediately.
-	GetInfo(ignored lang.Language, out *PluginDetails) error
-	// Init is called on plugin startup. All initialization should be done there.
-	Init(in EditorDetails, ignored *int) error
-	// Quit is called on editor termination. The editor waits for the function to
-	// return.
-	Quit(in int, ignored *int) error
 }
 
 // FileType is the type as determined by the scanner. It uses a hierarchical

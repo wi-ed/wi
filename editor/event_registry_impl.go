@@ -8,6 +8,7 @@ import (
 	"net/rpc"
 	"sync"
 
+	"github.com/maruel/wi/internal"
 	"github.com/maruel/wi/wicore"
 	"github.com/maruel/wi/wicore/key"
 	"github.com/maruel/wi/wicore/lang"
@@ -42,84 +43,84 @@ func makeEventRegistry() (wicore.EventRegistry, chan func()) {
 func registerPluginEvents(client *rpc.Client, e wicore.EventRegistry) wicore.EventListener {
 	return wicore.MultiCloser{
 		e.RegisterCommands(func(cmds wicore.EnqueuedCommands) {
-			packet := wicore.PacketCommands{cmds}
+			packet := internal.PacketCommands{cmds}
 			out := 0
 			if err := client.Call("EventTriggerRPC.TriggerCommandsRPC", packet, &out); err != nil {
 				log.Printf("RPC Commands call failure: %s", err)
 			}
 		}),
 		e.RegisterDocumentCreated(func(doc wicore.Document) {
-			packet := wicore.PacketDocumentCreated{doc}
+			packet := internal.PacketDocumentCreated{doc}
 			out := 0
 			if err := client.Call("EventTriggerRPC.TriggerDocumentCreatedRPC", packet, &out); err != nil {
 				log.Printf("RPC DocumentCreated call failure: %s", err)
 			}
 		}),
 		e.RegisterDocumentCursorMoved(func(doc wicore.Document, col, row int) {
-			packet := wicore.PacketDocumentCursorMoved{doc, col, row}
+			packet := internal.PacketDocumentCursorMoved{doc, col, row}
 			out := 0
 			if err := client.Call("EventTriggerRPC.TriggerDocumentCursorMovedRPC", packet, &out); err != nil {
 				log.Printf("RPC DocumentCursorMoved call failure: %s", err)
 			}
 		}),
 		e.RegisterEditorKeyboardModeChanged(func(mode wicore.KeyboardMode) {
-			packet := wicore.PacketEditorKeyboardModeChanged{mode}
+			packet := internal.PacketEditorKeyboardModeChanged{mode}
 			out := 0
 			if err := client.Call("EventTriggerRPC.TriggerEditorKeyboardModeChangedRPC", packet, &out); err != nil {
 				log.Printf("RPC EditorKeyboardModeChanged call failure: %s", err)
 			}
 		}),
 		e.RegisterEditorLanguage(func(l lang.Language) {
-			packet := wicore.PacketEditorLanguage{l}
+			packet := internal.PacketEditorLanguage{l}
 			out := 0
 			if err := client.Call("EventTriggerRPC.TriggerEditorLanguageRPC", packet, &out); err != nil {
 				log.Printf("RPC EditorLanguage call failure: %s", err)
 			}
 		}),
 		e.RegisterTerminalKeyPressed(func(k key.Press) {
-			packet := wicore.PacketTerminalKeyPressed{k}
+			packet := internal.PacketTerminalKeyPressed{k}
 			out := 0
 			if err := client.Call("EventTriggerRPC.TriggerTerminalKeyPressedRPC", packet, &out); err != nil {
 				log.Printf("RPC TerminalKeyPressed call failure: %s", err)
 			}
 		}),
 		e.RegisterTerminalMetaKeyPressed(func(k key.Press) {
-			packet := wicore.PacketTerminalMetaKeyPressed{k}
+			packet := internal.PacketTerminalMetaKeyPressed{k}
 			out := 0
 			if err := client.Call("EventTriggerRPC.TriggerTerminalMetaKeyPressedRPC", packet, &out); err != nil {
 				log.Printf("RPC TerminalMetaKeyPressed call failure: %s", err)
 			}
 		}),
 		e.RegisterTerminalResized(func() {
-			packet := wicore.PacketTerminalResized{}
+			packet := internal.PacketTerminalResized{}
 			out := 0
 			if err := client.Call("EventTriggerRPC.TriggerTerminalResizedRPC", packet, &out); err != nil {
 				log.Printf("RPC TerminalResized call failure: %s", err)
 			}
 		}),
 		e.RegisterViewActivated(func(view wicore.View) {
-			packet := wicore.PacketViewActivated{view}
+			packet := internal.PacketViewActivated{view}
 			out := 0
 			if err := client.Call("EventTriggerRPC.TriggerViewActivatedRPC", packet, &out); err != nil {
 				log.Printf("RPC ViewActivated call failure: %s", err)
 			}
 		}),
 		e.RegisterViewCreated(func(view wicore.View) {
-			packet := wicore.PacketViewCreated{view}
+			packet := internal.PacketViewCreated{view}
 			out := 0
 			if err := client.Call("EventTriggerRPC.TriggerViewCreatedRPC", packet, &out); err != nil {
 				log.Printf("RPC ViewCreated call failure: %s", err)
 			}
 		}),
 		e.RegisterWindowCreated(func(window wicore.Window) {
-			packet := wicore.PacketWindowCreated{window}
+			packet := internal.PacketWindowCreated{window}
 			out := 0
 			if err := client.Call("EventTriggerRPC.TriggerWindowCreatedRPC", packet, &out); err != nil {
 				log.Printf("RPC WindowCreated call failure: %s", err)
 			}
 		}),
 		e.RegisterWindowResized(func(window wicore.Window) {
-			packet := wicore.PacketWindowResized{window}
+			packet := internal.PacketWindowResized{window}
 			out := 0
 			if err := client.Call("EventTriggerRPC.TriggerWindowResizedRPC", packet, &out); err != nil {
 				log.Printf("RPC WindowResized call failure: %s", err)

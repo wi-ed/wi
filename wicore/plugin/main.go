@@ -12,6 +12,7 @@ import (
 	"net/rpc"
 	"os"
 
+	"github.com/maruel/wi/internal"
 	"github.com/maruel/wi/wicore"
 	"github.com/maruel/wi/wicore/lang"
 )
@@ -44,7 +45,7 @@ func (p *PluginImpl) Close() error {
 	return nil
 }
 
-// pluginRPC implements wicore.PluginRPC and implement common bookeeping.
+// pluginRPC implements internal.PluginRPC and implement common bookeeping.
 type pluginRPC struct {
 	conn         io.Closer
 	langListener wicore.EventListener
@@ -160,14 +161,14 @@ func Main(plugin wicore.Plugin) int {
 		plugin: plugin,
 	}
 	// Statically assert the interface is correctly implemented.
-	var objPluginRPC wicore.PluginRPC = p
+	var objPluginRPC internal.PluginRPC = p
 	if err := server.RegisterName("PluginRPC", objPluginRPC); err != nil {
 		fmt.Fprintf(os.Stderr, "%s\n", err)
 		return 1
 	}
 	// Expose an object which doesn't have any method beside the ones exposed.
 	// Otherwise it spew the logs with noise.
-	objEventTriggerRPC := struct{ wicore.EventTriggerRPC }{rpc}
+	objEventTriggerRPC := struct{ internal.EventTriggerRPC }{rpc}
 	if err := server.RegisterName("EventTriggerRPC", objEventTriggerRPC); err != nil {
 		fmt.Fprintf(os.Stderr, "%s\n", err)
 		return 1

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"sync"
 
+	"github.com/maruel/wi/internal"
 	"github.com/maruel/wi/wicore"
 	"github.com/maruel/wi/wicore/key"
 	"github.com/maruel/wi/wicore/lang"
@@ -17,7 +18,7 @@ type eventTriggerRPC struct {
 
 // makeEventRegistry returns a wicore.EventRegistry and the channel to read
 // from to run the events piped in.
-func makeEventRegistry() (wicore.EventRegistry, wicore.EventTriggerRPC, chan func()) {
+func makeEventRegistry() (wicore.EventRegistry, internal.EventTriggerRPC, chan func()) {
 	// Reduce the odds of allocation within RegistryXXX() by using relatively
 	// large buffers.
 	c := make(chan func(), 2048)
@@ -41,62 +42,62 @@ func makeEventRegistry() (wicore.EventRegistry, wicore.EventTriggerRPC, chan fun
 	return e, e, c
 }
 
-func (er *eventTriggerRPC) TriggerCommandsRPC(packet wicore.PacketCommands, ignored *int) error {
+func (er *eventTriggerRPC) TriggerCommandsRPC(packet internal.PacketCommands, ignored *int) error {
 	er.triggerCommands(packet.Cmds)
 	return nil
 }
 
-func (er *eventTriggerRPC) TriggerDocumentCreatedRPC(packet wicore.PacketDocumentCreated, ignored *int) error {
+func (er *eventTriggerRPC) TriggerDocumentCreatedRPC(packet internal.PacketDocumentCreated, ignored *int) error {
 	er.triggerDocumentCreated(packet.Doc)
 	return nil
 }
 
-func (er *eventTriggerRPC) TriggerDocumentCursorMovedRPC(packet wicore.PacketDocumentCursorMoved, ignored *int) error {
+func (er *eventTriggerRPC) TriggerDocumentCursorMovedRPC(packet internal.PacketDocumentCursorMoved, ignored *int) error {
 	er.triggerDocumentCursorMoved(packet.Doc, packet.Col, packet.Row)
 	return nil
 }
 
-func (er *eventTriggerRPC) TriggerEditorKeyboardModeChangedRPC(packet wicore.PacketEditorKeyboardModeChanged, ignored *int) error {
+func (er *eventTriggerRPC) TriggerEditorKeyboardModeChangedRPC(packet internal.PacketEditorKeyboardModeChanged, ignored *int) error {
 	er.triggerEditorKeyboardModeChanged(packet.Mode)
 	return nil
 }
 
-func (er *eventTriggerRPC) TriggerEditorLanguageRPC(packet wicore.PacketEditorLanguage, ignored *int) error {
+func (er *eventTriggerRPC) TriggerEditorLanguageRPC(packet internal.PacketEditorLanguage, ignored *int) error {
 	er.triggerEditorLanguage(packet.L)
 	return nil
 }
 
-func (er *eventTriggerRPC) TriggerTerminalKeyPressedRPC(packet wicore.PacketTerminalKeyPressed, ignored *int) error {
+func (er *eventTriggerRPC) TriggerTerminalKeyPressedRPC(packet internal.PacketTerminalKeyPressed, ignored *int) error {
 	er.triggerTerminalKeyPressed(packet.K)
 	return nil
 }
 
-func (er *eventTriggerRPC) TriggerTerminalMetaKeyPressedRPC(packet wicore.PacketTerminalMetaKeyPressed, ignored *int) error {
+func (er *eventTriggerRPC) TriggerTerminalMetaKeyPressedRPC(packet internal.PacketTerminalMetaKeyPressed, ignored *int) error {
 	er.triggerTerminalMetaKeyPressed(packet.K)
 	return nil
 }
 
-func (er *eventTriggerRPC) TriggerTerminalResizedRPC(packet wicore.PacketTerminalResized, ignored *int) error {
+func (er *eventTriggerRPC) TriggerTerminalResizedRPC(packet internal.PacketTerminalResized, ignored *int) error {
 	er.triggerTerminalResized()
 	return nil
 }
 
-func (er *eventTriggerRPC) TriggerViewActivatedRPC(packet wicore.PacketViewActivated, ignored *int) error {
+func (er *eventTriggerRPC) TriggerViewActivatedRPC(packet internal.PacketViewActivated, ignored *int) error {
 	er.triggerViewActivated(packet.View)
 	return nil
 }
 
-func (er *eventTriggerRPC) TriggerViewCreatedRPC(packet wicore.PacketViewCreated, ignored *int) error {
+func (er *eventTriggerRPC) TriggerViewCreatedRPC(packet internal.PacketViewCreated, ignored *int) error {
 	er.triggerViewCreated(packet.View)
 	return nil
 }
 
-func (er *eventTriggerRPC) TriggerWindowCreatedRPC(packet wicore.PacketWindowCreated, ignored *int) error {
+func (er *eventTriggerRPC) TriggerWindowCreatedRPC(packet internal.PacketWindowCreated, ignored *int) error {
 	er.triggerWindowCreated(packet.Window)
 	return nil
 }
 
-func (er *eventTriggerRPC) TriggerWindowResizedRPC(packet wicore.PacketWindowResized, ignored *int) error {
+func (er *eventTriggerRPC) TriggerWindowResizedRPC(packet internal.PacketWindowResized, ignored *int) error {
 	er.triggerWindowResized(packet.Window)
 	return nil
 }
