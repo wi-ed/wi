@@ -52,10 +52,9 @@ func TestMainImmediateQuit(t *testing.T) {
 	terminal := NewTerminalFake(80, 25, []TerminalEvent{})
 	editor, err := MakeEditor(terminal, true)
 	ut.AssertEqual(t, nil, err)
-	closeEditor := func() {
+	defer func() {
 		_ = editor.Close()
-	}
-	defer closeEditor()
+	}()
 
 	wicore.PostCommand(editor, nil, "editor_bootstrap_ui")
 	wicore.PostCommand(editor, nil, "new")
@@ -80,10 +79,9 @@ func TestMainInvalidThenQuit(t *testing.T) {
 	terminal := NewTerminalFake(80, 25, []TerminalEvent{})
 	editor, err := MakeEditor(terminal, true)
 	ut.AssertEqual(t, nil, err)
-	closeEditor := func() {
+	defer func() {
 		_ = editor.Close()
-	}
-	defer closeEditor()
+	}()
 
 	wicore.PostCommand(editor, nil, "editor_bootstrap_ui")
 	wicore.PostCommand(editor, nil, "invalid")
