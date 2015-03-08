@@ -30,7 +30,7 @@ func keepLog(t *testing.T) func() {
 	log.SetOutput(out)
 	return func() {
 		log.SetOutput(ioutil.Discard)
-		out.Close()
+		_ = out.Close()
 	}
 }
 
@@ -52,7 +52,9 @@ func TestMainImmediateQuit(t *testing.T) {
 	terminal := NewTerminalFake(80, 25, []TerminalEvent{})
 	editor, err := MakeEditor(terminal, true)
 	ut.AssertEqual(t, nil, err)
-	defer editor.Close()
+	defer func() {
+		_ = editor.Close()
+	}()
 
 	wicore.PostCommand(editor, nil, "editor_bootstrap_ui")
 	wicore.PostCommand(editor, nil, "new")
@@ -77,7 +79,9 @@ func TestMainInvalidThenQuit(t *testing.T) {
 	terminal := NewTerminalFake(80, 25, []TerminalEvent{})
 	editor, err := MakeEditor(terminal, true)
 	ut.AssertEqual(t, nil, err)
-	defer editor.Close()
+	defer func() {
+		_ = editor.Close()
+	}()
 
 	wicore.PostCommand(editor, nil, "editor_bootstrap_ui")
 	wicore.PostCommand(editor, nil, "invalid")
