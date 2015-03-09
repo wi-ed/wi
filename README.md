@@ -84,7 +84,14 @@ Vision
 Contributing
 ------------
 
-Run the presubmit check `./presubmit.py` first before doing a pull request. Even
-better is to install the git pre-commit hook with `./git-hooks/install.py`.
+First make sure test-only dependencies are installed with the flag `-t` then
+fetch and install `pre-commit-go`:
 
-A CLA (_form to be determined_) will be required for contribution.
+    cd github.com/<you>/wi
+    go get -t ./...
+    go get github.com/maruel/pre-commit-go
+    pre-commit-go
+
+Once done, you can send pull requests.
+
+A CLA (_form to be determined_) may eventually be required for contribution.

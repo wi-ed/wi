@@ -1,3 +1,0 @@
-[submodule "git-hooks-go"]
-	path = git-hooks-go
-	url = https://github.com/maruel/git-hooks-go.git

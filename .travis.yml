@@ -1,7 +1,6 @@
-# Install with:
-# cp git-hooks-go/sample.travis.yml .travis.yml
-#
-# travis-ci.org does *not* support .travis.yml to be a symlink!
+# Copyright 2014 Marc-Antoine Ruel. All rights reserved.
+# Use of this source code is governed under the Apache License, Version 2.0
+# that can be found in the LICENSE file.
 
 sudo: false
 language: go
@@ -10,7 +9,7 @@ go:
 - 1.4
 
 before_install:
-  - python git-hooks-go/install_prerequisites.py
+  - go get github.com/maruel/pre-commit-go
 
 script:
-  - ./presubmit.py
+  - pre-commit-go
