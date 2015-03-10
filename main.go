@@ -38,9 +38,9 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/nsf/termbox-go"
 	"github.com/wi-ed/wi/editor"
 	"github.com/wi-ed/wi/wicore"
-	"github.com/nsf/termbox-go"
 )
 
 func terminalThread(mustClose chan<- func()) int {
