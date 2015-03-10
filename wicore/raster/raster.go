@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"unicode/utf8"
 
-	"github.com/maruel/wi/wicore/colors"
+	"github.com/wi-ed/wi/wicore/colors"
 )
 
 // Rect is highly inspired by image.Rectangle but uses more standard origin +

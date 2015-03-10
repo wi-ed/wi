@@ -3,9 +3,9 @@
 package internal
 
 import (
-	"github.com/maruel/wi/wicore"
-	"github.com/maruel/wi/wicore/key"
-	"github.com/maruel/wi/wicore/lang"
+	"github.com/wi-ed/wi/wicore"
+	"github.com/wi-ed/wi/wicore/key"
+	"github.com/wi-ed/wi/wicore/lang"
 )
 
 // EventTriggerRPC is the low level interface to propagate events to plugins.

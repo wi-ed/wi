@@ -5,7 +5,7 @@
 package editor
 
 import (
-	"github.com/maruel/wi/wicore/lang"
+	"github.com/wi-ed/wi/wicore/lang"
 )
 
 var activateDisabled = lang.Map{

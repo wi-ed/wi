@@ -9,11 +9,11 @@ package main
 import (
 	"fmt"
 
-	"github.com/maruel/wi/editor"
-	"github.com/maruel/wi/wicore"
-	"github.com/maruel/wi/wicore/colors"
-	"github.com/maruel/wi/wicore/key"
-	"github.com/maruel/wi/wicore/raster"
+	"github.com/wi-ed/wi/editor"
+	"github.com/wi-ed/wi/wicore"
+	"github.com/wi-ed/wi/wicore/colors"
+	"github.com/wi-ed/wi/wicore/key"
+	"github.com/wi-ed/wi/wicore/raster"
 	"github.com/nsf/termbox-go"
 )
 

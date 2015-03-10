@@ -10,9 +10,9 @@ wi - right after vi
 _Bringing text based editor technology past 1200 bauds._
 
 
-[![GoDoc](https://godoc.org/github.com/maruel/wi?status.svg)](https://godoc.org/github.com/maruel/wi)
-[![Build Status](https://travis-ci.org/maruel/wi.svg?branch=master)](https://travis-ci.org/maruel/wi)
-[![Coverage Status](https://img.shields.io/coveralls/maruel/wi.svg)](https://coveralls.io/r/maruel/wi?branch=master)
+[![GoDoc](https://godoc.org/github.com/wi-ed/wi?status.svg)](https://godoc.org/github.com/wi-ed/wi)
+[![Build Status](https://travis-ci.org/wi-ed/wi.svg?branch=master)](https://travis-ci.org/wi-ed/wi)
+[![Coverage Status](https://img.shields.io/coveralls/wi-ed/wi.svg)](https://coveralls.io/r/wi-ed/wi?branch=master)
 
 
 Features
@@ -43,7 +43,7 @@ Setup
 ### Installation or updating
 
 ```
-go get -u github.com/maruel/wi
+go get -u github.com/wi-ed/wi
 ```
 
 

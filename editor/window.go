@@ -10,10 +10,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/maruel/wi/wicore"
-	"github.com/maruel/wi/wicore/colors"
-	"github.com/maruel/wi/wicore/lang"
-	"github.com/maruel/wi/wicore/raster"
+	"github.com/wi-ed/wi/wicore"
+	"github.com/wi-ed/wi/wicore/colors"
+	"github.com/wi-ed/wi/wicore/lang"
+	"github.com/wi-ed/wi/wicore/raster"
 )
 
 var singleBorder = []rune{'\u2500', '\u2502', '\u250D', '\u2510', '\u2514', '\u2518'}

@@ -18,9 +18,9 @@ import (
 	"strings"
 
 	"github.com/maruel/interfaceGUID"
-	"github.com/maruel/wi/wicore/key"
-	"github.com/maruel/wi/wicore/lang"
-	"github.com/maruel/wi/wicore/raster"
+	"github.com/wi-ed/wi/wicore/key"
+	"github.com/wi-ed/wi/wicore/lang"
+	"github.com/wi-ed/wi/wicore/raster"
 )
 
 // UI

@@ -5,7 +5,7 @@
 package wicore
 
 import (
-	"github.com/maruel/wi/wicore/lang"
+	"github.com/wi-ed/wi/wicore/lang"
 )
 
 // AliasFor describes that a command is an alias.

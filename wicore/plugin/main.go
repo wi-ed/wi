@@ -12,9 +12,9 @@ import (
 	"net/rpc"
 	"os"
 
-	"github.com/maruel/wi/internal"
-	"github.com/maruel/wi/wicore"
-	"github.com/maruel/wi/wicore/lang"
+	"github.com/wi-ed/wi/internal"
+	"github.com/wi-ed/wi/wicore"
+	"github.com/wi-ed/wi/wicore/lang"
 )
 
 // PluginImpl is the base implementation of interface wicore.Plugin. Embed this

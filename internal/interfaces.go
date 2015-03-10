@@ -5,8 +5,8 @@
 package internal
 
 import (
-	"github.com/maruel/wi/wicore"
-	"github.com/maruel/wi/wicore/lang"
+	"github.com/wi-ed/wi/wicore"
+	"github.com/wi-ed/wi/wicore/lang"
 )
 
 // PluginRPC is the low-level interface exposed by the plugin for use by

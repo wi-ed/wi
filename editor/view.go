@@ -10,9 +10,9 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/maruel/wi/wicore"
-	"github.com/maruel/wi/wicore/colors"
-	"github.com/maruel/wi/wicore/raster"
+	"github.com/wi-ed/wi/wicore"
+	"github.com/wi-ed/wi/wicore/colors"
+	"github.com/wi-ed/wi/wicore/raster"
 )
 
 // TODO(maruel): Likely move into wicore for reuse.

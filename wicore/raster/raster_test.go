@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/maruel/ut"
-	"github.com/maruel/wi/wicore/colors"
+	"github.com/wi-ed/wi/wicore/colors"
 )
 
 func TestRect(t *testing.T) {

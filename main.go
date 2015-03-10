@@ -38,8 +38,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/maruel/wi/editor"
-	"github.com/maruel/wi/wicore"
+	"github.com/wi-ed/wi/editor"
+	"github.com/wi-ed/wi/wicore"
 	"github.com/nsf/termbox-go"
 )
 

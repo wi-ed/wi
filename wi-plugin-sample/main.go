@@ -19,10 +19,10 @@ import (
 	"log"
 	"os"
 
-	"github.com/maruel/wi/wicore"
-	"github.com/maruel/wi/wicore/key"
-	"github.com/maruel/wi/wicore/lang"
-	"github.com/maruel/wi/wicore/plugin"
+	"github.com/wi-ed/wi/wicore"
+	"github.com/wi-ed/wi/wicore/key"
+	"github.com/wi-ed/wi/wicore/lang"
+	"github.com/wi-ed/wi/wicore/plugin"
 )
 
 type pluginImpl struct {

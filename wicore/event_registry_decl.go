@@ -5,8 +5,8 @@ package wicore
 import (
 	"io"
 
-	"github.com/maruel/wi/wicore/key"
-	"github.com/maruel/wi/wicore/lang"
+	"github.com/wi-ed/wi/wicore/key"
+	"github.com/wi-ed/wi/wicore/lang"
 )
 
 // EventListener is to be used to cancel an event listener.

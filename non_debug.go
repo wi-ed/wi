@@ -12,7 +12,7 @@ import (
 	"log"
 
 	_ "github.com/maruel/circular"
-	"github.com/maruel/wi/editor"
+	"github.com/wi-ed/wi/editor"
 )
 
 func debugHook() io.Closer {

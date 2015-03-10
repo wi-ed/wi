@@ -5,9 +5,9 @@
 package editor
 
 import (
-	"github.com/maruel/wi/wicore"
-	"github.com/maruel/wi/wicore/key"
-	"github.com/maruel/wi/wicore/raster"
+	"github.com/wi-ed/wi/wicore"
+	"github.com/wi-ed/wi/wicore/key"
+	"github.com/wi-ed/wi/wicore/raster"
 )
 
 // Terminal is the interface to the actual terminal termbox so it can be mocked
