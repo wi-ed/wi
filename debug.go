@@ -39,7 +39,7 @@ var (
 )
 
 type debugData struct {
-	logBuffer *circular.Buffer
+	logBuffer circular.Buffer
 	logFile   io.Closer
 	profFile  io.Closer
 }
@@ -62,7 +62,7 @@ func (d *debugData) Close() error {
 
 func debugHook() io.Closer {
 	log.SetFlags(log.Lmicroseconds | log.Lshortfile)
-	data.logBuffer = circular.MakeBuffer(10 * 1024 * 1024)
+	data.logBuffer = circular.New(10 * 1024 * 1024)
 	log.SetOutput(data.logBuffer)
 	if f, err := os.OpenFile("wi.log", os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0666); err == nil {
 		wicore.Go("Log flusher", func() { data.logBuffer.WriteTo(f) })

@@ -11,7 +11,6 @@ import (
 	"io/ioutil"
 	"log"
 
-	_ "github.com/maruel/circular"
 	"github.com/wi-ed/wi/editor"
 )
 
