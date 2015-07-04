@@ -94,7 +94,6 @@ type listener{{.Name}} struct {
 type eventRegistry struct {
 	lock     sync.Mutex
 	nextID   int
-	deferred chan<- func()
 {{range .Events}}
 	{{.Lower}} []listener{{.Name}}{{end}}
 }
@@ -125,21 +124,24 @@ func (er *eventRegistry) Register{{.Name}}(callback func({{.Params.Flat $.Curren
 	return &eventListener{er, i | {{.BitValue}}}
 }{{end}}{{range .Events}}
 
+func (er *eventRegistry) getListeners{{.Name}}() []listener{{.Name}}{
+	er.lock.Lock()
+	defer er.lock.Unlock()
+	out := make([]listener{{.Name}}, 0, len(er.{{.Lower}}))
+	copy(out, er.{{.Lower}})
+	return out
+}
+
 func (er *eventRegistry) {{$.Trigger}}{{.Name}}({{.Params.Flat $.CurrentPkg}}) {
-	er.deferred <- func() {
-		items := func() []func({{.Params.Flat $.CurrentPkg}}) {
-			er.lock.Lock()
-			defer er.lock.Unlock()
-			items := make([]func({{.Params.Flat $.CurrentPkg}}), 0, len(er.{{.Lower}}))
-			for _, item := range er.{{.Lower}} {
-				items = append(items, item.callback)
-			}
-			return items
-		}()
-		for _, item := range items {
-			item({{.Params.Names}})
-		}
+	var wg sync.WaitGroup
+	for _, item := range er.getListeners{{.Name}}() {
+		wg.Add(1)
+		go func(fn func({{.Params.Flat $.CurrentPkg}})) {
+			defer wg.Done()
+			fn({{.Params.Names}})
+		}(item.callback)
 	}
+	wg.Wait()
 }{{end}}
 
 type unregister interface {
@@ -179,15 +181,13 @@ import (
 
 // makeEventRegistry returns a wicore.EventRegistry and the channel to read
 // from to run the events piped in.
-func makeEventRegistry() (wicore.EventRegistry, chan func()) {
+func makeEventRegistry() wicore.EventRegistry {
 	// Reduce the odds of allocation within RegistryXXX() by using relatively
 	// large buffers.
-	c := make(chan func(), 2048)
-	e := &eventRegistry{
-		deferred: c,{{range .Events}}
+	e := &eventRegistry{ {{range .Events}}
 		{{.Lower}}: make([]listener{{.Name}}, 0, 64),{{end}}
 	}
-	return e, c
+	return e
 }
 
 // registerPluginEvents registers all the events to be forwarded to the plugin
@@ -225,17 +225,15 @@ type eventTriggerRPC struct {
 
 // makeEventRegistry returns a wicore.EventRegistry and the channel to read
 // from to run the events piped in.
-func makeEventRegistry() (wicore.EventRegistry, internal.EventTriggerRPC, chan func()) {
+func makeEventRegistry() (wicore.EventRegistry, internal.EventTriggerRPC) {
 	// Reduce the odds of allocation within RegistryXXX() by using relatively
 	// large buffers.
-	c := make(chan func(), 2048)
 	e := &eventTriggerRPC{
-		eventRegistry{
-			deferred: c,{{range .Events}}
+		eventRegistry{ {{range .Events}}
 			{{.Lower}}: make([]listener{{.Name}}, 0, 64),{{end}}
 		},
 	}
-	return e, e, c
+	return e, e
 }{{range .Events}}
 
 func (er *eventTriggerRPC) Trigger{{.Name}}RPC(packet internal.Packet{{.Name}}, ignored *int) error {

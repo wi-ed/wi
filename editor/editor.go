@@ -38,7 +38,7 @@ type Editor interface {
 // the Editor interface.
 type editor struct {
 	wicore.EventRegistry
-	deferred      chan func()
+	quit          chan int
 	terminal      Terminal                      // Abstract terminal interface to the real terminal.
 	rootWindow    *window                       // The rootWindow is always DockingFill and set to the size of the terminal.
 	lastActive    []wicore.Window               // Most recently used order of Window activatd.
@@ -230,16 +230,8 @@ func (e *editor) EventLoop() int {
 	var drawTimer <-chan time.Time = fakeChan
 	for {
 		select {
-		case i := <-e.deferred:
-			if i == nil {
-				// Happens on exit. Drawing only happens to make unit tests happy.
-				// Should be removed eventually.
-				e.draw()
-				return 0
-			}
-			// The core of the event loop. See the generated file
-			// event_registry_impl.go for how the functions are enqueued.
-			i()
+		case i := <-e.quit:
+			return i
 
 		case <-e.viewReady:
 			// Taking in account a 60hz frame is 18.8ms, 5ms is going to be generally
@@ -306,10 +298,10 @@ func (e *editor) loadPlugins() {
 // be used by the object created by this function.
 func MakeEditor(terminal Terminal, noPlugin bool) (Editor, error) {
 	lang.Set(lang.En)
-	reg, deferred := makeEventRegistry()
+	reg := makeEventRegistry()
 	e := &editor{
 		EventRegistry: reg,
-		deferred:      deferred,
+		quit:          make(chan int),
 		terminal:      terminal,
 		rootWindow:    nil,                         // It is set below due to circular reference.
 		lastActive:    make([]wicore.Window, 1, 8), // It is set below.
@@ -396,8 +388,8 @@ func cmdEditorQuit(c *privilegedCommandImpl, e *editor, w *window, args ...strin
 		// - Send a signal back to the main loop.
 	}
 
-	// This tells the editor.EventLoop() to quit.
-	e.deferred <- nil
+	// This tells the editor.EventLoop() to quit. This is synchronous.
+	e.quit <- 0
 }
 
 func cmdEditorRedraw(c *privilegedCommandImpl, e *editor, w *window, args ...string) {

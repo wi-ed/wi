@@ -16,12 +16,10 @@ import (
 
 // makeEventRegistry returns a wicore.EventRegistry and the channel to read
 // from to run the events piped in.
-func makeEventRegistry() (wicore.EventRegistry, chan func()) {
+func makeEventRegistry() wicore.EventRegistry {
 	// Reduce the odds of allocation within RegistryXXX() by using relatively
 	// large buffers.
-	c := make(chan func(), 2048)
 	e := &eventRegistry{
-		deferred:                  c,
 		commands:                  make([]listenerCommands, 0, 64),
 		documentCreated:           make([]listenerDocumentCreated, 0, 64),
 		documentCursorMoved:       make([]listenerDocumentCursorMoved, 0, 64),
@@ -35,7 +33,7 @@ func makeEventRegistry() (wicore.EventRegistry, chan func()) {
 		windowCreated:             make([]listenerWindowCreated, 0, 64),
 		windowResized:             make([]listenerWindowResized, 0, 64),
 	}
-	return e, c
+	return e
 }
 
 // registerPluginEvents registers all the events to be forwarded to the plugin
@@ -193,9 +191,8 @@ type listenerWindowResized struct {
 // interface wicore.EventRegistry. It completely implements
 // wicore.EventRegistry.
 type eventRegistry struct {
-	lock     sync.Mutex
-	nextID   int
-	deferred chan<- func()
+	lock   sync.Mutex
+	nextID int
 
 	commands                  []listenerCommands
 	documentCreated           []listenerDocumentCreated
@@ -424,208 +421,244 @@ func (er *eventRegistry) RegisterWindowResized(callback func(window wicore.Windo
 	return &eventListener{er, i | 0xc000000}
 }
 
+func (er *eventRegistry) getListenersCommands() []listenerCommands {
+	er.lock.Lock()
+	defer er.lock.Unlock()
+	out := make([]listenerCommands, 0, len(er.commands))
+	copy(out, er.commands)
+	return out
+}
+
 func (er *eventRegistry) TriggerCommands(cmds wicore.EnqueuedCommands) {
-	er.deferred <- func() {
-		items := func() []func(cmds wicore.EnqueuedCommands) {
-			er.lock.Lock()
-			defer er.lock.Unlock()
-			items := make([]func(cmds wicore.EnqueuedCommands), 0, len(er.commands))
-			for _, item := range er.commands {
-				items = append(items, item.callback)
-			}
-			return items
-		}()
-		for _, item := range items {
-			item(cmds)
-		}
+	var wg sync.WaitGroup
+	for _, item := range er.getListenersCommands() {
+		wg.Add(1)
+		go func(fn func(cmds wicore.EnqueuedCommands)) {
+			defer wg.Done()
+			fn(cmds)
+		}(item.callback)
 	}
+	wg.Wait()
+}
+
+func (er *eventRegistry) getListenersDocumentCreated() []listenerDocumentCreated {
+	er.lock.Lock()
+	defer er.lock.Unlock()
+	out := make([]listenerDocumentCreated, 0, len(er.documentCreated))
+	copy(out, er.documentCreated)
+	return out
 }
 
 func (er *eventRegistry) TriggerDocumentCreated(doc wicore.Document) {
-	er.deferred <- func() {
-		items := func() []func(doc wicore.Document) {
-			er.lock.Lock()
-			defer er.lock.Unlock()
-			items := make([]func(doc wicore.Document), 0, len(er.documentCreated))
-			for _, item := range er.documentCreated {
-				items = append(items, item.callback)
-			}
-			return items
-		}()
-		for _, item := range items {
-			item(doc)
-		}
+	var wg sync.WaitGroup
+	for _, item := range er.getListenersDocumentCreated() {
+		wg.Add(1)
+		go func(fn func(doc wicore.Document)) {
+			defer wg.Done()
+			fn(doc)
+		}(item.callback)
 	}
+	wg.Wait()
+}
+
+func (er *eventRegistry) getListenersDocumentCursorMoved() []listenerDocumentCursorMoved {
+	er.lock.Lock()
+	defer er.lock.Unlock()
+	out := make([]listenerDocumentCursorMoved, 0, len(er.documentCursorMoved))
+	copy(out, er.documentCursorMoved)
+	return out
 }
 
 func (er *eventRegistry) TriggerDocumentCursorMoved(doc wicore.Document, col, row int) {
-	er.deferred <- func() {
-		items := func() []func(doc wicore.Document, col, row int) {
-			er.lock.Lock()
-			defer er.lock.Unlock()
-			items := make([]func(doc wicore.Document, col, row int), 0, len(er.documentCursorMoved))
-			for _, item := range er.documentCursorMoved {
-				items = append(items, item.callback)
-			}
-			return items
-		}()
-		for _, item := range items {
-			item(doc, col, row)
-		}
+	var wg sync.WaitGroup
+	for _, item := range er.getListenersDocumentCursorMoved() {
+		wg.Add(1)
+		go func(fn func(doc wicore.Document, col, row int)) {
+			defer wg.Done()
+			fn(doc, col, row)
+		}(item.callback)
 	}
+	wg.Wait()
+}
+
+func (er *eventRegistry) getListenersEditorKeyboardModeChanged() []listenerEditorKeyboardModeChanged {
+	er.lock.Lock()
+	defer er.lock.Unlock()
+	out := make([]listenerEditorKeyboardModeChanged, 0, len(er.editorKeyboardModeChanged))
+	copy(out, er.editorKeyboardModeChanged)
+	return out
 }
 
 func (er *eventRegistry) TriggerEditorKeyboardModeChanged(mode wicore.KeyboardMode) {
-	er.deferred <- func() {
-		items := func() []func(mode wicore.KeyboardMode) {
-			er.lock.Lock()
-			defer er.lock.Unlock()
-			items := make([]func(mode wicore.KeyboardMode), 0, len(er.editorKeyboardModeChanged))
-			for _, item := range er.editorKeyboardModeChanged {
-				items = append(items, item.callback)
-			}
-			return items
-		}()
-		for _, item := range items {
-			item(mode)
-		}
+	var wg sync.WaitGroup
+	for _, item := range er.getListenersEditorKeyboardModeChanged() {
+		wg.Add(1)
+		go func(fn func(mode wicore.KeyboardMode)) {
+			defer wg.Done()
+			fn(mode)
+		}(item.callback)
 	}
+	wg.Wait()
+}
+
+func (er *eventRegistry) getListenersEditorLanguage() []listenerEditorLanguage {
+	er.lock.Lock()
+	defer er.lock.Unlock()
+	out := make([]listenerEditorLanguage, 0, len(er.editorLanguage))
+	copy(out, er.editorLanguage)
+	return out
 }
 
 func (er *eventRegistry) TriggerEditorLanguage(l lang.Language) {
-	er.deferred <- func() {
-		items := func() []func(l lang.Language) {
-			er.lock.Lock()
-			defer er.lock.Unlock()
-			items := make([]func(l lang.Language), 0, len(er.editorLanguage))
-			for _, item := range er.editorLanguage {
-				items = append(items, item.callback)
-			}
-			return items
-		}()
-		for _, item := range items {
-			item(l)
-		}
+	var wg sync.WaitGroup
+	for _, item := range er.getListenersEditorLanguage() {
+		wg.Add(1)
+		go func(fn func(l lang.Language)) {
+			defer wg.Done()
+			fn(l)
+		}(item.callback)
 	}
+	wg.Wait()
+}
+
+func (er *eventRegistry) getListenersTerminalKeyPressed() []listenerTerminalKeyPressed {
+	er.lock.Lock()
+	defer er.lock.Unlock()
+	out := make([]listenerTerminalKeyPressed, 0, len(er.terminalKeyPressed))
+	copy(out, er.terminalKeyPressed)
+	return out
 }
 
 func (er *eventRegistry) TriggerTerminalKeyPressed(k key.Press) {
-	er.deferred <- func() {
-		items := func() []func(k key.Press) {
-			er.lock.Lock()
-			defer er.lock.Unlock()
-			items := make([]func(k key.Press), 0, len(er.terminalKeyPressed))
-			for _, item := range er.terminalKeyPressed {
-				items = append(items, item.callback)
-			}
-			return items
-		}()
-		for _, item := range items {
-			item(k)
-		}
+	var wg sync.WaitGroup
+	for _, item := range er.getListenersTerminalKeyPressed() {
+		wg.Add(1)
+		go func(fn func(k key.Press)) {
+			defer wg.Done()
+			fn(k)
+		}(item.callback)
 	}
+	wg.Wait()
+}
+
+func (er *eventRegistry) getListenersTerminalMetaKeyPressed() []listenerTerminalMetaKeyPressed {
+	er.lock.Lock()
+	defer er.lock.Unlock()
+	out := make([]listenerTerminalMetaKeyPressed, 0, len(er.terminalMetaKeyPressed))
+	copy(out, er.terminalMetaKeyPressed)
+	return out
 }
 
 func (er *eventRegistry) TriggerTerminalMetaKeyPressed(k key.Press) {
-	er.deferred <- func() {
-		items := func() []func(k key.Press) {
-			er.lock.Lock()
-			defer er.lock.Unlock()
-			items := make([]func(k key.Press), 0, len(er.terminalMetaKeyPressed))
-			for _, item := range er.terminalMetaKeyPressed {
-				items = append(items, item.callback)
-			}
-			return items
-		}()
-		for _, item := range items {
-			item(k)
-		}
+	var wg sync.WaitGroup
+	for _, item := range er.getListenersTerminalMetaKeyPressed() {
+		wg.Add(1)
+		go func(fn func(k key.Press)) {
+			defer wg.Done()
+			fn(k)
+		}(item.callback)
 	}
+	wg.Wait()
+}
+
+func (er *eventRegistry) getListenersTerminalResized() []listenerTerminalResized {
+	er.lock.Lock()
+	defer er.lock.Unlock()
+	out := make([]listenerTerminalResized, 0, len(er.terminalResized))
+	copy(out, er.terminalResized)
+	return out
 }
 
 func (er *eventRegistry) TriggerTerminalResized() {
-	er.deferred <- func() {
-		items := func() []func() {
-			er.lock.Lock()
-			defer er.lock.Unlock()
-			items := make([]func(), 0, len(er.terminalResized))
-			for _, item := range er.terminalResized {
-				items = append(items, item.callback)
-			}
-			return items
-		}()
-		for _, item := range items {
-			item()
-		}
+	var wg sync.WaitGroup
+	for _, item := range er.getListenersTerminalResized() {
+		wg.Add(1)
+		go func(fn func()) {
+			defer wg.Done()
+			fn()
+		}(item.callback)
 	}
+	wg.Wait()
+}
+
+func (er *eventRegistry) getListenersViewActivated() []listenerViewActivated {
+	er.lock.Lock()
+	defer er.lock.Unlock()
+	out := make([]listenerViewActivated, 0, len(er.viewActivated))
+	copy(out, er.viewActivated)
+	return out
 }
 
 func (er *eventRegistry) TriggerViewActivated(view wicore.View) {
-	er.deferred <- func() {
-		items := func() []func(view wicore.View) {
-			er.lock.Lock()
-			defer er.lock.Unlock()
-			items := make([]func(view wicore.View), 0, len(er.viewActivated))
-			for _, item := range er.viewActivated {
-				items = append(items, item.callback)
-			}
-			return items
-		}()
-		for _, item := range items {
-			item(view)
-		}
+	var wg sync.WaitGroup
+	for _, item := range er.getListenersViewActivated() {
+		wg.Add(1)
+		go func(fn func(view wicore.View)) {
+			defer wg.Done()
+			fn(view)
+		}(item.callback)
 	}
+	wg.Wait()
+}
+
+func (er *eventRegistry) getListenersViewCreated() []listenerViewCreated {
+	er.lock.Lock()
+	defer er.lock.Unlock()
+	out := make([]listenerViewCreated, 0, len(er.viewCreated))
+	copy(out, er.viewCreated)
+	return out
 }
 
 func (er *eventRegistry) TriggerViewCreated(view wicore.View) {
-	er.deferred <- func() {
-		items := func() []func(view wicore.View) {
-			er.lock.Lock()
-			defer er.lock.Unlock()
-			items := make([]func(view wicore.View), 0, len(er.viewCreated))
-			for _, item := range er.viewCreated {
-				items = append(items, item.callback)
-			}
-			return items
-		}()
-		for _, item := range items {
-			item(view)
-		}
+	var wg sync.WaitGroup
+	for _, item := range er.getListenersViewCreated() {
+		wg.Add(1)
+		go func(fn func(view wicore.View)) {
+			defer wg.Done()
+			fn(view)
+		}(item.callback)
 	}
+	wg.Wait()
+}
+
+func (er *eventRegistry) getListenersWindowCreated() []listenerWindowCreated {
+	er.lock.Lock()
+	defer er.lock.Unlock()
+	out := make([]listenerWindowCreated, 0, len(er.windowCreated))
+	copy(out, er.windowCreated)
+	return out
 }
 
 func (er *eventRegistry) TriggerWindowCreated(window wicore.Window) {
-	er.deferred <- func() {
-		items := func() []func(window wicore.Window) {
-			er.lock.Lock()
-			defer er.lock.Unlock()
-			items := make([]func(window wicore.Window), 0, len(er.windowCreated))
-			for _, item := range er.windowCreated {
-				items = append(items, item.callback)
-			}
-			return items
-		}()
-		for _, item := range items {
-			item(window)
-		}
+	var wg sync.WaitGroup
+	for _, item := range er.getListenersWindowCreated() {
+		wg.Add(1)
+		go func(fn func(window wicore.Window)) {
+			defer wg.Done()
+			fn(window)
+		}(item.callback)
 	}
+	wg.Wait()
+}
+
+func (er *eventRegistry) getListenersWindowResized() []listenerWindowResized {
+	er.lock.Lock()
+	defer er.lock.Unlock()
+	out := make([]listenerWindowResized, 0, len(er.windowResized))
+	copy(out, er.windowResized)
+	return out
 }
 
 func (er *eventRegistry) TriggerWindowResized(window wicore.Window) {
-	er.deferred <- func() {
-		items := func() []func(window wicore.Window) {
-			er.lock.Lock()
-			defer er.lock.Unlock()
-			items := make([]func(window wicore.Window), 0, len(er.windowResized))
-			for _, item := range er.windowResized {
-				items = append(items, item.callback)
-			}
-			return items
-		}()
-		for _, item := range items {
-			item(window)
-		}
+	var wg sync.WaitGroup
+	for _, item := range er.getListenersWindowResized() {
+		wg.Add(1)
+		go func(fn func(window wicore.Window)) {
+			defer wg.Done()
+			fn(window)
+		}(item.callback)
 	}
+	wg.Wait()
 }
 
 type unregister interface {

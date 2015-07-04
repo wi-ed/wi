@@ -89,7 +89,6 @@ func (p *pluginRPC) Quit(int, *int) error {
 // editorProxy is an experimentation.
 type editorProxy struct {
 	wicore.EventRegistry
-	deferred     chan func()
 	id           string
 	activeWindow wicore.Window
 	factoryNames []string
@@ -145,10 +144,9 @@ func Main(plugin wicore.Plugin) int {
 	// kill the plugin process in this case.
 	conn := wicore.MakeReadWriteCloser(os.Stdin, os.Stdout)
 	server := rpc.NewServer()
-	reg, rpc, deferred := makeEventRegistry()
+	reg, rpc := makeEventRegistry()
 	e := &editorProxy{
 		reg,
-		deferred,
 		"",
 		nil,
 		[]string{},
