@@ -22,6 +22,7 @@ type Arg struct {
 	Type string
 }
 
+// FullType returns the qualified type including the package.
 func (a *Arg) FullType(curPkg string) string {
 	if a.Pkg == "" || a.Pkg == curPkg {
 		return fmt.Sprintf("%s", a.Type)
@@ -29,8 +30,10 @@ func (a *Arg) FullType(curPkg string) string {
 	return fmt.Sprintf("%s.%s", a.Pkg, a.Type)
 }
 
+// Args is a slice of Arg.
 type Args []Arg
 
+// Names returns the comma separated name of arguments.
 func (a Args) Names() string {
 	out := make([]string, len(a))
 	for i, arg := range a {
@@ -39,6 +42,7 @@ func (a Args) Names() string {
 	return strings.Join(out, ", ")
 }
 
+// Flat returns the comma separated qualified arguments.
 func (a Args) Flat(curPkg string) string {
 	out := make([]string, len(a))
 	for i, arg := range a {
@@ -174,11 +178,11 @@ func EnumInterface(pkgName string, t *ast.TypeSpec) ([]Method, error) {
 		}
 		params, err := processFieldList(pkgName, methodFunc.Params)
 		if err != nil {
-			return out, fmt.Errorf("%s.%s: params %s", i, typeName, methodName, err)
+			return out, fmt.Errorf("%s.%s: params %s", typeName, methodName, err)
 		}
 		results, err := processFieldList(pkgName, methodFunc.Results)
 		if err != nil {
-			return out, fmt.Errorf("%s.%s: results %s", i, typeName, methodName, err)
+			return out, fmt.Errorf("%s.%s: results %s", typeName, methodName, err)
 		}
 		method := Method{
 			Name:    methodName,

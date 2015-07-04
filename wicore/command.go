@@ -7,7 +7,6 @@
 package wicore
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/wi-ed/wi/wicore/lang"
@@ -78,7 +77,7 @@ func (c *CommandAlias) Handle(e EditorW, w Window, args ...string) {
 	} else {
 		// TODO(maruel): This makes assumption on "alert".
 		cmd = GetCommand(e, w, "alert")
-		txt := fmt.Sprintf(AliasNotFound.String(), c.NameValue, c.CommandValue)
+		txt := AliasNotFound.Formatf(c.NameValue, c.CommandValue)
 		cmd.Handle(e, w, txt)
 	}
 }
@@ -94,12 +93,12 @@ func (c *CommandAlias) Category(e Editor, w Window) CommandCategory {
 
 // ShortDesc implements Command.
 func (c *CommandAlias) ShortDesc() string {
-	return fmt.Sprintf(AliasFor.String(), c.merged())
+	return AliasFor.Formatf(c.merged())
 }
 
 // LongDesc implements Command.
 func (c *CommandAlias) LongDesc() string {
-	return fmt.Sprintf(AliasFor.String(), c.merged())
+	return AliasFor.Formatf(c.merged())
 }
 
 func (c *CommandAlias) merged() string {

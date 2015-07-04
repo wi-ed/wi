@@ -17,31 +17,31 @@ import (
 	"github.com/wi-ed/wi/wicore/lang"
 )
 
-// PluginImpl is the base implementation of interface wicore.Plugin. Embed this
+// Impl is the base implementation of interface wicore.Plugin. Embed this
 // structure and override the functions desired.
-type PluginImpl struct {
+type Impl struct {
 	Name        string
 	Description lang.Map
 }
 
-func (p *PluginImpl) String() string {
-	return fmt.Sprintf("Plugin(%s, %d)", p.Name, os.Getpid())
+func (i *Impl) String() string {
+	return fmt.Sprintf("Plugin(%s, %d)", i.Name, os.Getpid())
 }
 
 // Details implements wicore.Plugin.
-func (p *PluginImpl) Details() wicore.PluginDetails {
+func (i *Impl) Details() wicore.PluginDetails {
 	return wicore.PluginDetails{
-		p.Name,
-		p.Description.String(),
+		i.Name,
+		i.Description.String(),
 	}
 }
 
 // Init implements wicore.Plugin.
-func (p *PluginImpl) Init(e wicore.Editor) {
+func (i *Impl) Init(e wicore.Editor) {
 }
 
 // Close implements wicore.Plugin.
-func (p *PluginImpl) Close() error {
+func (i *Impl) Close() error {
 	return nil
 }
 

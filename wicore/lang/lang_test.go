@@ -40,10 +40,10 @@ func TestString(t *testing.T) {
 	ut.AssertEqual(t, "Bar", a.String())
 }
 
-func TestSprintf(t *testing.T) {
+func TestFormatf(t *testing.T) {
 	a := Map{
 		FrCa: "Bar %d",
 	}
 	Set(FrCa)
-	ut.AssertEqual(t, "Bar 2", a.Sprintf(2))
+	ut.AssertEqual(t, "Bar 2", a.Formatf(2))
 }

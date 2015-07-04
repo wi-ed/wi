@@ -77,6 +77,7 @@ func PositionOnScreen(w Window) raster.Rect {
 // MultiCloser closes multiple io.Closer at once.
 type MultiCloser []io.Closer
 
+// Close implements io.Closer.
 func (m MultiCloser) Close() (err error) {
 	for _, i := range m {
 		err1 := i.Close()

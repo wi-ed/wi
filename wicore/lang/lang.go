@@ -47,8 +47,8 @@ func (m Map) String() string {
 	return m.Get(Active())
 }
 
-// Sprintf returns fmt.Sprintf(m.Get(), args...) as a shortcut.
-func (m Map) Sprintf(args ...interface{}) string {
+// Formatf returns fmt.Sprintf(m.String(), args...) as a shortcut.
+func (m Map) Formatf(args ...interface{}) string {
 	return fmt.Sprintf(m.String(), args...)
 }
 

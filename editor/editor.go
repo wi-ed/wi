@@ -81,7 +81,7 @@ func (e *editor) onTerminalMetaKeyPressed(k key.Press) {
 		// the event queue.
 		e.ExecuteCommand(e.ActiveWindow(), cmdName)
 	} else {
-		e.ExecuteCommand(e.ActiveWindow(), "alert", notMapped.Sprintf(k))
+		e.ExecuteCommand(e.ActiveWindow(), "alert", notMapped.Formatf(k))
 	}
 }
 
@@ -101,7 +101,7 @@ func (e *editor) ExecuteCommand(w wicore.Window, cmdName string, args ...string)
 	}
 	cmd := wicore.GetCommand(e, w, cmdName)
 	if cmd == nil {
-		e.ExecuteCommand(w, "alert", notFound.Sprintf(cmdName))
+		e.ExecuteCommand(w, "alert", notFound.Formatf(cmdName))
 	} else {
 		cmd.Handle(e, w, args...)
 	}

@@ -26,7 +26,7 @@ import (
 )
 
 type pluginImpl struct {
-	plugin.PluginImpl
+	plugin.Impl
 	e wicore.Editor
 }
 
@@ -85,7 +85,7 @@ func mainImpl() int {
 	}
 	// This starts the control loop. See its doc for more up-to-date details.
 	p := &pluginImpl{
-		plugin.PluginImpl{
+		plugin.Impl{
 			"wi-plugin-sample",
 			lang.Map{
 				lang.En: "Sample plugin to be used as a template",
