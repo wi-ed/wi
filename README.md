@@ -1,6 +1,12 @@
 wi - right after vi
 ===================
 
+The project was put on ice because it failed to attract interest and was mostly
+done for research purpose. Please look at
+[xi](https://github.com/google/xi-editor) which has similar design goals and is
+written in Rust instead.
+
+
 *Experimental, do not look into.*
 
 *Experimental, do not look into.*
